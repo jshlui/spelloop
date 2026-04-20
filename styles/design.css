@@ -1,0 +1,265 @@
+/* SpellLoop Kids — Design System
+   Palette: Soft pastel (aesthetic option 2)
+   Feel: friendly, balanced for 6–8yo, not babyish
+*/
+
+:root {
+  /* pastels */
+  --bg: #F3F6FA;
+  --bg-warm: #FFF6EA;
+  --surface: #FFFFFF;
+  --surface-alt: #F7F2FF;
+  --ink: #1F2A44;
+  --ink-soft: #4B587A;
+  --ink-mute: #7C89A8;
+
+  /* primaries */
+  --blue: #6C8EFF;
+  --blue-ink: #3F5FE2;
+  --blue-soft: #E3EAFF;
+
+  --yellow: #FFD166;
+  --yellow-ink: #C8942A;
+  --yellow-soft: #FFF2CE;
+
+  --pink: #FF9ECD;
+  --pink-ink: #D05A95;
+  --pink-soft: #FFE0EF;
+
+  --mint: #8EE3C3;
+  --mint-ink: #2E9C75;
+  --mint-soft: #D7F5E8;
+
+  --coral: #FFA07A;
+  --coral-ink: #D46A45;
+  --coral-soft: #FFE3D5;
+
+  --lilac: #C7B4FF;
+  --lilac-ink: #7A5BD6;
+  --lilac-soft: #EDE4FF;
+
+  /* semantic */
+  --success: #30C285;
+  --danger: #F07171;
+  --warn: #F2A53B;
+
+  /* type scale (kid app is balanced 6–8) */
+  --fs-xs: 12px;
+  --fs-sm: 14px;
+  --fs-md: 16px;
+  --fs-lg: 20px;
+  --fs-xl: 26px;
+  --fs-2xl: 34px;
+  --fs-3xl: 48px;
+  --fs-tile: 56px;    /* big letter tiles */
+  --fs-hero: 72px;    /* word under display */
+
+  /* radii */
+  --r-sm: 8px;
+  --r-md: 14px;
+  --r-lg: 22px;
+  --r-xl: 32px;
+  --r-pill: 999px;
+
+  /* shadow */
+  --shadow-soft: 0 2px 0 rgba(31,42,68,0.05), 0 6px 20px rgba(31,42,68,0.07);
+  --shadow-pop: 0 4px 0 rgba(31,42,68,0.08), 0 10px 28px rgba(31,42,68,0.12);
+  --shadow-tile: 0 4px 0 rgba(31,42,68,0.10);
+
+  /* spacing */
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-5: 24px;
+  --sp-6: 32px;
+  --sp-7: 48px;
+}
+
+/* age skew */
+:root[data-age="young"] {
+  --fs-md: 18px;
+  --fs-lg: 24px;
+  --fs-xl: 32px;
+  --fs-tile: 64px;
+  --fs-hero: 84px;
+  --r-sm: 12px;
+  --r-md: 18px;
+  --r-lg: 28px;
+  --r-xl: 38px;
+}
+:root[data-age="old"] {
+  --fs-md: 15px;
+  --fs-lg: 18px;
+  --fs-xl: 22px;
+  --fs-tile: 44px;
+  --fs-hero: 60px;
+  --r-sm: 6px;
+  --r-md: 10px;
+  --r-lg: 18px;
+  --r-xl: 26px;
+}
+
+/* theme variants */
+:root[data-theme="sunny"] {
+  --blue: #FFD166;
+  --blue-ink: #C8942A;
+  --blue-soft: #FFF2CE;
+}
+:root[data-theme="berry"] {
+  --blue: #C7B4FF;
+  --blue-ink: #7A5BD6;
+  --blue-soft: #EDE4FF;
+}
+:root[data-theme="mint"] {
+  --blue: #8EE3C3;
+  --blue-ink: #2E9C75;
+  --blue-soft: #D7F5E8;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  font-family: 'Nunito', 'SF Pro Rounded', -apple-system, system-ui, sans-serif;
+  color: var(--ink);
+  -webkit-font-smoothing: antialiased;
+  background: #E9EDF5;
+}
+
+/* == Buttons == */
+.btn {
+  font-family: inherit;
+  border: none;
+  cursor: pointer;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  border-radius: var(--r-pill);
+  padding: 14px 22px;
+  font-size: var(--fs-md);
+  transition: transform 80ms ease, box-shadow 80ms ease, background 120ms ease;
+  box-shadow: var(--shadow-tile);
+}
+.btn:active { transform: translateY(2px); box-shadow: 0 2px 0 rgba(31,42,68,0.10); }
+.btn-primary { background: var(--blue); color: white; }
+.btn-primary:hover { background: var(--blue-ink); }
+.btn-ghost { background: var(--surface); color: var(--ink); box-shadow: 0 0 0 2px rgba(31,42,68,0.06); }
+.btn-mint { background: var(--mint); color: #0f5c42; }
+.btn-coral { background: var(--coral); color: #7a2a0a; }
+
+/* == Cards == */
+.card {
+  background: var(--surface);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-soft);
+  padding: var(--sp-5);
+}
+
+/* == Letter tile == */
+.tile {
+  width: 72px;
+  height: 84px;
+  border-radius: var(--r-md);
+  background: var(--yellow);
+  color: var(--ink);
+  font-weight: 900;
+  font-size: var(--fs-tile);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--shadow-tile);
+  user-select: none;
+  cursor: pointer;
+  position: relative;
+  transition: transform 120ms ease;
+}
+.tile.blue { background: var(--blue); color: white; }
+.tile.pink { background: var(--pink); color: white; }
+.tile.mint { background: var(--mint); color: #0f5c42; }
+.tile.coral { background: var(--coral); color: #7a2a0a; }
+.tile.lilac { background: var(--lilac); color: white; }
+.tile.ghost { background: transparent; color: transparent; box-shadow: inset 0 0 0 3px rgba(31,42,68,0.14); }
+.tile.slot {
+  background: rgba(31,42,68,0.06);
+  color: rgba(31,42,68,0.20);
+  box-shadow: none;
+  border: 3px dashed rgba(31,42,68,0.15);
+  font-size: var(--fs-xl);
+}
+.tile.slot.filled {
+  background: var(--surface);
+  color: var(--ink);
+  border: none;
+  box-shadow: var(--shadow-tile);
+  font-size: var(--fs-tile);
+}
+.tile.correct { background: var(--success) !important; color: white !important; animation: pop 400ms ease; }
+.tile.wrong { animation: shake 300ms ease; background: var(--danger) !important; color: white !important; }
+.tile.hint { outline: 3px dashed var(--yellow-ink); outline-offset: 4px; }
+
+.tile.small { width: 48px; height: 56px; font-size: 28px; border-radius: var(--r-sm); }
+
+@keyframes pop {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.15); }
+  100% { transform: scale(1); }
+}
+@keyframes shake {
+  0%,100% { transform: translateX(0); }
+  20% { transform: translateX(-6px); }
+  40% { transform: translateX(6px); }
+  60% { transform: translateX(-4px); }
+  80% { transform: translateX(4px); }
+}
+@keyframes floatUp {
+  0% { transform: translateY(20px); opacity: 0; }
+  100% { transform: translateY(0); opacity: 1; }
+}
+@keyframes starBurst {
+  0% { transform: scale(0) rotate(0deg); opacity: 1; }
+  70% { transform: scale(1.2) rotate(180deg); opacity: 1; }
+  100% { transform: scale(1) rotate(360deg); opacity: 1; }
+}
+
+/* == Chip == */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: var(--r-pill);
+  background: var(--surface);
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  box-shadow: 0 0 0 1px rgba(31,42,68,0.06);
+}
+
+/* == Progress == */
+.progress-track { height: 10px; background: rgba(31,42,68,0.08); border-radius: var(--r-pill); overflow: hidden; }
+.progress-fill { height: 100%; background: var(--blue); border-radius: var(--r-pill); transition: width 300ms ease; }
+
+/* == Avatars (on-cards) == */
+.avatar-circle {
+  width: 72px; height: 72px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--shadow-soft);
+}
+
+/* == Utilities == */
+.flex { display: flex; }
+.row { display: flex; flex-direction: row; }
+.col { display: flex; flex-direction: column; }
+.center { align-items: center; justify-content: center; }
+.gap-1 { gap: 4px; } .gap-2 { gap: 8px; } .gap-3 { gap: 12px; } .gap-4 { gap: 16px; } .gap-5 { gap: 24px; } .gap-6 { gap: 32px; }
+.muted { color: var(--ink-mute); }
+.soft { color: var(--ink-soft); }
+.bold { font-weight: 800; }
+.stretch { flex: 1; }
+
+/* Hide scrollbars cleanly inside device */
+.noscroll::-webkit-scrollbar { display: none; }
+.noscroll { scrollbar-width: none; }
