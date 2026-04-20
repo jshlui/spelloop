@@ -23,6 +23,8 @@ function GameHeader({ mode, progress, onClose }) {
 
 // ── 1. CLICK spelling — pick the correct letter from choices ──
 function ClickGame({ word, onDone, onClose }) {
+  const { distractorCount, recordClick, recordTaskComplete } = React.useContext(window.GameContext);
+  const taskStartRef = React.useRef(Date.now());
   const [idx, setIdx] = React.useState(0);
   const [feedback, setFeedback] = React.useState(null); // {letter, correct}
   const [wrongCount, setWrongCount] = React.useState(0);
@@ -31,17 +33,20 @@ function ClickGame({ word, onDone, onClose }) {
   const target = word[idx];
   const choices = React.useMemo(() => {
     const pool = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').filter(c => c !== target);
-    const others = pool.sort(() => Math.random() - 0.5).slice(0, 3);
+    const others = pool.sort(() => Math.random() - 0.5).slice(0, distractorCount - 1);
     return [...others, target].sort(() => Math.random() - 0.5);
-  }, [idx, word]);
+  }, [idx, word, distractorCount]);
 
   function pick(letter) {
     if (feedback?.correct) return;
     if (letter === target) {
+      recordClick(true, 'click', Date.now() - taskStartRef.current);
       window.sfx?.playCorrect();
       setFeedback({ letter, correct: true });
       setTimeout(() => {
         if (idx + 1 >= word.length) {
+          recordTaskComplete('click', Date.now() - taskStartRef.current);
+          taskStartRef.current = Date.now();
           setBurst(true);
           window.sfx?.complete();
           setTimeout(() => onDone(wrongCount === 0 ? 3 : wrongCount <= 2 ? 2 : 1), 1000);
@@ -51,6 +56,7 @@ function ClickGame({ word, onDone, onClose }) {
         }
       }, 500);
     } else {
+      recordClick(false, 'click', Date.now() - taskStartRef.current);
       window.sfx?.playWrong();
       setWrongCount(w => w + 1);
       setFeedback({ letter, correct: false });
@@ -79,14 +85,15 @@ function ClickGame({ word, onDone, onClose }) {
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, width: '100%', maxWidth: 340 }}>
-          {choices.map(c => {
+          {choices.map((c, i) => {
             const isPicked = feedback && feedback.letter === c;
             const cls = isPicked ? (feedback.correct ? 'tile correct' : 'tile wrong') : 'tile';
             const color = c.charCodeAt(0) % 5;
             const colorCls = ['blue', 'pink', 'mint', 'coral', 'lilac'][color];
             return (
-              <button key={c} onClick={() => pick(c)} className={cls + ' ' + colorCls} style={{
+              <button key={c} onClick={() => pick(c)} className={cls + ' ' + colorCls + ' tile-entry'} style={{
                 width: 'auto', height: 88, fontSize: 42, border: 'none', cursor: 'pointer', fontFamily: 'inherit',
+                animationDelay: `${i * 50}ms`
               }}>{c}</button>
             );
           })}
@@ -305,6 +312,8 @@ function KidKeyboard({ onPress, device }) {
 
 // ── 4. MISSING letter — fill the _ with the right letter ──
 function MissingGame({ word, onDone, onClose }) {
+  const { distractorCount, recordClick, recordTaskComplete } = React.useContext(window.GameContext);
+  const taskStartRef = React.useRef(Date.now());
   // pick a middle letter as missing (index > 0 and < length-1 if possible)
   const missingIdx = React.useMemo(() => {
     if (word.length <= 3) return 1;
@@ -312,10 +321,11 @@ function MissingGame({ word, onDone, onClose }) {
   }, [word]);
   const target = word[missingIdx];
   const choices = React.useMemo(() => {
+    const choiceCount = Math.min(distractorCount, 4);
     const pool = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').filter(c => c !== target);
-    const others = pool.sort(() => Math.random() - 0.5).slice(0, 3);
+    const others = pool.sort(() => Math.random() - 0.5).slice(0, choiceCount - 1);
     return [...others, target].sort(() => Math.random() - 0.5);
-  }, [target]);
+  }, [target, distractorCount]);
   const [picked, setPicked] = React.useState(null);
   const [wrongCount, setWrongCount] = React.useState(0);
   const [burst, setBurst] = React.useState(false);
@@ -323,10 +333,13 @@ function MissingGame({ word, onDone, onClose }) {
   function pick(c) {
     setPicked(c);
     if (c === target) {
+      recordClick(true, 'missing', Date.now() - taskStartRef.current);
       window.sfx?.playCorrect();
       setBurst(true); window.sfx?.complete();
+      recordTaskComplete('missing', Date.now() - taskStartRef.current);
       setTimeout(() => onDone(wrongCount === 0 ? 3 : wrongCount <= 2 ? 2 : 1), 1000);
     } else {
+      recordClick(false, 'missing', Date.now() - taskStartRef.current);
       window.sfx?.playWrong();
       setWrongCount(w => w + 1);
       setTimeout(() => setPicked(null), 400);
