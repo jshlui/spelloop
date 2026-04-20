@@ -1,5 +1,15 @@
 // Root shell — no device frames, no tweaks panel. Pure app.
 
+// Bump this whenever LEVELS structure or schema changes to auto-clear stale localStorage.
+var DATA_VERSION = '3';
+(function() {
+  if (localStorage.getItem('spelloop-version') !== DATA_VERSION) {
+    var keys = ['spelloop-levels','spelloop-profile','spelloop-settings','spelloop-tutorial'];
+    keys.forEach(function(k) { localStorage.removeItem(k); });
+    localStorage.setItem('spelloop-version', DATA_VERSION);
+  }
+})();
+
 function App() {
   var defaultSettings = { theme: 'blue', difficulty: 'med', ageSkew: '', avatarStyle: 'animal', sounds: true };
   var defaultProfile  = { name: 'Sam', age: 7, avatar: 'fox', level: 1, streak: 0, totalStars: 0, words: 0 };
