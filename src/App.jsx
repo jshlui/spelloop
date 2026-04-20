@@ -62,6 +62,7 @@ function App() {
       background: 'radial-gradient(circle at 50% 20%, #F8FAFD 0%, #E5EAF2 70%, #CFD6E3 100%)',
     }}>
       {!tutorialDone && <HoverTutorial onComplete={handleTutorialComplete} />}
+      <StreakBadge />
       {isWeb ? (
         <div data-screen-label={webLabel(parentOpen)} style={{ width: '100%', maxWidth: 1360 }}>
           <ChromeWindow
@@ -97,6 +98,7 @@ function webLabel(parentOpen) {
 function MobileApp({ profile, tweaks, setParentOpen, parentOpen }) {
   const [tab, setTab] = React.useState('home');
   const [route, setRoute] = React.useState({ name: 'home' });
+  const [levelTransition, setLevelTransition] = React.useState(null);
   function startLevel(level) {
     setRoute({ name: 'game', mode: level.mode === 'boss' ? 'type' : level.mode, word: level.word });
   }
@@ -107,6 +109,14 @@ function MobileApp({ profile, tweaks, setParentOpen, parentOpen }) {
   }
   function finishGame(stars) { setRoute({ name: 'reward', word: route.word, stars }); }
   function closeGame() { setRoute({ name: 'home' }); }
+  function handleRewardNext() {
+    const nextLevel = (profile.level || 1) + 1;
+    setLevelTransition({ level: nextLevel, color: '#6C8EFF' });
+    window.sfx?.playLevelUp && window.sfx.playLevelUp();
+    setTimeout(() => setLevelTransition(null), 700);
+    setRoute({ name: 'home' });
+    setTab('map');
+  }
 
   let screen;
   if (route.name === 'home') {
@@ -122,7 +132,7 @@ function MobileApp({ profile, tweaks, setParentOpen, parentOpen }) {
     else if (route.mode === 'keyboard') screen = <KeyboardGame {...props}/>;
     else if (route.mode === 'precision') screen = <PrecisionGame {...props}/>;
   } else if (route.name === 'reward') {
-    screen = <RewardScreen word={route.word} stars={route.stars} onNext={() => { setRoute({ name: 'home' }); setTab('map'); }} onHome={() => { setRoute({ name: 'home' }); setTab('map'); }}/>;
+    screen = <RewardScreen word={route.word} stars={route.stars} onNext={handleRewardNext} onHome={() => { setRoute({ name: 'home' }); setTab('map'); }}/>;
   }
 
   const DeviceFrame = tweaks.device === 'android' ? AndroidDevice : IOSDevice;
@@ -134,6 +144,8 @@ function MobileApp({ profile, tweaks, setParentOpen, parentOpen }) {
           {screen}
           {route.name === 'home' && <BottomNav tab={tab} onTab={setTab}/>}
           {parentOpen && <ParentDashboard profile={profile} onClose={() => setParentOpen(false)}/>}
+          {levelTransition && <LevelTransition level={levelTransition.level} color={levelTransition.color} onDone={() => setLevelTransition(null)} />}
+          <StreakBadge />
         </div>
       </DeviceFrame>
     </div>

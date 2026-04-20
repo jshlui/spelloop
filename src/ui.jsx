@@ -181,4 +181,106 @@ function SpeakButton({ word, size = 56, big = false }) {
   );
 }
 
-Object.assign(window, { Star, StarRow, BottomNav, ModeBadge, Burst, BigButton, SpeakButton });
+function LevelTransition({ level, color, onDone }) {
+  React.useEffect(function() {
+    var t = setTimeout(onDone, 600);
+    return function() { clearTimeout(t); };
+  }, []);
+
+  return (
+    <div style={{
+      position: 'fixed', inset: 0,
+      background: color || 'var(--blue, #6C8EFF)',
+      zIndex: 200,
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      animation: 'levelFlash 600ms ease both',
+      pointerEvents: 'none',
+    }}>
+      <span style={{
+        fontSize: 'clamp(40px, 8vw, 64px)',
+        fontWeight: 900, color: '#fff', fontFamily: 'inherit',
+        animation: 'pop 400ms 100ms cubic-bezier(0.34,1.56,0.64,1) both',
+      }}>
+        Level {level}!
+      </span>
+    </div>
+  );
+}
+
+function StreakBadge() {
+  const ctx = React.useContext(window.GameContext);
+  const streak = ctx ? ctx.streak : 0;
+  const [visible, setVisible] = React.useState(false);
+  const prevStreakRef = React.useRef(0);
+
+  React.useEffect(function() {
+    if (streak >= 3 && streak !== prevStreakRef.current) {
+      setVisible(true);
+      var t = setTimeout(function() { setVisible(false); }, 1800);
+      prevStreakRef.current = streak;
+      return function() { clearTimeout(t); };
+    }
+    prevStreakRef.current = streak;
+  }, [streak]);
+
+  if (!visible || streak < 3) return null;
+
+  var label = streak >= 5 ? ('⚡ ' + streak + ' streak!') : ('🔥 ' + streak + ' in a row!');
+  var bg = streak >= 5 ? 'var(--yellow, #FFD166)' : 'var(--coral, #FFA07A)';
+
+  return (
+    <div style={{
+      position: 'fixed', top: 24, right: 24, zIndex: 300,
+      background: bg, color: '#fff',
+      borderRadius: '999px',
+      padding: '10px 20px',
+      fontWeight: 800, fontSize: 18, fontFamily: 'inherit',
+      boxShadow: '0 4px 16px rgba(0,0,0,0.18)',
+      animation: 'streakIn 0.4s cubic-bezier(0.34,1.56,0.64,1) both',
+      pointerEvents: 'none',
+    }}>
+      {label}
+    </div>
+  );
+}
+
+function Confetti() {
+  var PALETTE = ['#6C8EFF','#FFD166','#FF9ECD','#8EE3C3','#FFA07A','#C7B4FF'];
+  var count = 20;
+
+  React.useEffect(function() {
+    var container = document.createElement('div');
+    container.style.cssText = 'position:fixed;inset:0;pointer-events:none;z-index:500;overflow:hidden;';
+    document.body.appendChild(container);
+
+    for (var i = 0; i < count; i++) {
+      var el = document.createElement('div');
+      var size = 8 + Math.random() * 6;
+      var angle = Math.random() * 360;
+      var tx = (Math.random() - 0.5) * window.innerWidth * 0.9;
+      var ty = (Math.random() - 0.5) * window.innerHeight * 0.9;
+      var color = PALETTE[i % PALETTE.length];
+      el.style.cssText = [
+        'position:absolute', 'left:50%', 'top:50%',
+        'width:' + size + 'px', 'height:' + size + 'px',
+        'background:' + color, 'border-radius:2px',
+        'animation:confettiFly' + (i % 5) + ' 1.4s ease-out both',
+        '--tx:' + tx + 'px', '--ty:' + ty + 'px', '--rot:' + angle + 'deg',
+      ].join(';');
+      container.appendChild(el);
+    }
+
+    var t = setTimeout(function() {
+      if (container.parentNode) document.body.removeChild(container);
+    }, 1500);
+
+    return function() {
+      clearTimeout(t);
+      if (container.parentNode) document.body.removeChild(container);
+    };
+  }, []);
+
+  return null;
+}
+
+Object.assign(window, { Star, StarRow, BottomNav, ModeBadge, Burst, BigButton, SpeakButton, LevelTransition, StreakBadge, Confetti });
