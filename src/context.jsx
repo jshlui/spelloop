@@ -11,6 +11,20 @@ function GameContextProvider(props) {
 
   var accuracy = totalClicks === 0 ? 1 : correctClicks / totalClicks;
 
+  // Adjust distractor count after every 3 completed tasks using current accuracy.
+  // Done in useEffect so it always reads fresh state, not a stale closure.
+  React.useEffect(function() {
+    if (tasksCompleted > 0 && tasksCompleted % 3 === 0) {
+      setDistractorCount(function(d) {
+        // ≥85% accuracy → harder (more distractors, max 9)
+        // ≤45% accuracy → easier (fewer distractors, min 2)
+        if (accuracy >= 0.85) return Math.min(d + 1, 9);
+        if (accuracy <= 0.45) return Math.max(d - 1, 2);
+        return d;
+      });
+    }
+  }, [tasksCompleted, accuracy]);
+
   var recordClick = React.useCallback(function(correct, mode, ms) {
     setTotalClicks(function(t) { return t + 1; });
     if (correct) {
@@ -24,19 +38,9 @@ function GameContextProvider(props) {
   }, []);
 
   var recordTaskComplete = React.useCallback(function(mode, ms) {
-    setTasksCompleted(function(prev) {
-      var next = prev + 1;
-      if (next % 3 === 0) {
-        setDistractorCount(function(d) {
-          if (accuracy >= 0.85) return Math.min(d + 1, 9);
-          if (accuracy <= 0.45) return Math.max(d - 1, 2);
-          return d;
-        });
-      }
-      return next;
-    });
+    setTasksCompleted(function(prev) { return prev + 1; });
     setTaskHistory(function(h) { return h.concat([{ mode: mode, correct: true, ms: ms, type: 'complete' }]); });
-  }, [accuracy]);
+  }, []);
 
   var value = {
     correctClicks: correctClicks,
