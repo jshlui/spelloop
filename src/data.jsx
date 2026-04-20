@@ -102,5 +102,11 @@ window.PRECISION_TASKS = PRECISION_TASKS;
 window.MODE_META['precision'] = {
   label: 'Precision', color: 'coral', ink: '#fff', soft: 'rgba(255,160,122,0.15)', icon: '🎯'
 };
+window.MODE_META['scramble'] = {
+  label: 'Scramble', color: 'yellow', ink: 'var(--yellow-ink)', soft: 'var(--yellow-soft)', icon: '🔀'
+};
+window.MODE_META['speed'] = {
+  label: 'Speed', color: 'coral', ink: 'var(--coral-ink)', soft: 'var(--coral-soft)', icon: '⏱'
+};
 
 Object.assign(window, { WORDS_EASY, WORDS_MED, WORDS_HARD, getWordsForDifficulty, LEVELS, CHAPTER_META, MODE_META, PRECISION_TASKS });

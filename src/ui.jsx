@@ -141,7 +141,7 @@ function BigButton({ children, onClick, color = 'blue', style = {} }) {
   );
 }
 
-// Speak button (fake — animates waveform; optionally calls speechSynthesis)
+// Speak button — Australian accent, clear and slow
 function SpeakButton({ word, size = 56, big = false }) {
   const [playing, setPlaying] = React.useState(false);
   function speak() {
@@ -149,13 +149,22 @@ function SpeakButton({ word, size = 56, big = false }) {
     window.sfx?.tap();
     try {
       if (window.speechSynthesis) {
-        const u = new SpeechSynthesisUtterance(word.toLowerCase());
-        u.rate = 0.85; u.pitch = 1.2;
         window.speechSynthesis.cancel();
+        const u = new SpeechSynthesisUtterance(word.toLowerCase());
+        u.lang = 'en-AU';
+        u.rate = 0.72;
+        u.pitch = 1.05;
+        u.volume = 1;
+        const voices = window.speechSynthesis.getVoices();
+        const auVoice = voices.find(function(v) { return v.lang === 'en-AU'; })
+          || voices.find(function(v) { return v.lang.startsWith('en-AU'); })
+          || voices.find(function(v) { return v.lang.startsWith('en-GB'); })
+          || null;
+        if (auVoice) u.voice = auVoice;
         window.speechSynthesis.speak(u);
       }
     } catch (e) {}
-    setTimeout(() => setPlaying(false), 900);
+    setTimeout(() => setPlaying(false), 1400);
   }
   const s = big ? 88 : size;
   return (

@@ -156,20 +156,79 @@ function WebLevelNode({ level }) {
 }
 
 // ─── ME ────────────────────────────────────────────────
-function WebMe({ profile, onOpenParent }) {
-  const avatarStyle = window.__tweaks?.avatarStyle || 'animal';
-  const badges = [
-    { id: 'streak3', name: '3-day streak', unlocked: true, icon: '🔥' },
-    { id: 'firstword', name: 'First word', unlocked: true, icon: '📝' },
-    { id: 'spell5', name: '5 spellings', unlocked: true, icon: '✏️' },
-    { id: 'perfect', name: 'Perfect run', unlocked: false, icon: '⭐' },
-    { id: 'speed', name: 'Speed champ', unlocked: false, icon: '⚡' },
-    { id: 'ch1', name: 'Ch. 1 king', unlocked: false, icon: '👑' },
-    { id: 'marathon', name: 'Marathon', unlocked: false, icon: '🏃' },
-    { id: 'earlybird', name: 'Early bird', unlocked: false, icon: '🌅' },
+function WebMe({ profile, setProfile, levels, onOpenParent }) {
+  var avatarStyle = (window.__tweaks && window.__tweaks.avatarStyle) || 'animal';
+  var [avatarOpen, setAvatarOpen] = React.useState(false);
+  var [editingName, setEditingName] = React.useState(false);
+  var [nameInput, setNameInput] = React.useState(profile.name);
+
+  var ctx = React.useContext(window.GameContext) || {};
+  var accuracy = ctx.totalClicks > 0 ? Math.round(ctx.accuracy * 100) + '%' : '—';
+
+  var xp = profile.totalStars * 10;
+  var xpInLevel = xp % 500;
+  var xpPct = xpInLevel / 500 * 100;
+
+  var ch1Done = levels && levels.filter(function(l) { return l.chapter === 1; }).every(function(l) { return l.done; });
+  var hasPerfect = levels && levels.some(function(l) { return l.stars === 3; });
+  var history = (ctx.taskHistory || []).filter(function(t) { return t.correct && t.ms > 0; });
+  var fastestMs = history.length ? Math.min.apply(null, history.map(function(t) { return t.ms; })) : Infinity;
+
+  var badges = [
+    { id: 'firstword', name: 'First word',   icon: '📝', unlocked: profile.words >= 1 },
+    { id: 'spell5',    name: '5 spellings',   icon: '✏️', unlocked: profile.words >= 5 },
+    { id: 'streak3',   name: '3-day streak',  icon: '🔥', unlocked: profile.streak >= 3 },
+    { id: 'ch1',       name: 'Ch. 1 king',    icon: '👑', unlocked: !!ch1Done },
+    { id: 'perfect',   name: 'Perfect run',   icon: '⭐', unlocked: !!hasPerfect },
+    { id: 'speed',     name: 'Speed champ',   icon: '⚡', unlocked: isFinite(fastestMs) && fastestMs < 800 },
+    { id: 'marathon',  name: 'Marathon',      icon: '🏃', unlocked: profile.words >= 20 },
+    { id: 'earlybird', name: 'Early bird',    icon: '🌅', unlocked: false },
   ];
+
+  function saveName() {
+    var n = nameInput.trim();
+    if (n) setProfile(function(p) { return Object.assign({}, p, { name: n }); });
+    setEditingName(false);
+  }
+
   return (
     <div style={{ padding: '32px 40px 48px', background: 'linear-gradient(180deg, #EDE4FF 0%, var(--bg) 300px)', minHeight: '100%' }}>
+      {/* Avatar picker modal */}
+      {avatarOpen && (
+        <div onClick={function() { setAvatarOpen(false); }} style={{
+          position: 'fixed', inset: 0, zIndex: 200,
+          background: 'rgba(31,42,68,0.55)', backdropFilter: 'blur(4px)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}>
+          <div onClick={function(e) { e.stopPropagation(); }} style={{
+            background: 'var(--surface)', borderRadius: 28, padding: 28,
+            maxWidth: 480, width: '90vw', boxShadow: 'var(--shadow-pop)',
+          }}>
+            <h2 style={{ margin: '0 0 20px', fontSize: 22, fontWeight: 900 }}>Choose your avatar</h2>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }}>
+              {AVATARS.map(function(av) {
+                var selected = profile.avatar === av.id;
+                return (
+                  <button key={av.id} onClick={function() {
+                    setProfile(function(p) { return Object.assign({}, p, { avatar: av.id }); });
+                    setAvatarOpen(false);
+                  }} style={{
+                    background: selected ? 'var(--blue-soft)' : 'var(--bg)',
+                    border: 'none', borderRadius: 18, padding: '16px 10px', cursor: 'pointer',
+                    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8,
+                    outline: selected ? '3px solid var(--blue)' : 'none',
+                    outlineOffset: 2, fontFamily: 'inherit',
+                  }}>
+                    <Avatar id={av.id} size={80} style={avatarStyle}/>
+                    <div style={{ fontWeight: 900, fontSize: 13 }}>{av.name}</div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+
       <div style={{ display: 'grid', gridTemplateColumns: '280px 1fr', gap: 24 }}>
         {/* left — avatar panel */}
         <div className="card" style={{ textAlign: 'center', padding: '28px 20px' }}>
@@ -182,9 +241,28 @@ function WebMe({ profile, onOpenParent }) {
               boxShadow: 'var(--shadow-tile)',
             }}>Lv {profile.level}</div>
           </div>
-          <h2 style={{ fontSize: 28, fontWeight: 900, margin: '14px 0 4px', letterSpacing: '-0.02em' }}>{profile.name}</h2>
-          <div style={{ fontSize: 13, color: 'var(--ink-mute)', fontWeight: 700, marginBottom: 18 }}>Age {profile.age} · Started Apr 12</div>
-          <button style={{
+          {editingName ? (
+            <div style={{ margin: '14px 0 4px' }}>
+              <input autoFocus value={nameInput}
+                onChange={function(e) { setNameInput(e.target.value); }}
+                onKeyDown={function(e) { if (e.key === 'Enter') saveName(); if (e.key === 'Escape') setEditingName(false); }}
+                onBlur={saveName}
+                style={{
+                  fontSize: 24, fontWeight: 900, fontFamily: 'inherit',
+                  border: 'none', borderBottom: '2px solid var(--blue)',
+                  background: 'transparent', textAlign: 'center',
+                  width: '100%', outline: 'none', color: 'var(--ink)',
+                }}
+              />
+            </div>
+          ) : (
+            <h2 onClick={function() { setNameInput(profile.name); setEditingName(true); }}
+              style={{ fontSize: 28, fontWeight: 900, margin: '14px 0 4px', letterSpacing: '-0.02em', cursor: 'pointer' }}>
+              {profile.name} <span style={{ fontSize: 16 }}>✏️</span>
+            </h2>
+          )}
+          <div style={{ fontSize: 13, color: 'var(--ink-mute)', fontWeight: 700, marginBottom: 18 }}>Age {profile.age}</div>
+          <button onClick={function() { setAvatarOpen(true); }} style={{
             background: 'var(--lilac-soft)', color: 'var(--lilac-ink)',
             border: 'none', padding: '10px 18px', borderRadius: 999,
             fontWeight: 900, fontSize: 13, cursor: 'pointer', fontFamily: 'inherit',
@@ -197,16 +275,16 @@ function WebMe({ profile, onOpenParent }) {
           <div className="card">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 8 }}>
               <h3 style={{ fontSize: 18, fontWeight: 900, margin: 0 }}>XP this week</h3>
-              <div style={{ fontSize: 16, fontWeight: 900, color: 'var(--blue-ink)' }}>240 / 500</div>
+              <div style={{ fontSize: 16, fontWeight: 900, color: 'var(--blue-ink)' }}>{xpInLevel} / 500</div>
             </div>
             <div className="progress-track" style={{ height: 14 }}>
-              <div className="progress-fill" style={{ width: '48%' }}/>
+              <div className="progress-fill" style={{ width: xpPct + '%' }}/>
             </div>
             <div style={{ display: 'flex', gap: 10, marginTop: 14 }}>
               <WebStat icon="🔥" value={profile.streak} label="day streak" bg="var(--coral-soft)"/>
               <WebStat icon="⭐" value={profile.totalStars} label="stars" bg="var(--yellow-soft)"/>
               <WebStat icon="📚" value={profile.words} label="words" bg="var(--mint-soft)"/>
-              <WebStat icon="🎯" value="86%" label="accuracy" bg="var(--blue-soft)"/>
+              <WebStat icon="🎯" value={accuracy} label="accuracy" bg="var(--blue-soft)"/>
             </div>
           </div>
 
@@ -214,22 +292,24 @@ function WebMe({ profile, onOpenParent }) {
           <div className="card">
             <h3 style={{ fontSize: 18, fontWeight: 900, margin: '0 0 14px' }}>Badges</h3>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
-              {badges.map(b => (
-                <div key={b.id} style={{
-                  background: b.unlocked ? 'var(--yellow-soft)' : 'var(--bg)',
-                  borderRadius: 14, padding: 14,
-                  display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6,
-                  opacity: b.unlocked ? 1 : 0.4, filter: b.unlocked ? 'none' : 'grayscale(1)',
-                }}>
-                  <div style={{
-                    width: 56, height: 56, borderRadius: '50%',
-                    background: b.unlocked ? 'var(--yellow)' : 'rgba(31,42,68,0.08)',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28,
-                    boxShadow: b.unlocked ? 'var(--shadow-soft)' : 'none',
-                  }}>{b.icon}</div>
-                  <div style={{ fontSize: 11, fontWeight: 800, textAlign: 'center', lineHeight: 1.2 }}>{b.name}</div>
-                </div>
-              ))}
+              {badges.map(function(b) {
+                return (
+                  <div key={b.id} style={{
+                    background: b.unlocked ? 'var(--yellow-soft)' : 'var(--bg)',
+                    borderRadius: 14, padding: 14,
+                    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6,
+                    opacity: b.unlocked ? 1 : 0.4, filter: b.unlocked ? 'none' : 'grayscale(1)',
+                  }}>
+                    <div style={{
+                      width: 56, height: 56, borderRadius: '50%',
+                      background: b.unlocked ? 'var(--yellow)' : 'rgba(31,42,68,0.08)',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28,
+                      boxShadow: b.unlocked ? 'var(--shadow-soft)' : 'none',
+                    }}>{b.icon}</div>
+                    <div style={{ fontSize: 11, fontWeight: 800, textAlign: 'center', lineHeight: 1.2 }}>{b.name}</div>
+                  </div>
+                );
+              })}
             </div>
           </div>
 
@@ -264,7 +344,9 @@ function WebGame({ mode, word, onClose, onDone }) {
     : mode === 'type' ? TypeGame
     : mode === 'missing' ? MissingGame
     : mode === 'keyboard' ? KeyboardGame
-    : mode === 'precision' ? PrecisionGame : ClickGame;
+    : mode === 'precision' ? PrecisionGame
+    : mode === 'scramble' ? ScrambleGame
+    : mode === 'speed' ? SpeedGame : ClickGame;
   const m = MODE_META[mode];
   const cssSoft = m.color === 'blue' ? '#E3EAFF' : m.color === 'pink' ? '#FFE0EF'
     : m.color === 'mint' ? '#D7F5E8' : m.color === 'coral' ? '#FFE3D5'

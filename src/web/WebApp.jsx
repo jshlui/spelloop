@@ -60,7 +60,7 @@ function WebApp({ profile, setProfile, levels, setLevels, settings, setSettings,
             onOpenParent={onOpenParent}/>
         )}
         {route.name === 'screen' && tab === 'map'  && <WebMap levels={levels} onPlayLevel={startLevel}/>}
-        {route.name === 'screen' && tab === 'me'   && <WebMe profile={profile} onOpenParent={onOpenParent}/>}
+        {route.name === 'screen' && tab === 'me'   && <WebMe profile={profile} setProfile={setProfile} levels={levels} onOpenParent={onOpenParent}/>}
         {route.name === 'game'   && <WebGame mode={route.mode} word={route.word} onClose={closeGame} onDone={finishGame}/>}
         {route.name === 'reward' && (
           <WebReward word={route.word} stars={route.stars}
@@ -152,7 +152,7 @@ function WebSidebar({ tab, onTab, profile, settings, onOpenParent }) {
 }
 
 function WebHome({ profile, levels, onContinue, onPickMode, onOpenParent }) {
-  var modes = ['click', 'drag', 'type', 'missing', 'keyboard'];
+  var modes = ['click', 'drag', 'type', 'missing', 'keyboard', 'scramble', 'speed'];
   var currentLevel = levels && levels.find(function(l) { return l.current; });
   var doneCount = levels ? levels.filter(function(l) { return l.done; }).length : 0;
   var modeName = currentLevel ? (MODE_META[currentLevel.mode] || MODE_META.click).label : 'Spell it';
@@ -218,7 +218,7 @@ function WebHome({ profile, levels, onContinue, onPickMode, onOpenParent }) {
         <h2 style={{ fontSize: 22, fontWeight: 900, margin: 0 }}>Practice a mode</h2>
         <span style={{ fontSize: 13, color: 'var(--ink-mute)', fontWeight: 700 }}>Quick play · one word</span>
       </div>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 14, marginBottom: 28 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 12, marginBottom: 28 }}>
         {modes.map(function(m) { return <WebModeCard key={m} mode={m} onClick={function() { onPickMode(m); }}/>; })}
       </div>
 

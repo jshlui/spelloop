@@ -132,21 +132,11 @@ function DragGame({ word, onDone, onClose }) {
         setTimeout(() => onDone(wrongCount === 0 ? 3 : wrongCount <= 2 ? 2 : 1), 1000);
       } else {
         window.sfx?.playWrong();
-        // find first wrong and kick it back
+        setWrongCount(w => w + 1);
+        // clear ALL tiles so player starts fresh — avoids stranded-tile deadlock
         setTimeout(() => {
-          const newSlots = [...slots];
-          const newTiles = [...tiles];
-          for (let i = 0; i < word.length; i++) {
-            if (newSlots[i] && newSlots[i].letter !== word[i]) {
-              const t = newTiles.find(x => x.key === newSlots[i].key);
-              if (t) t.placed = false;
-              newSlots[i] = null;
-              setWrongCount(w => w + 1);
-              break;
-            }
-          }
-          setSlots(newSlots);
-          setTiles(newTiles);
+          setSlots(Array(word.length).fill(null));
+          setTiles(function(prev) { return prev.map(function(t) { return Object.assign({}, t, { placed: false }); }); });
         }, 400);
       }
     }
@@ -165,10 +155,14 @@ function DragGame({ word, onDone, onClose }) {
   }
 
   function unplace(slotIdx) {
-    const s = slots[slotIdx]; if (!s) return;
+    if (!slots[slotIdx]) return;
     window.sfx?.tap();
-    const newSlots = [...slots]; newSlots[slotIdx] = null;
-    const newTiles = tiles.map(x => x.key === s.key ? { ...x, placed: false } : x);
+    const newSlots = [...slots];
+    const freedKeys = [];
+    for (var i = slotIdx; i < newSlots.length; i++) {
+      if (newSlots[i]) { freedKeys.push(newSlots[i].key); newSlots[i] = null; }
+    }
+    const newTiles = tiles.map(function(x) { return freedKeys.includes(x.key) ? Object.assign({}, x, { placed: false }) : x; });
     setSlots(newSlots); setTiles(newTiles);
   }
 
@@ -253,6 +247,15 @@ function TypeGame({ word, onDone, onClose, device }) {
       setTimeout(() => setShake(false), 300);
     }
   }
+
+  React.useEffect(function() {
+    function onKey(e) {
+      if (e.key === 'Backspace') { setTyped(function(t) { return t.slice(0, -1); }); return; }
+      if (e.key.length === 1 && /[a-zA-Z]/.test(e.key)) press(e.key.toUpperCase());
+    }
+    window.addEventListener('keydown', onKey);
+    return function() { window.removeEventListener('keydown', onKey); };
+  }, [typed, wrongCount]);
 
   return (
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: 'var(--bg)' }}>
@@ -346,6 +349,17 @@ function MissingGame({ word, onDone, onClose }) {
     }
   }
 
+  React.useEffect(function() {
+    function onKey(e) {
+      if (e.key.length === 1 && /[a-zA-Z]/.test(e.key)) {
+        const k = e.key.toUpperCase();
+        if (choices.includes(k)) pick(k);
+      }
+    }
+    window.addEventListener('keydown', onKey);
+    return function() { window.removeEventListener('keydown', onKey); };
+  }, [choices, target, picked, wrongCount]);
+
   return (
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: 'var(--bg)' }}>
       <GameHeader mode="missing" progress={picked === target ? 1 : 0.5} onClose={onClose}/>
@@ -415,6 +429,14 @@ function KeyboardGame({ word, onDone, onClose }) {
       setTimeout(() => setFlash(null), 250);
     }
   }
+
+  React.useEffect(function() {
+    function onKey(e) {
+      if (e.key.length === 1 && /[a-zA-Z]/.test(e.key)) press(e.key.toUpperCase());
+    }
+    window.addEventListener('keydown', onKey);
+    return function() { window.removeEventListener('keydown', onKey); };
+  }, [idx, wrongCount]);
 
   return (
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: 'var(--bg)' }}>
@@ -573,4 +595,171 @@ function PrecisionGame({ word, onDone, onClose }) {
   );
 }
 
-Object.assign(window, { ClickGame, DragGame, TypeGame, MissingGame, KeyboardGame, PrecisionGame });
+// ── 7. SCRAMBLE — tap the scrambled letters in correct order ──
+function ScrambleGame({ word, onDone, onClose }) {
+  const scrambled = React.useMemo(function() {
+    var arr = word.split('').map(function(l, i) { return { letter: l, key: i, used: false }; });
+    for (var i = arr.length - 1; i > 0; i--) {
+      var j = Math.floor(Math.random() * (i + 1));
+      var tmp = arr[i]; arr[i] = arr[j]; arr[j] = tmp;
+    }
+    return arr;
+  }, [word]);
+  const [tiles, setTiles] = React.useState(scrambled);
+  const [typed, setTyped] = React.useState('');
+  const [wrongKey, setWrongKey] = React.useState(null);
+  const [wrongCount, setWrongCount] = React.useState(0);
+  const [burst, setBurst] = React.useState(false);
+  const progress = typed.length / word.length;
+
+  function pick(key) {
+    const tile = tiles.find(function(t) { return t.key === key; });
+    if (!tile || tile.used) return;
+    const expected = word[typed.length];
+    if (tile.letter === expected) {
+      window.sfx?.playCorrect();
+      const nt = typed + tile.letter;
+      setTiles(function(prev) { return prev.map(function(t) { return t.key === key ? Object.assign({}, t, { used: true }) : t; }); });
+      setTyped(nt);
+      if (nt === word) {
+        setBurst(true); window.sfx?.complete();
+        setTimeout(function() { onDone(wrongCount === 0 ? 3 : wrongCount <= 2 ? 2 : 1); }, 1000);
+      }
+    } else {
+      window.sfx?.playWrong();
+      setWrongCount(function(w) { return w + 1; });
+      setWrongKey(key);
+      setTimeout(function() { setWrongKey(null); }, 350);
+    }
+  }
+
+  const colors = ['blue','pink','coral','mint','lilac'];
+  return (
+    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: 'var(--bg)' }}>
+      <GameHeader mode="scramble" progress={progress} onClose={onClose}/>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'space-between', padding: '20px 16px 32px' }}>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ fontSize: 12, color: 'var(--ink-mute)', fontWeight: 800, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 8 }}>Tap letters in the right order</div>
+          <SpeakButton word={word} big/>
+        </div>
+        <div style={{ display: 'flex', gap: 10, justifyContent: 'center' }}>
+          {word.split('').map(function(l, i) {
+            return (
+              <div key={i} style={{
+                width: 58, height: 72, borderRadius: 14, fontSize: 36, fontWeight: 900,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                background: i < typed.length ? 'var(--mint)' : 'rgba(31,42,68,0.06)',
+                color: i < typed.length ? '#0f5c42' : 'transparent',
+                border: i === typed.length ? '3px dashed var(--mint-ink)' : i < typed.length ? 'none' : '3px dashed rgba(31,42,68,0.15)',
+                boxShadow: 'none',
+              }}>{i < typed.length ? typed[i] : ''}</div>
+            );
+          })}
+        </div>
+        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', justifyContent: 'center' }}>
+          {tiles.map(function(t) {
+            return (
+              <button key={t.key} onClick={function() { pick(t.key); }}
+                disabled={t.used}
+                className={'tile ' + colors[t.key % colors.length]}
+                style={{
+                  width: 68, height: 80, fontSize: 36, border: 'none',
+                  cursor: t.used ? 'default' : 'pointer', fontFamily: 'inherit',
+                  opacity: t.used ? 0.15 : 1, transition: 'opacity 200ms',
+                  animation: wrongKey === t.key ? 'tileWrong 350ms ease' : 'none',
+                }}>{t.letter}</button>
+            );
+          })}
+        </div>
+      </div>
+      <Burst show={burst}/>
+    </div>
+  );
+}
+
+// ── 8. SPEED SPELL — type the word before the timer runs out ──
+function SpeedGame({ word, onDone, onClose }) {
+  const TIME = 15;
+  const [timeLeft, setTimeLeft] = React.useState(TIME);
+  const [typed, setTyped] = React.useState('');
+  const [wrongCount, setWrongCount] = React.useState(0);
+  const [shake, setShake] = React.useState(false);
+  const [burst, setBurst] = React.useState(false);
+  const [done, setDone] = React.useState(false);
+  const progress = typed.length / word.length;
+
+  React.useEffect(function() {
+    if (done || timeLeft <= 0) {
+      if (timeLeft <= 0 && !done) { window.sfx?.playWrong(); onDone(0); }
+      return;
+    }
+    const t = setTimeout(function() { setTimeLeft(function(p) { return p - 1; }); }, 1000);
+    return function() { clearTimeout(t); };
+  }, [timeLeft, done]);
+
+  function press(letter) {
+    if (done || typed.length >= word.length) return;
+    const expected = word[typed.length];
+    if (letter === expected) {
+      window.sfx?.playCorrect();
+      const nt = typed + letter;
+      setTyped(nt);
+      if (nt === word) {
+        setDone(true); setBurst(true); window.sfx?.complete();
+        const stars = timeLeft >= 10 ? 3 : timeLeft >= 5 ? 2 : 1;
+        setTimeout(function() { onDone(stars); }, 1000);
+      }
+    } else {
+      window.sfx?.playWrong();
+      setWrongCount(function(w) { return w + 1; });
+      setShake(true);
+      setTimeout(function() { setShake(false); }, 300);
+    }
+  }
+
+  React.useEffect(function() {
+    function onKey(e) {
+      if (e.key.length === 1 && /[a-zA-Z]/.test(e.key)) press(e.key.toUpperCase());
+      if (e.key === 'Backspace') setTyped(function(t) { return t.slice(0, -1); });
+    }
+    window.addEventListener('keydown', onKey);
+    return function() { window.removeEventListener('keydown', onKey); };
+  }, [typed, done, timeLeft]);
+
+  const pct = timeLeft / TIME;
+  const timerColor = pct > 0.6 ? '#30C285' : pct > 0.3 ? '#FFA000' : '#F07171';
+
+  return (
+    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: 'var(--bg)' }}>
+      <GameHeader mode="speed" progress={progress} onClose={onClose}/>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '16px 16px 12px', gap: 14 }}>
+        <div style={{ width: '100%', height: 12, borderRadius: 6, background: 'rgba(31,42,68,0.08)', overflow: 'hidden' }}>
+          <div style={{ height: '100%', width: (pct * 100) + '%', background: timerColor, borderRadius: 6, transition: 'width 1s linear, background 0.3s' }}/>
+        </div>
+        <div style={{ fontSize: 32, fontWeight: 900, color: timerColor, lineHeight: 1 }}>{timeLeft}s</div>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ fontSize: 12, color: 'var(--ink-mute)', fontWeight: 800, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 8 }}>Type before time runs out!</div>
+          <SpeakButton word={word}/>
+        </div>
+        <div style={{ display: 'flex', gap: 10, justifyContent: 'center', animation: shake ? 'shake 300ms' : 'none' }}>
+          {word.split('').map(function(l, i) {
+            return (
+              <div key={i} style={{
+                width: 54, height: 68, fontSize: 36, borderRadius: 14,
+                display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900,
+                background: i < typed.length ? 'var(--success)' : 'rgba(31,42,68,0.06)',
+                color: i < typed.length ? 'white' : 'transparent',
+                border: i === typed.length ? '3px dashed var(--coral-ink)' : i < typed.length ? 'none' : '3px dashed rgba(31,42,68,0.15)',
+                boxShadow: 'none',
+              }}>{i < typed.length ? l : ''}</div>
+            );
+          })}
+        </div>
+        <KidKeyboard onPress={press}/>
+      </div>
+      <Burst show={burst}/>
+    </div>
+  );
+}
+
+Object.assign(window, { ClickGame, DragGame, TypeGame, MissingGame, KeyboardGame, PrecisionGame, ScrambleGame, SpeedGame });

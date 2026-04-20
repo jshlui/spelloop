@@ -127,19 +127,26 @@ function PinGate({ onSuccess, onCancel }) {
   );
 }
 
-function WebParent({ profile, levels, settings, setSettings, onClose }) {
+function WebParent({ profiles, activeId, profile, setProfile, levels, setLevels, settings, setSettings, onSwitchProfile, onAddProfile, onDeleteProfile, onResetProgress, onClose }) {
   var [pinVerified, setPinVerified] = React.useState(false);
   var [tab, setTab] = React.useState('overview');
 
   if (!pinVerified) {
     return <PinGate onSuccess={function() { setPinVerified(true); }} onCancel={onClose} />;
   }
+
+  var navItems = [
+    { id: 'overview',   label: '📊 Overview' },
+    { id: 'profiles',   label: '👨‍👩‍👧 Kids' },
+    { id: 'curriculum', label: '📚 Level Manager' },
+    { id: 'settings',   label: '⚙️ Settings' },
+  ];
+
   return (
     <div style={{
       position: 'fixed', inset: 0, background: '#F7F9FC', zIndex: 300,
       display: 'flex', fontFamily: "Nunito, system-ui, sans-serif",
     }}>
-      {/* sidebar */}
       <aside style={{
         width: 240, flexShrink: 0, background: 'white',
         borderRight: '1px solid rgba(0,0,0,0.06)', padding: 18,
@@ -152,233 +159,419 @@ function WebParent({ profile, levels, settings, setSettings, onClose }) {
           alignItems: 'center', gap: 6, width: 'fit-content', marginBottom: 20,
         }}>← Back to app</button>
         <div style={{ fontSize: 11, color: '#7C89A8', fontWeight: 800, letterSpacing: 0.5, textTransform: 'uppercase', marginBottom: 4 }}>Parent area</div>
-        <div style={{ fontSize: 18, fontWeight: 900, marginBottom: 20 }}>Sam's progress</div>
+        <div style={{ fontSize: 16, fontWeight: 900, marginBottom: 20 }}>{profile.name}'s progress</div>
         <nav style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-          {[
-            { id: 'overview', label: 'Overview' },
-            { id: 'reports', label: 'Reports' },
-            { id: 'curriculum', label: 'Curriculum' },
-            { id: 'settings', label: 'Settings' },
-          ].map(it => (
-            <button key={it.id} onClick={() => setTab(it.id)} style={{
-              background: tab === it.id ? '#EEF1F9' : 'transparent',
-              color: tab === it.id ? '#3F5FE2' : '#4B587A', border: 'none',
-              padding: '10px 14px', borderRadius: 8, fontWeight: 700, fontSize: 13,
-              textAlign: 'left', cursor: 'pointer', fontFamily: 'inherit',
-            }}>{it.label}</button>
-          ))}
+          {navItems.map(function(it) {
+            return (
+              <button key={it.id} onClick={function() { setTab(it.id); }} style={{
+                background: tab === it.id ? '#EEF1F9' : 'transparent',
+                color: tab === it.id ? '#3F5FE2' : '#4B587A', border: 'none',
+                padding: '10px 14px', borderRadius: 8, fontWeight: 700, fontSize: 13,
+                textAlign: 'left', cursor: 'pointer', fontFamily: 'inherit',
+              }}>{it.label}</button>
+            );
+          })}
         </nav>
-        <div style={{ flex: 1 }}/>
-        <div style={{
-          background: '#F1F3F6', padding: 12, borderRadius: 10,
-          fontSize: 12, color: '#4B587A', lineHeight: 1.4,
-        }}>
-          <div style={{ fontWeight: 800, marginBottom: 2 }}>Weekly email</div>
-          Next report Sunday, Apr 26
+        {/* Active kid chip */}
+        <div style={{ marginTop: 'auto', paddingTop: 16, display: 'flex', alignItems: 'center', gap: 10, background: '#F7F9FC', borderRadius: 10, padding: 10 }}>
+          <Avatar id={profile.avatar} size={36}/>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontWeight: 900, fontSize: 13 }}>{profile.name}</div>
+            <div style={{ fontSize: 11, color: '#7C89A8', fontWeight: 600 }}>Active profile</div>
+          </div>
         </div>
       </aside>
 
       <div style={{ flex: 1, overflow: 'auto' }}>
-        {tab === 'overview' && <OverviewTab profile={profile}/>}
-        {tab === 'reports' && <ReportsTab/>}
-        {tab === 'curriculum' && <CurriculumTab/>}
-        {tab === 'settings' && <SettingsTab settings={settings} setSettings={setSettings}/>}
+        {tab === 'overview'   && <OverviewTab profile={profile} levels={levels}/>}
+        {tab === 'profiles'   && <ProfilesTab profiles={profiles} activeId={activeId} onSwitch={onSwitchProfile} onAdd={onAddProfile} onDelete={onDeleteProfile} onReset={onResetProgress}/>}
+        {tab === 'curriculum' && <CurriculumTab levels={levels} setLevels={setLevels}/>}
+        {tab === 'settings'   && <SettingsTab profile={profile} setProfile={setProfile} settings={settings} setSettings={setSettings}/>}
       </div>
     </div>
   );
 }
 
-function OverviewTab({ profile }) {
-  const week = [
-    { d: 'Mon', m: 12, done: true },
-    { d: 'Tue', m: 8, done: true },
-    { d: 'Wed', m: 0, done: false },
-    { d: 'Thu', m: 15, done: true },
-    { d: 'Fri', m: 10, done: true },
-    { d: 'Sat', m: 6, done: true },
-    { d: 'Sun', m: 14, done: true, today: true },
-  ];
-  const maxM = Math.max(...week.map(w => w.m));
+function ProfilesTab({ profiles, activeId, onSwitch, onAdd, onDelete, onReset }) {
+  var [showAdd, setShowAdd] = React.useState(false);
+  var [newName, setNewName] = React.useState('');
+  var [newAge, setNewAge] = React.useState('');
+  var [newAvatar, setNewAvatar] = React.useState('fox');
+
+  function handleAdd() {
+    var n = newName.trim();
+    if (!n) return;
+    onAdd(n, parseInt(newAge) || 7, newAvatar);
+    setNewName(''); setNewAge(''); setNewAvatar('fox');
+    setShowAdd(false);
+  }
+
+  var inputStyle = {
+    border: '1px solid #D4DAE5', borderRadius: 8, padding: '8px 12px',
+    fontSize: 14, fontFamily: 'inherit', fontWeight: 700, color: '#1F2A44',
+    outline: 'none',
+  };
+
   return (
-    <div style={{ padding: 32 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 24 }}>
+    <div style={{ padding: 32, maxWidth: 760 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
         <div>
-          <div style={{ fontSize: 12, fontWeight: 800, color: '#7C89A8', letterSpacing: 1, textTransform: 'uppercase' }}>This week · Apr 14–20</div>
-          <h1 style={{ fontSize: 28, fontWeight: 900, margin: '4px 0 0' }}>Sam is doing great 🌱</h1>
-          <div style={{ fontSize: 14, color: '#4B587A', fontWeight: 600 }}>+18% play time vs last week · 14 new words</div>
+          <h1 style={{ fontSize: 26, fontWeight: 900, margin: '0 0 4px' }}>Kids profiles</h1>
+          <div style={{ fontSize: 13, color: '#7C89A8', fontWeight: 600 }}>Each child has their own progress, avatar and levels.</div>
         </div>
-        <div style={{ display: 'flex', gap: 8 }}>
-          <button style={btnGhost}>📧 Email me</button>
-          <button style={btnGhost}>📄 Export PDF</button>
-        </div>
+        <button onClick={function() { setShowAdd(!showAdd); }} style={{
+          background: '#3F5FE2', color: 'white', border: 'none', borderRadius: 10,
+          padding: '10px 18px', fontWeight: 800, fontSize: 13, cursor: 'pointer',
+          fontFamily: 'inherit',
+        }}>+ Add child</button>
       </div>
 
-      {/* metric row */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14, marginBottom: 20 }}>
-        <Metric label="Play time" value="65 min" delta="▲ +18%" tone="#30C285"/>
-        <Metric label="Words mastered" value="14" delta="+3 new" tone="#30C285"/>
-        <Metric label="Accuracy" value="86%" delta="▲ +4%" tone="#30C285"/>
-        <Metric label="Streak" value={profile.streak + ' days'} delta="On track" tone="#FFA000"/>
-      </div>
-
-      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 16, marginBottom: 16 }}>
-        {/* play-time chart */}
-        <div style={webCard}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
-            <h3 style={{ margin: 0, fontSize: 16, fontWeight: 900 }}>Play time this week</h3>
-            <span style={{ fontSize: 12, fontWeight: 700, color: '#7C89A8' }}>minutes per day</span>
+      {/* Add child form */}
+      {showAdd && (
+        <div style={Object.assign({}, webCard, { marginBottom: 20, border: '2px solid #3F5FE2' })}>
+          <h3 style={{ margin: '0 0 16px', fontSize: 16, fontWeight: 900 }}>New profile</h3>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 120px', gap: 12, marginBottom: 16 }}>
+            <div>
+              <div style={{ fontSize: 12, fontWeight: 700, color: '#7C89A8', marginBottom: 4 }}>Name</div>
+              <input value={newName} onChange={function(e) { setNewName(e.target.value); }}
+                onKeyDown={function(e) { if (e.key === 'Enter') handleAdd(); }}
+                style={Object.assign({}, inputStyle, { width: '100%' })} placeholder="Child's name" autoFocus/>
+            </div>
+            <div>
+              <div style={{ fontSize: 12, fontWeight: 700, color: '#7C89A8', marginBottom: 4 }}>Age</div>
+              <input value={newAge} onChange={function(e) { setNewAge(e.target.value); }}
+                style={Object.assign({}, inputStyle, { width: '100%' })} placeholder="Age" type="number" min="3" max="12"/>
+            </div>
           </div>
-          <div style={{ display: 'flex', gap: 10, height: 180, alignItems: 'flex-end' }}>
-            {week.map((w, i) => (
-              <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
-                <div style={{ fontSize: 11, fontWeight: 700, color: '#4B587A' }}>{w.m || '-'}</div>
-                <div style={{
-                  width: '100%',
-                  height: `${(w.m / maxM) * 140 + (w.done ? 4 : 2)}px`,
-                  background: w.today ? '#3F5FE2' : w.done ? '#A9BDFF' : '#E8ECF3',
-                  borderRadius: 6,
-                }}/>
-                <div style={{ fontSize: 11, fontWeight: 700, color: w.today ? '#3F5FE2' : '#7C89A8' }}>{w.d}</div>
+          <div style={{ fontSize: 12, fontWeight: 700, color: '#7C89A8', marginBottom: 8 }}>Avatar</div>
+          <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 16 }}>
+            {AVATARS.map(function(av) {
+              var sel = newAvatar === av.id;
+              return (
+                <button key={av.id} onClick={function() { setNewAvatar(av.id); }} style={{
+                  border: 'none', background: sel ? '#E3EAFF' : '#F7F9FC', borderRadius: 14,
+                  padding: '10px 8px', cursor: 'pointer', display: 'flex', flexDirection: 'column',
+                  alignItems: 'center', gap: 4,
+                  outline: sel ? '3px solid #3F5FE2' : 'none', outlineOffset: 2,
+                }}>
+                  <Avatar id={av.id} size={52}/>
+                  <div style={{ fontSize: 11, fontWeight: 800, color: sel ? '#3F5FE2' : '#7C89A8' }}>{av.name}</div>
+                </button>
+              );
+            })}
+          </div>
+          <div style={{ display: 'flex', gap: 10 }}>
+            <button onClick={handleAdd} style={{
+              background: '#3F5FE2', color: 'white', border: 'none', borderRadius: 8,
+              padding: '10px 20px', fontWeight: 800, fontSize: 13, cursor: 'pointer', fontFamily: 'inherit',
+            }}>Create profile</button>
+            <button onClick={function() { setShowAdd(false); }} style={Object.assign({}, btnGhost)}>Cancel</button>
+          </div>
+        </div>
+      )}
+
+      {/* Profile cards */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+        {profiles.map(function(p) {
+          var isActive = p.id === activeId;
+          return (
+            <div key={p.id} style={Object.assign({}, webCard, {
+              border: isActive ? '2px solid #3F5FE2' : '2px solid transparent',
+              display: 'flex', alignItems: 'center', gap: 20,
+            })}>
+              <div style={{ position: 'relative', flexShrink: 0 }}>
+                <Avatar id={p.avatar} size={64}/>
+                {isActive && (
+                  <div style={{
+                    position: 'absolute', bottom: -4, right: -4,
+                    background: '#3F5FE2', color: 'white', borderRadius: 999,
+                    fontSize: 9, fontWeight: 900, padding: '2px 6px', whiteSpace: 'nowrap',
+                  }}>ACTIVE</div>
+                )}
               </div>
-            ))}
-          </div>
-        </div>
-
-        {/* focus areas */}
-        <div style={webCard}>
-          <h3 style={{ margin: '0 0 12px', fontSize: 16, fontWeight: 900 }}>Focus words</h3>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            <Focus word="FISH" accuracy={40} note="Mixed up S and H"/>
-            <Focus word="MOON" accuracy={60} note="Double letters"/>
-            <Focus word="BIRD" accuracy={70} note="Close, just needs repetition"/>
-          </div>
-        </div>
-      </div>
-
-      {/* recent + mode breakdown */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-        <div style={webCard}>
-          <h3 style={{ margin: '0 0 14px', fontSize: 16, fontWeight: 900 }}>Recent sessions</h3>
-          {[
-            { t: 'Today · 3:42 PM', l: 'Level 3 — SUN', s: 2, m: 'drag', dur: '6 min' },
-            { t: 'Yesterday · 4:10 PM', l: 'Level 2 — DOG', s: 3, m: 'missing', dur: '4 min' },
-            { t: 'Apr 18 · 5:25 PM', l: 'Level 1 — CAT', s: 3, m: 'click', dur: '5 min' },
-            { t: 'Apr 17 · 4:02 PM', l: 'Free play — BEE', s: 2, m: 'type', dur: '3 min' },
-          ].map((r, i) => (
-            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 0', borderTop: i === 0 ? 'none' : '1px solid #F1F3F6' }}>
-              <div style={{ width: 34, height: 34, borderRadius: 10, background: '#F1F3F6', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, color: '#3F5FE2', fontWeight: 900 }}>{MODE_META[r.m].icon}</div>
               <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 14, fontWeight: 800 }}>{r.l}</div>
-                <div style={{ fontSize: 11, color: '#7C89A8', fontWeight: 600 }}>{r.t} · {r.dur}</div>
+                <div style={{ fontSize: 18, fontWeight: 900 }}>{p.name}</div>
+                <div style={{ fontSize: 13, color: '#7C89A8', fontWeight: 600 }}>
+                  Age {p.age} &nbsp;·&nbsp; {p.words} words &nbsp;·&nbsp; {p.totalStars}⭐ &nbsp;·&nbsp; {p.streak} day streak
+                </div>
               </div>
-              <StarRow filled={r.s} size={14} gap={2}/>
+              <div style={{ display: 'flex', gap: 8 }}>
+                {!isActive && (
+                  <button onClick={function() { onSwitch(p.id); }} style={Object.assign({}, btnGhost, { fontWeight: 800 })}>
+                    Switch
+                  </button>
+                )}
+                <button onClick={function() {
+                  if (window.confirm('Reset ALL progress for ' + p.name + '? Stars, words and level progress will be cleared.')) {
+                    onReset(p.id);
+                  }
+                }} style={{
+                  background: '#FFF4F0', border: '1px solid #FFB3A0', color: '#C0392B',
+                  borderRadius: 8, padding: '8px 14px', fontSize: 13, fontWeight: 800,
+                  cursor: 'pointer', fontFamily: 'inherit',
+                }}>↺ Reset</button>
+                {profiles.length > 1 && (
+                  <button onClick={function() {
+                    if (window.confirm('Delete ' + p.name + "'s profile? This cannot be undone.")) {
+                      onDelete(p.id);
+                    }
+                  }} style={Object.assign({}, btnGhost, { color: '#E74C3C', borderColor: '#FFB3A0' })}>✕</button>
+                )}
+              </div>
             </div>
-          ))}
-        </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function OverviewTab({ profile, levels }) {
+  var ctx = React.useContext(window.GameContext) || {};
+  var accuracy = ctx.totalClicks > 0 ? Math.round(ctx.accuracy * 100) : null;
+  var doneCount = levels ? levels.filter(function(l) { return l.done; }).length : 0;
+  var doneLevels = levels ? levels.filter(function(l) { return l.done; }).slice(-5).reverse() : [];
+  var ch1Done = levels ? levels.filter(function(l) { return l.chapter === 1; }).filter(function(l) { return l.done; }).length : 0;
+  var ch2Done = levels ? levels.filter(function(l) { return l.chapter === 2; }).filter(function(l) { return l.done; }).length : 0;
+  var ch3Done = levels ? levels.filter(function(l) { return l.chapter === 3; }).filter(function(l) { return l.done; }).length : 0;
+
+  return (
+    <div style={{ padding: 32 }}>
+      <div style={{ marginBottom: 24 }}>
+        <div style={{ fontSize: 12, fontWeight: 800, color: '#7C89A8', letterSpacing: 1, textTransform: 'uppercase' }}>Parent overview</div>
+        <h1 style={{ fontSize: 28, fontWeight: 900, margin: '4px 0 0' }}>{profile.name}'s progress 🌱</h1>
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14, marginBottom: 20 }}>
+        <Metric label="Words spelled" value={profile.words} delta={profile.words >= 5 ? '🏆 5+ milestone' : (5 - profile.words) + ' to next badge'} tone="#30C285"/>
+        <Metric label="Total stars" value={profile.totalStars} delta={'XP: ' + (profile.totalStars * 10)} tone="#FFA000"/>
+        <Metric label="Accuracy" value={accuracy !== null ? accuracy + '%' : '—'} delta={accuracy !== null ? (accuracy >= 80 ? '🎉 Excellent!' : 'Keep practising') : 'Play to track'} tone={accuracy !== null && accuracy >= 80 ? '#30C285' : '#7C89A8'}/>
+        <Metric label="Streak" value={profile.streak + ' days'} delta={profile.streak >= 3 ? '🔥 On fire!' : 'Keep it up'} tone={profile.streak >= 3 ? '#FF7043' : '#FFA000'}/>
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
+        {/* Chapter progress */}
         <div style={webCard}>
-          <h3 style={{ margin: '0 0 14px', fontSize: 16, fontWeight: 900 }}>Accuracy by mode</h3>
+          <h3 style={{ margin: '0 0 16px', fontSize: 16, fontWeight: 900 }}>Chapter progress</h3>
           {[
-            { m: 'click', v: 92 }, { m: 'missing', v: 88 }, { m: 'drag', v: 82 },
-            { m: 'keyboard', v: 74 }, { m: 'type', v: 68 },
-          ].map(r => (
-            <div key={r.m} style={{ display: 'grid', gridTemplateColumns: '100px 1fr 48px', gap: 12, alignItems: 'center', padding: '8px 0' }}>
-              <div style={{ fontSize: 13, fontWeight: 800 }}>{MODE_META[r.m].label}</div>
-              <div style={{ height: 10, borderRadius: 5, background: '#EEF1F5', overflow: 'hidden' }}>
-                <div style={{ width: `${r.v}%`, height: '100%', background: '#3F5FE2', borderRadius: 5 }}/>
+            { id: 1, name: 'The Word Forest', emoji: '🌳', done: ch1Done, total: 8 },
+            { id: 2, name: 'The Word Sea', emoji: '🌊', done: ch2Done, total: 8 },
+            { id: 3, name: 'The Word Mountain', emoji: '⛰️', done: ch3Done, total: 8 },
+          ].map(function(ch) {
+            var pct = Math.round(ch.done / ch.total * 100);
+            var tone = pct === 100 ? '#30C285' : pct > 0 ? '#3F5FE2' : '#B0BCCF';
+            return (
+              <div key={ch.id} style={{ marginBottom: 14 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                  <span style={{ fontSize: 14, fontWeight: 800 }}>{ch.emoji} {ch.name}</span>
+                  <span style={{ fontSize: 13, fontWeight: 800, color: tone }}>{ch.done}/{ch.total}</span>
+                </div>
+                <div style={{ height: 10, borderRadius: 5, background: '#EEF1F5', overflow: 'hidden' }}>
+                  <div style={{ height: '100%', width: pct + '%', background: tone, borderRadius: 5, transition: 'width 0.5s' }}/>
+                </div>
               </div>
-              <div style={{ fontSize: 13, fontWeight: 800, textAlign: 'right' }}>{r.v}%</div>
+            );
+          })}
+        </div>
+
+        {/* Recent completed levels */}
+        <div style={webCard}>
+          <h3 style={{ margin: '0 0 14px', fontSize: 16, fontWeight: 900 }}>Recent levels ({doneCount} total)</h3>
+          {doneLevels.length === 0 && <div style={{ fontSize: 13, color: '#7C89A8', fontWeight: 600 }}>No levels completed yet — play some rounds!</div>}
+          {doneLevels.map(function(lv, i) {
+            var m = MODE_META[lv.mode] || MODE_META.click;
+            return (
+              <div key={lv.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '8px 0', borderTop: i === 0 ? 'none' : '1px solid #F1F3F6' }}>
+                <div style={{ width: 34, height: 34, borderRadius: 10, background: '#F1F3F6', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 900 }}>{m.icon}</div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 14, fontWeight: 800 }}>Level {lv.id} — {lv.word}</div>
+                  <div style={{ fontSize: 11, color: '#7C89A8', fontWeight: 600 }}>Chapter {lv.chapter} · {m.label}</div>
+                </div>
+                <StarRow filled={lv.stars} size={14} gap={2}/>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      <div style={webCard}>
+        <h3 style={{ margin: '0 0 8px', fontSize: 16, fontWeight: 900 }}>Overall journey</h3>
+        <div style={{ fontSize: 13, color: '#4B587A', fontWeight: 600, marginBottom: 10 }}>{doneCount} of {levels ? levels.length : 24} levels complete</div>
+        <div style={{ height: 14, borderRadius: 7, background: '#EEF1F5', overflow: 'hidden' }}>
+          <div style={{ height: '100%', width: (levels && levels.length ? Math.round(doneCount / levels.length * 100) : 0) + '%', background: 'linear-gradient(90deg, #6C8EFF, #30C285)', borderRadius: 7, transition: 'width 0.5s' }}/>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function CurriculumTab({ levels, setLevels }) {
+  var chapters = window.CHAPTER_META || [
+    { id: 1, name: 'The Word Forest', emoji: '🌳' },
+    { id: 2, name: 'The Word Sea', emoji: '🌊' },
+    { id: 3, name: 'The Word Mountain', emoji: '⛰️' },
+  ];
+
+  function resetLevel(levelId) {
+    setLevels(function(prev) {
+      var idx = prev.findIndex(function(l) { return l.id === levelId; });
+      if (idx < 0) return prev;
+      var next = prev.map(function(l, i) {
+        if (i === idx) return Object.assign({}, l, { done: false, stars: 0, current: !l.locked, locked: l.locked });
+        return l;
+      });
+      // If no level is current, make the first unlocked non-done one current
+      var hasCurrent = next.some(function(l) { return l.current; });
+      if (!hasCurrent) {
+        var firstUnlocked = next.findIndex(function(l) { return !l.locked && !l.done; });
+        if (firstUnlocked >= 0) next[firstUnlocked] = Object.assign({}, next[firstUnlocked], { current: true });
+        else if (idx > 0 && !next[idx - 1].locked) next[idx] = Object.assign({}, next[idx], { current: true });
+      }
+      return next;
+    });
+  }
+
+  function resetChapter(chapterId) {
+    if (!window.confirm('Reset all ' + (chapters.find(function(c) { return c.id === chapterId; }) || {}).name + ' levels? Stars will be cleared.')) return;
+    setLevels(function(prev) {
+      return prev.map(function(l, i) {
+        if (l.chapter !== chapterId) return l;
+        var isFirst = i === prev.findIndex(function(x) { return x.chapter === chapterId; });
+        return Object.assign({}, l, { done: false, stars: 0, current: isFirst && !l.locked, locked: l.locked });
+      });
+    });
+  }
+
+  return (
+    <div style={{ padding: 32, maxWidth: 800 }}>
+      <h1 style={{ fontSize: 26, fontWeight: 900, margin: '0 0 6px' }}>Level Manager</h1>
+      <p style={{ fontSize: 13, color: '#7C89A8', fontWeight: 600, margin: '0 0 24px' }}>Reset individual levels or whole chapters to let your child replay them.</p>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+        {chapters.map(function(ch) {
+          var chLevels = levels ? levels.filter(function(l) { return l.chapter === ch.id; }) : [];
+          var doneCt = chLevels.filter(function(l) { return l.done; }).length;
+          return (
+            <div key={ch.id} style={webCard}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+                <div>
+                  <div style={{ fontSize: 16, fontWeight: 900 }}>{ch.emoji} {ch.name}</div>
+                  <div style={{ fontSize: 12, color: '#7C89A8', fontWeight: 600 }}>{doneCt}/{chLevels.length} complete</div>
+                </div>
+                <button onClick={function() { resetChapter(ch.id); }} style={{
+                  background: '#FFF0F0', border: '1px solid #FFB3B3', color: '#C0392B',
+                  borderRadius: 8, padding: '6px 12px', fontSize: 12, fontWeight: 800,
+                  cursor: 'pointer', fontFamily: 'inherit',
+                }}>↺ Reset chapter</button>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10 }}>
+                {chLevels.map(function(lv) {
+                  var m = MODE_META[lv.mode] || MODE_META.click;
+                  var statusColor = lv.done ? '#30C285' : lv.current ? '#3F5FE2' : lv.locked ? '#B0BCCF' : '#FFA000';
+                  var statusLabel = lv.done ? ('★'.repeat(lv.stars) + '☆'.repeat(3 - lv.stars)) : lv.current ? 'Current' : lv.locked ? 'Locked' : 'Unlocked';
+                  return (
+                    <div key={lv.id} style={{
+                      background: '#F7F9FC', borderRadius: 10, padding: 10,
+                      border: lv.current ? '2px solid #3F5FE2' : '2px solid transparent',
+                    }}>
+                      <div style={{ fontSize: 11, fontWeight: 800, color: '#7C89A8', marginBottom: 2 }}>Lv {lv.id} · {m.label}</div>
+                      <div style={{ fontSize: 14, fontWeight: 900, marginBottom: 2 }}>{lv.word}</div>
+                      <div style={{ fontSize: 11, fontWeight: 700, color: statusColor, marginBottom: 6 }}>{statusLabel}</div>
+                      {lv.done && (
+                        <button onClick={function() { resetLevel(lv.id); }} style={{
+                          background: 'white', border: '1px solid #E1E5EC', color: '#4B587A',
+                          borderRadius: 6, padding: '3px 8px', fontSize: 11, fontWeight: 700,
+                          cursor: 'pointer', fontFamily: 'inherit', width: '100%',
+                        }}>↺ Replay</button>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
             </div>
-          ))}
-        </div>
+          );
+        })}
       </div>
     </div>
   );
 }
 
-function ReportsTab() {
-  return (
-    <div style={{ padding: 32 }}>
-      <h1 style={{ fontSize: 26, fontWeight: 900, margin: '0 0 20px' }}>Reports</h1>
-      <div style={webCard}>
-        <div style={{ fontSize: 12, fontWeight: 800, color: '#7C89A8', letterSpacing: 0.5, textTransform: 'uppercase' }}>Accuracy · 30 days</div>
-        <div style={{ fontSize: 28, fontWeight: 900 }}>86%</div>
-        <svg width="100%" height="200" viewBox="0 0 800 200" style={{ marginTop: 12 }}>
-          <defs>
-            <linearGradient id="acc2" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#6C8EFF" stopOpacity="0.4"/>
-              <stop offset="100%" stopColor="#6C8EFF" stopOpacity="0"/>
-            </linearGradient>
-          </defs>
-          {[0, 50, 100, 150, 200].map(y => <line key={y} x1="0" y1={y} x2="800" y2={y} stroke="#EEF1F5"/>)}
-          <path d="M0 150 L60 140 L120 145 L180 125 L240 130 L300 105 L360 110 L420 85 L480 90 L540 70 L600 75 L660 55 L720 50 L800 45 L800 200 L0 200 Z" fill="url(#acc2)"/>
-          <path d="M0 150 L60 140 L120 145 L180 125 L240 130 L300 105 L360 110 L420 85 L480 90 L540 70 L600 75 L660 55 L720 50 L800 45" stroke="#3F5FE2" strokeWidth="2.5" fill="none" strokeLinecap="round"/>
-        </svg>
-      </div>
-    </div>
-  );
-}
-
-function CurriculumTab() {
-  return (
-    <div style={{ padding: 32 }}>
-      <h1 style={{ fontSize: 26, fontWeight: 900, margin: '0 0 20px' }}>Curriculum</h1>
-      <div style={webCard}>
-        <h3 style={{ margin: 0, fontSize: 16, fontWeight: 900 }}>Word themes</h3>
-        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginTop: 12 }}>
-          {[
-            { n: 'Animals', on: true }, { n: 'Space', on: true }, { n: 'Fruit', on: false },
-            { n: 'Weather', on: false }, { n: 'Food', on: false }, { n: 'Transport', on: false },
-          ].map(t => (
-            <div key={t.n} style={{
-              padding: '10px 16px', borderRadius: 999,
-              background: t.on ? '#E3EAFF' : '#F7F9FC',
-              color: t.on ? '#3F5FE2' : '#7C89A8',
-              fontWeight: 800, fontSize: 13,
-              border: `2px solid ${t.on ? '#3F5FE2' : '#E8ECF3'}`,
-              cursor: 'pointer',
-            }}>{t.on ? '✓ ' : '+ '}{t.n}</div>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function SettingsTab({ settings, setSettings }) {
+function SettingsTab({ profile, setProfile, settings, setSettings }) {
   var s = settings || {};
-  function update(key, val) {
+  var [nameVal, setNameVal] = React.useState(profile ? profile.name : '');
+  var [ageVal, setAgeVal] = React.useState(profile ? String(profile.age) : '');
+
+  function updateSetting(key, val) {
     setSettings && setSettings(function(prev) { return Object.assign({}, prev, { [key]: val }); });
   }
+  function saveProfile() {
+    var n = nameVal.trim();
+    var a = parseInt(ageVal, 10);
+    if (!n) return;
+    setProfile && setProfile(function(prev) {
+      return Object.assign({}, prev, { name: n, age: isNaN(a) ? prev.age : a });
+    });
+  }
+
   var diffLabel = s.difficulty === 'easy' ? 'Easy (3 letters)' : s.difficulty === 'hard' ? 'Hard (5+ letters)' : 'Medium (3–5 letters)';
   var themeLabel = { blue: 'Blue (default)', sunny: 'Sunny yellow', berry: 'Berry purple', mint: 'Mint green' }[s.theme] || 'Blue';
+
+  var inputStyle = {
+    border: '1px solid #D4DAE5', borderRadius: 8, padding: '8px 12px',
+    fontSize: 14, fontFamily: 'inherit', fontWeight: 700, color: '#1F2A44',
+    outline: 'none', width: '100%',
+  };
 
   return (
     <div style={{ padding: 32, maxWidth: 720 }}>
       <h1 style={{ fontSize: 26, fontWeight: 900, margin: '0 0 20px' }}>Settings</h1>
-      <div style={webCard}>
+
+      {/* Child profile */}
+      <div style={Object.assign({}, webCard, { marginBottom: 14 })}>
+        <h3 style={{ margin: '0 0 14px', fontSize: 15, fontWeight: 900 }}>Child profile</h3>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 120px', gap: 12, marginBottom: 12 }}>
+          <div>
+            <div style={{ fontSize: 12, fontWeight: 700, color: '#7C89A8', marginBottom: 4 }}>Name</div>
+            <input value={nameVal} onChange={function(e) { setNameVal(e.target.value); }}
+              onKeyDown={function(e) { if (e.key === 'Enter') saveProfile(); }}
+              style={inputStyle} placeholder="Child's name"/>
+          </div>
+          <div>
+            <div style={{ fontSize: 12, fontWeight: 700, color: '#7C89A8', marginBottom: 4 }}>Age</div>
+            <input value={ageVal} onChange={function(e) { setAgeVal(e.target.value); }}
+              onKeyDown={function(e) { if (e.key === 'Enter') saveProfile(); }}
+              style={inputStyle} placeholder="Age" type="number" min="3" max="12"/>
+          </div>
+        </div>
+        <button onClick={saveProfile} style={{
+          background: '#3F5FE2', color: 'white', border: 'none', borderRadius: 8,
+          padding: '10px 20px', fontWeight: 800, fontSize: 13, cursor: 'pointer',
+          fontFamily: 'inherit',
+        }}>Save name &amp; age</button>
+      </div>
+
+      {/* Game settings */}
+      <div style={Object.assign({}, webCard, { marginBottom: 14 })}>
         <WebSettingRow label="Difficulty" value={diffLabel} chev
-          onChange={function() { update('difficulty', s.difficulty === 'easy' ? 'med' : s.difficulty === 'med' ? 'hard' : 'easy'); }}/>
+          onChange={function() { updateSetting('difficulty', s.difficulty === 'easy' ? 'med' : s.difficulty === 'med' ? 'hard' : 'easy'); }}/>
         <WebSettingRow label="Colour theme" value={themeLabel} chev
-          onChange={function() { var themes = ['blue','sunny','berry','mint']; update('theme', themes[(themes.indexOf(s.theme||'blue')+1)%themes.length]); }}/>
+          onChange={function() { var themes = ['blue','sunny','berry','mint']; updateSetting('theme', themes[(themes.indexOf(s.theme||'blue')+1)%themes.length]); }}/>
         <WebSettingRow label="Avatar style" value={s.avatarStyle === 'geo' ? 'Geometric' : 'Animal'} chev last
-          onChange={function() { update('avatarStyle', s.avatarStyle === 'geo' ? 'animal' : 'geo'); }}/>
+          onChange={function() { updateSetting('avatarStyle', s.avatarStyle === 'geo' ? 'animal' : 'geo'); }}/>
       </div>
-      <div style={{ height: 14 }}/>
-      <div style={webCard}>
-        <WebToggleRow label="Sound effects" sub="Chimes and taps" value={s.sounds !== false} onChange={function(v) { update('sounds', v); window.sfx && window.sfx.setEnabled && window.sfx.setEnabled(v); }} last/>
+      <div style={Object.assign({}, webCard, { marginBottom: 14 })}>
+        <WebToggleRow label="Sound effects" sub="Chimes and taps" value={s.sounds !== false} onChange={function(v) { updateSetting('sounds', v); window.sfx && window.sfx.setEnabled && window.sfx.setEnabled(v); }} last/>
       </div>
-      <div style={{ height: 14 }}/>
       <div style={webCard}>
         <WebSettingRow label="Change parent PIN" value="••••" chev last
-          onChange={function() { if(confirm('Reset your parent PIN? You will need to set a new one.')) { localStorage.removeItem('spelloop-pin'); alert('PIN removed. You will be asked to set a new one next time.'); } }}/>
+          onChange={function() { if(confirm('Reset your parent PIN? You will need to set a new one.')) { localStorage.removeItem('spelloop-pin'); alert('PIN removed. Reload the page to set a new one.'); } }}/>
       </div>
     </div>
   );
 }
 
-function WebSettingRow({ label, value, chev, last }) {
+function WebSettingRow({ label, value, chev, last, onChange }) {
   return (
-    <div style={{
+    <div onClick={onChange} style={{
       display: 'flex', alignItems: 'center', padding: '14px 4px',
       borderBottom: last ? 'none' : '1px solid #F1F3F6', cursor: chev ? 'pointer' : 'default',
     }}>
