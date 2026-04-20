@@ -28,6 +28,7 @@ body {
   font-family: 'Nunito', system-ui, sans-serif;
   background: #E9E4DA;
   color: var(--ink);
+  cursor: none;
   -webkit-font-smoothing: antialiased;
   overflow-x: hidden;
 }

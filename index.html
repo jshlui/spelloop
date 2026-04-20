@@ -9,16 +9,15 @@
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@500;600;700;800;900&family=Space+Grotesk:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="styles.css" />
 <style>
-  body { cursor: none; }
   .cursor-shake {
     animation: cursorShake 200ms ease;
   }
   @keyframes cursorShake {
-    0%,100% { margin-left: 0; }
-    20% { margin-left: -6px; }
-    40% { margin-left: 6px; }
-    60% { margin-left: -4px; }
-    80% { margin-left: 4px; }
+    0%,100% { transform: translate(-50%,-50%) translateX(0); }
+    20%     { transform: translate(-50%,-50%) translateX(-6px); }
+    40%     { transform: translate(-50%,-50%) translateX(6px); }
+    60%     { transform: translate(-50%,-50%) translateX(-4px); }
+    80%     { transform: translate(-50%,-50%) translateX(4px); }
   }
 </style>
 </head>

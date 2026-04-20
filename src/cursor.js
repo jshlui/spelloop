@@ -52,7 +52,9 @@
   });
 
   // Feedback API
+  let flashTimer = null;
   window.cursorFlash = function (type) {
+    if (flashTimer) clearTimeout(flashTimer);
     const dot = dots[0];
     const color = type === 'correct' ? 'rgba(48,194,133,0.85)' : 'rgba(240,113,113,0.85)';
     const scale = type === 'correct' ? 'scale(1.4)' : 'scale(1)';
@@ -62,9 +64,10 @@
       dot.classList.add('cursor-shake');
       setTimeout(() => dot.classList.remove('cursor-shake'), 200);
     }
-    setTimeout(() => {
+    flashTimer = setTimeout(() => {
       dot.style.background = 'rgba(108,142,255,0.6)';
       dot.style.transform = 'translate(-50%,-50%) scale(1)';
+      flashTimer = null;
     }, 200);
   };
 
