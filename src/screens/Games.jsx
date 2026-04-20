@@ -39,7 +39,6 @@ function ClickGame({ word, onDone, onClose }) {
     if (feedback?.correct) return;
     if (letter === target) {
       window.sfx?.playCorrect();
-      window.sfx?.success();
       setFeedback({ letter, correct: true });
       setTimeout(() => {
         if (idx + 1 >= word.length) {
@@ -325,7 +324,7 @@ function MissingGame({ word, onDone, onClose }) {
     setPicked(c);
     if (c === target) {
       window.sfx?.playCorrect();
-      window.sfx?.success(); setBurst(true); window.sfx?.complete();
+      setBurst(true); window.sfx?.complete();
       setTimeout(() => onDone(wrongCount === 0 ? 3 : wrongCount <= 2 ? 2 : 1), 1000);
     } else {
       window.sfx?.playWrong();
