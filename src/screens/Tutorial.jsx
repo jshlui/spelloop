@@ -20,15 +20,15 @@ function EmojiTarget({ emoji, position, onCollected }) {
     }
   }, [dwelling]);
 
-  // Play rising tone as dwell progresses (throttled to ~10 calls)
-  var lastProgressRef = React.useRef(0);
+  // Throttle playDwell to ~10 calls across the 0→1 range
+  var lastRoundedRef = React.useRef(null);
   React.useEffect(function() {
-    var rounded = Math.round(progress * 10) / 10;
-    if (progress > 0 && progress < 1 && rounded !== lastProgressRef.current) {
-      lastProgressRef.current = rounded;
+    var rounded = Math.round(progress * 10);
+    if (progress > 0 && progress < 1 && rounded !== lastRoundedRef.current) {
+      lastRoundedRef.current = rounded;
       window.sfx && window.sfx.playDwell && window.sfx.playDwell(progress);
     }
-  }, [Math.round(progress * 10)]);
+  }, [progress]);
 
   return (
     <div ref={ref} style={{
@@ -41,6 +41,7 @@ function EmojiTarget({ emoji, position, onCollected }) {
       alignItems: 'center',
       justifyContent: 'center',
       fontSize: 48,
+      cursor: 'none',
     }}>
       <svg style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }} viewBox="0 0 96 96">
         <circle cx="48" cy="48" r="38" fill="none" stroke="rgba(108,142,255,0.2)" strokeWidth="5"/>
@@ -50,13 +51,14 @@ function EmojiTarget({ emoji, position, onCollected }) {
           strokeDashoffset={circumference - circumference * (collected ? 1 : progress)}
           strokeLinecap="round"
           transform="rotate(-90 48 48)"
-          style={{ transition: 'stroke-dashoffset 0.05s linear, stroke 0.2s' }}
+          style={{ transition: 'stroke-dashoffset 0.08s linear, stroke 0.2s' }}
         />
       </svg>
       <span style={{
         position: 'relative', zIndex: 1,
         opacity: collected ? 0.4 : 1,
         display: 'inline-block',
+        transition: 'opacity 0.3s ease',
         animation: collected ? 'emojiCollect 0.4s cubic-bezier(0.34,1.56,0.64,1) both' : 'none',
       }}>
         {emoji}
@@ -102,7 +104,9 @@ function HoverTutorial({ onComplete }) {
         fontFamily: 'inherit',
       }}>
         {done
-          ? React.createElement('span', { style: { color: '#30C285' } }, 'Ready! 🎉')
+          ? React.createElement('span', {
+              style: { color: '#30C285', display: 'inline-block', animation: 'pop 0.4s ease' }
+            }, 'Ready! 🎉')
           : 'Hover over each! (' + collected + '/' + TUTORIAL_EMOJIS.length + ')'}
       </div>
 
@@ -117,6 +121,8 @@ function HoverTutorial({ onComplete }) {
 
       <button
         onClick={onComplete}
+        onFocus={function(e) { e.target.style.outline = '3px solid #6C8EFF'; }}
+        onBlur={function(e) { e.target.style.outline = 'none'; }}
         style={{
           position: 'absolute', bottom: 24, right: 24,
           background: 'none',
@@ -124,6 +130,7 @@ function HoverTutorial({ onComplete }) {
           borderRadius: 20, padding: '8px 18px',
           fontSize: 14, color: 'var(--ink-soft, #4B587A)',
           fontFamily: 'inherit',
+          cursor: 'none',
         }}
       >
         Skip
