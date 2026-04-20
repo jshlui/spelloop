@@ -368,13 +368,14 @@ function MissingGame({ word, onDone, onClose }) {
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, width: '100%', maxWidth: 340 }}>
-          {choices.map(c => {
+          {choices.map((c, i) => {
             const isPicked = picked === c;
             const cls = isPicked ? (c === target ? 'tile correct' : 'tile wrong') : 'tile';
             const color = ['blue', 'pink', 'mint', 'coral'][c.charCodeAt(0) % 4];
             return (
-              <button key={c} onClick={() => pick(c)} className={cls + ' ' + color} style={{
+              <button key={c} onClick={() => pick(c)} className={cls + ' ' + color + ' tile-entry'} style={{
                 width: 'auto', height: 80, fontSize: 38, border: 'none', cursor: 'pointer', fontFamily: 'inherit',
+                animationDelay: `${i * 50}ms`
               }}>{c}</button>
             );
           })}
