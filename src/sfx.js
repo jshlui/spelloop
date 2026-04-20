@@ -38,5 +38,84 @@
     complete() {
       [523, 659, 784, 1047].forEach((f, i) => tone(f, 0.14, 'sine', 0.12, i * 0.09));
     },
+    playCorrect() {
+      if (!window.sfx.isEnabled()) return;
+      try {
+        const a = c();
+        [660, 880].forEach((freq, i) => {
+          const o = a.createOscillator();
+          const g = a.createGain();
+          o.connect(g); g.connect(a.destination);
+          o.type = 'sine'; o.frequency.value = freq;
+          const t = a.currentTime + i * 0.08;
+          g.gain.setValueAtTime(0.12, t);
+          g.gain.exponentialRampToValueAtTime(0.001, t + 0.12);
+          o.start(t); o.stop(t + 0.13);
+        });
+        window.cursorFlash && window.cursorFlash('correct');
+      } catch(e) {}
+    },
+    playWrong() {
+      if (!window.sfx.isEnabled()) return;
+      try {
+        const a = c();
+        const o = a.createOscillator();
+        const g = a.createGain();
+        o.connect(g); g.connect(a.destination);
+        o.type = 'square';
+        o.frequency.setValueAtTime(220, a.currentTime);
+        o.frequency.exponentialRampToValueAtTime(140, a.currentTime + 0.15);
+        g.gain.setValueAtTime(0.10, a.currentTime);
+        g.gain.exponentialRampToValueAtTime(0.001, a.currentTime + 0.15);
+        o.start(); o.stop(a.currentTime + 0.15);
+        window.cursorFlash && window.cursorFlash('wrong');
+      } catch(e) {}
+    },
+    playLevelUp() {
+      if (!window.sfx.isEnabled()) return;
+      try {
+        const a = c();
+        [523, 659, 784].forEach((freq, i) => {
+          const o = a.createOscillator();
+          const g = a.createGain();
+          o.connect(g); g.connect(a.destination);
+          o.type = 'sine'; o.frequency.value = freq;
+          const t = a.currentTime + i * 0.12;
+          g.gain.setValueAtTime(0.12, t);
+          g.gain.exponentialRampToValueAtTime(0.001, t + 0.18);
+          o.start(t); o.stop(t + 0.19);
+        });
+      } catch(e) {}
+    },
+    playComplete() {
+      if (!window.sfx.isEnabled()) return;
+      try {
+        const a = c();
+        [523, 659, 784, 880, 1047].forEach((freq, i) => {
+          const o = a.createOscillator();
+          const g = a.createGain();
+          o.connect(g); g.connect(a.destination);
+          o.type = 'sine'; o.frequency.value = freq;
+          const t = a.currentTime + i * 0.10;
+          g.gain.setValueAtTime(0.12, t);
+          g.gain.exponentialRampToValueAtTime(0.001, t + 0.20);
+          o.start(t); o.stop(t + 0.21);
+        });
+      } catch(e) {}
+    },
+    playDwell(progress) {
+      if (!window.sfx.isEnabled()) return;
+      try {
+        const a = c();
+        const freq = 220 + (progress || 0) * 220;
+        const o = a.createOscillator();
+        const g = a.createGain();
+        o.connect(g); g.connect(a.destination);
+        o.type = 'sine'; o.frequency.value = freq;
+        g.gain.setValueAtTime(0.04, a.currentTime);
+        g.gain.exponentialRampToValueAtTime(0.001, a.currentTime + 0.06);
+        o.start(); o.stop(a.currentTime + 0.07);
+      } catch(e) {}
+    },
   };
 })();

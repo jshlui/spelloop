@@ -37,8 +37,8 @@ function ClickGame({ word, onDone, onClose }) {
 
   function pick(letter) {
     if (feedback?.correct) return;
-    window.sfx?.tap();
     if (letter === target) {
+      window.sfx?.playCorrect();
       window.sfx?.success();
       setFeedback({ letter, correct: true });
       setTimeout(() => {
@@ -52,7 +52,7 @@ function ClickGame({ word, onDone, onClose }) {
         }
       }, 500);
     } else {
-      window.sfx?.wrong();
+      window.sfx?.playWrong();
       setWrongCount(w => w + 1);
       setFeedback({ letter, correct: false });
       setTimeout(() => setFeedback(null), 400);
@@ -125,7 +125,7 @@ function DragGame({ word, onDone, onClose }) {
         setBurst(true); window.sfx?.complete();
         setTimeout(() => onDone(wrongCount === 0 ? 3 : wrongCount <= 2 ? 2 : 1), 1000);
       } else {
-        window.sfx?.wrong();
+        window.sfx?.playWrong();
         // find first wrong and kick it back
         setTimeout(() => {
           const newSlots = [...slots];
@@ -238,10 +238,10 @@ function TypeGame({ word, onDone, onClose, device }) {
         window.sfx?.complete(); setBurst(true);
         setTimeout(() => onDone(wrongCount === 0 ? 3 : wrongCount <= 2 ? 2 : 1), 1000);
       } else {
-        window.sfx?.tap();
+        window.sfx?.playCorrect();
       }
     } else {
-      window.sfx?.wrong();
+      window.sfx?.playWrong();
       setWrongCount(w => w + 1);
       setShake(true);
       setTimeout(() => setShake(false), 300);
@@ -322,13 +322,13 @@ function MissingGame({ word, onDone, onClose }) {
   const [burst, setBurst] = React.useState(false);
 
   function pick(c) {
-    window.sfx?.tap();
     setPicked(c);
     if (c === target) {
+      window.sfx?.playCorrect();
       window.sfx?.success(); setBurst(true); window.sfx?.complete();
       setTimeout(() => onDone(wrongCount === 0 ? 3 : wrongCount <= 2 ? 2 : 1), 1000);
     } else {
-      window.sfx?.wrong();
+      window.sfx?.playWrong();
       setWrongCount(w => w + 1);
       setTimeout(() => setPicked(null), 400);
     }
@@ -385,7 +385,7 @@ function KeyboardGame({ word, onDone, onClose }) {
     window.sfx?.type();
     if (l === target) {
       setFlash({ l, ok: true });
-      window.sfx?.tap();
+      window.sfx?.playCorrect();
       setTimeout(() => {
         setFlash(null);
         if (idx + 1 >= word.length) {
@@ -397,7 +397,7 @@ function KeyboardGame({ word, onDone, onClose }) {
       }, 150);
     } else {
       setFlash({ l, ok: false });
-      window.sfx?.wrong();
+      window.sfx?.playWrong();
       setWrongCount(w => w + 1);
       setTimeout(() => setFlash(null), 250);
     }
