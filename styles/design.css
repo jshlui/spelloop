@@ -277,3 +277,52 @@ html, body {
   50%  { transform: scale(1.4); }
   100% { transform: scale(1.1); }
 }
+
+/* Correct tile spring pop */
+@keyframes tileCorrect {
+  0%   { transform: scale(1); }
+  40%  { transform: scale(1.25); filter: brightness(1.3); }
+  100% { transform: scale(1); }
+}
+/* Wrong tile shake */
+@keyframes tileWrong {
+  0%,100% { transform: translateX(0); }
+  15%     { transform: translateX(-6px); }
+  30%     { transform: translateX(6px); }
+  45%     { transform: translateX(-5px); }
+  60%     { transform: translateX(5px); }
+  75%     { transform: translateX(-3px); }
+  90%     { transform: translateX(3px); }
+}
+.tile-correct {
+  animation: tileCorrect 350ms cubic-bezier(0.34,1.56,0.64,1) both;
+}
+.tile-wrong {
+  animation: tileWrong 300ms ease both;
+}
+/* Hover lift — only for devices that support hover */
+@media (hover: hover) {
+  .tile:hover {
+    transform: translateY(-5px) scale(1.07);
+    box-shadow: 0 10px 24px rgba(0,0,0,0.18);
+    transition: transform 120ms ease, box-shadow 120ms ease;
+  }
+}
+
+@keyframes levelFlash {
+  0%   { opacity: 0; }
+  15%  { opacity: 1; }
+  75%  { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+@keyframes streakIn {
+  from { opacity: 0; transform: translateY(-20px) scale(0.8); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes confettiFly0 { from{opacity:1;transform:translate(0,0) rotate(0deg)} to{opacity:0;transform:translate(var(--tx),var(--ty)) rotate(var(--rot))} }
+@keyframes confettiFly1 { from{opacity:1;transform:translate(0,0) rotate(0deg)} to{opacity:0;transform:translate(var(--tx),var(--ty)) rotate(calc(var(--rot) + 90deg))} }
+@keyframes confettiFly2 { from{opacity:1;transform:translate(0,0) rotate(0deg)} to{opacity:0;transform:translate(var(--tx),var(--ty)) rotate(calc(var(--rot) + 180deg))} }
+@keyframes confettiFly3 { from{opacity:1;transform:translate(0,0) rotate(0deg)} to{opacity:0;transform:translate(var(--tx),var(--ty)) rotate(calc(var(--rot) - 90deg))} }
+@keyframes confettiFly4 { from{opacity:1;transform:translate(0,0) rotate(0deg)} to{opacity:0;transform:translate(var(--tx),var(--ty)) rotate(calc(var(--rot) + 270deg))} }

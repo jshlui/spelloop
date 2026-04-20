@@ -91,7 +91,7 @@ function ClickGame({ word, onDone, onClose }) {
             const color = c.charCodeAt(0) % 5;
             const colorCls = ['blue', 'pink', 'mint', 'coral', 'lilac'][color];
             return (
-              <button key={c} onClick={() => pick(c)} className={cls + ' ' + colorCls + ' tile-entry'} style={{
+              <button key={c} onClick={() => pick(c)} className={cls + ' ' + colorCls + ' tile-entry' + (isPicked && feedback.correct ? ' tile-correct' : isPicked && !feedback.correct ? ' tile-wrong' : '')} style={{
                 width: 'auto', height: 88, fontSize: 42, border: 'none', cursor: 'pointer', fontFamily: 'inherit',
                 animationDelay: `${i * 50}ms`
               }}>{c}</button>
