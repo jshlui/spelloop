@@ -326,3 +326,32 @@ html, body {
 @keyframes confettiFly2 { from{opacity:1;transform:translate(0,0) rotate(0deg)} to{opacity:0;transform:translate(var(--tx),var(--ty)) rotate(calc(var(--rot) + 180deg))} }
 @keyframes confettiFly3 { from{opacity:1;transform:translate(0,0) rotate(0deg)} to{opacity:0;transform:translate(var(--tx),var(--ty)) rotate(calc(var(--rot) - 90deg))} }
 @keyframes confettiFly4 { from{opacity:1;transform:translate(0,0) rotate(0deg)} to{opacity:0;transform:translate(var(--tx),var(--ty)) rotate(calc(var(--rot) + 270deg))} }
+
+/* == Focus rings (keyboard nav) == */
+:focus-visible {
+  outline: 3px solid #6C8EFF;
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* == Tablet (768px–1024px) == */
+@media (min-width: 768px) and (max-width: 1024px) {
+  .tile { width: 80px; height: 92px; font-size: 44px; }
+  button, .tile { min-width: 80px; min-height: 80px; }
+}
+
+/* == Desktop (>1280px) == */
+@media (min-width: 1280px) {
+  .tile { width: 88px; height: 100px; font-size: 52px; }
+}
+
+/* == Reduced motion == */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+  }
+}

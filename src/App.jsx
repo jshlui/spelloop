@@ -145,7 +145,6 @@ function MobileApp({ profile, tweaks, setParentOpen, parentOpen }) {
           {route.name === 'home' && <BottomNav tab={tab} onTab={setTab}/>}
           {parentOpen && <ParentDashboard profile={profile} onClose={() => setParentOpen(false)}/>}
           {levelTransition && <LevelTransition level={levelTransition.level} color={levelTransition.color} onDone={() => setLevelTransition(null)} />}
-          <StreakBadge />
         </div>
       </DeviceFrame>
     </div>

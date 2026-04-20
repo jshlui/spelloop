@@ -1,8 +1,90 @@
 // Reward screen after level completion.
 
+function SessionReport({ onClose }) {
+  var ctx = React.useContext(window.GameContext);
+  var correctClicks = ctx ? ctx.correctClicks : 0;
+  var totalClicks = ctx ? ctx.totalClicks : 0;
+  var taskHistory = ctx ? ctx.taskHistory : [];
+  var accuracy = ctx ? ctx.accuracy : 1;
+
+  var withMs = taskHistory.filter(function(t) { return t.ms > 0; });
+  var correctWithMs = taskHistory.filter(function(t) { return t.correct && t.ms > 0; });
+  var avgMs = withMs.length > 0 ? withMs.reduce(function(s, t) { return s + t.ms; }, 0) / withMs.length : 0;
+  var fastestMs = correctWithMs.length > 0 ? Math.min.apply(null, correctWithMs.map(function(t) { return t.ms; })) : 0;
+  var totalComplete = taskHistory.filter(function(t) { return t.type === 'complete'; }).length;
+
+  var modes = ['click', 'drag', 'type', 'missing', 'keyboard', 'precision'];
+  var modeStats = modes.map(function(m) {
+    var mTasks = taskHistory.filter(function(t) { return t.mode === m; });
+    var mCorrect = mTasks.filter(function(t) { return t.correct; }).length;
+    return { mode: m, total: mTasks.length, correct: mCorrect, pct: mTasks.length ? Math.round(mCorrect / mTasks.length * 100) : null };
+  }).filter(function(m) { return m.total > 0; });
+
+  return (
+    <div style={{
+      position: 'fixed', inset: 0, zIndex: 500,
+      background: 'rgba(31,42,68,0.7)', backdropFilter: 'blur(4px)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+    }} onClick={onClose}>
+      <div onClick={function(e) { e.stopPropagation(); }} style={{
+        background: '#fff', borderRadius: 32, padding: 36,
+        maxWidth: 520, width: '90vw', maxHeight: '85vh', overflowY: 'auto',
+        position: 'relative', boxShadow: '0 16px 48px rgba(0,0,0,0.20)',
+      }}>
+        <button onClick={onClose} style={{
+          position: 'absolute', top: 20, right: 20,
+          background: 'none', border: 'none', fontSize: 24, cursor: 'pointer',
+          color: 'var(--ink-soft, #4B587A)', lineHeight: 1,
+        }}>✕</button>
+
+        <h2 style={{ margin: '0 0 24px', fontSize: 26, fontWeight: 900, color: 'var(--ink, #1F2A44)', fontFamily: 'inherit' }}>
+          📊 Session Report
+        </h2>
+
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 28 }}>
+          {[
+            { label: 'Tasks done', value: String(totalComplete) },
+            { label: 'Accuracy', value: Math.round(accuracy * 100) + '%' },
+            { label: 'Avg time/click', value: avgMs > 0 ? (avgMs / 1000).toFixed(1) + 's' : '—' },
+            { label: 'Fastest click', value: fastestMs > 0 ? fastestMs + 'ms' : '—' },
+          ].map(function(item) {
+            return React.createElement('div', {
+              key: item.label,
+              style: { background: '#F3F6FA', borderRadius: 18, padding: '16px 20px' },
+            },
+              React.createElement('div', { style: { fontSize: 13, color: 'var(--ink-mute, #7C89A8)', marginBottom: 4, fontWeight: 700, fontFamily: 'inherit' } }, item.label),
+              React.createElement('div', { style: { fontSize: 28, fontWeight: 900, color: 'var(--ink, #1F2A44)', fontFamily: 'inherit' } }, item.value)
+            );
+          })}
+        </div>
+
+        <h3 style={{ fontSize: 16, fontWeight: 800, margin: '0 0 14px', color: 'var(--ink, #1F2A44)', fontFamily: 'inherit' }}>Mode Accuracy</h3>
+        {modeStats.length === 0 && (
+          <p style={{ color: 'var(--ink-mute, #7C89A8)', fontSize: 14, fontFamily: 'inherit' }}>No data yet — play some rounds first!</p>
+        )}
+        {modeStats.map(function(s) {
+          var barColor = s.pct >= 80 ? 'var(--mint, #8EE3C3)' : s.pct >= 50 ? 'var(--blue, #6C8EFF)' : 'var(--coral, #FFA07A)';
+          return (
+            <div key={s.mode} style={{ marginBottom: 12 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 14, fontWeight: 700, color: 'var(--ink, #1F2A44)', marginBottom: 4, fontFamily: 'inherit' }}>
+                <span style={{ textTransform: 'capitalize' }}>{s.mode}</span>
+                <span>{s.pct}%</span>
+              </div>
+              <div style={{ height: 12, background: '#E8ECF5', borderRadius: 6, overflow: 'hidden' }}>
+                <div style={{ height: '100%', width: s.pct + '%', background: barColor, borderRadius: 6, transition: 'width 0.6s ease' }} />
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 function RewardScreen({ word, stars, onNext, onHome }) {
   const [animIn, setAnimIn] = React.useState(false);
   const [showConfetti, setShowConfetti] = React.useState(false);
+  const [showReport, setShowReport] = React.useState(false);
   React.useEffect(() => {
     const t = setTimeout(() => setAnimIn(true), 100);
     // cascade star sounds
@@ -80,6 +162,17 @@ function RewardScreen({ word, stars, onNext, onHome }) {
           <BigButton onClick={onNext} color="coral">Next level ▶</BigButton>
         </div>
       </div>
+
+      <button onClick={() => setShowReport(true)} aria-label="Session report" style={{
+        position: 'absolute', bottom: 24, right: 24,
+        width: 44, height: 44, borderRadius: '50%',
+        background: 'var(--ink-soft, #4B587A)', color: '#fff',
+        border: 'none', fontSize: 20, cursor: 'pointer',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        boxShadow: '0 4px 12px rgba(0,0,0,0.2)', zIndex: 1,
+      }}>📊</button>
+
+      {showReport && <SessionReport onClose={() => setShowReport(false)} />}
     </div>
   );
 }
