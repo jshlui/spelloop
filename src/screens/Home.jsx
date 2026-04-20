@@ -4,14 +4,15 @@ function HomeScreen({ profile, onContinue, onPickMode, onOpenParent }) {
   const avatarStyle = window.__tweaks?.avatarStyle || 'animal';
   const modes = ['click', 'drag', 'type', 'missing', 'keyboard'];
 
-  const { ref: dwellRef, dwelling, progress } = window.useDwell(800);
+  const dwellHook = window.useDwell ? window.useDwell(800) : { ref: React.useRef(null), dwelling: false, progress: 0 };
+  const { ref: dwellRef, dwelling, progress } = dwellHook;
 
   React.useEffect(() => {
     if (dwelling) {
       window.sfx && window.sfx.tap && window.sfx.tap();
       onContinue && onContinue();
     }
-  }, [dwelling]);
+  }, [dwelling, onContinue]);
 
   return (
     <div style={{
