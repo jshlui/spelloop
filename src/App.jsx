@@ -33,6 +33,14 @@ function App() {
     return () => window.removeEventListener('message', handler);
   }, []);
 
+  const [tutorialDone, setTutorialDone] = React.useState(
+    function() { return sessionStorage.getItem('spelloop-tutorial') === '1'; }
+  );
+  const handleTutorialComplete = React.useCallback(function() {
+    sessionStorage.setItem('spelloop-tutorial', '1');
+    setTutorialDone(true);
+  }, []);
+
   const [profile] = React.useState({
     name: 'Sam', age: 7, avatar: 'fox', level: 4, streak: 5, totalStars: 7, words: 3,
   });
@@ -53,6 +61,7 @@ function App() {
       display: 'flex', alignItems: isMobile ? 'center' : 'flex-start', justifyContent: 'center',
       background: 'radial-gradient(circle at 50% 20%, #F8FAFD 0%, #E5EAF2 70%, #CFD6E3 100%)',
     }}>
+      {!tutorialDone && <HoverTutorial onComplete={handleTutorialComplete} />}
       {isWeb ? (
         <div data-screen-label={webLabel(parentOpen)} style={{ width: '100%', maxWidth: 1360 }}>
           <ChromeWindow

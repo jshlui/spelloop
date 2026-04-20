@@ -271,3 +271,9 @@ html, body {
 .tile-entry {
   animation: flyIn 0.35s cubic-bezier(0.34,1.56,0.64,1) both;
 }
+
+@keyframes emojiCollect {
+  0%   { transform: scale(1); }
+  50%  { transform: scale(1.4); }
+  100% { transform: scale(1.1); }
+}
