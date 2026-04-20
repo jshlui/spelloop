@@ -4,6 +4,15 @@ function HomeScreen({ profile, onContinue, onPickMode, onOpenParent }) {
   const avatarStyle = window.__tweaks?.avatarStyle || 'animal';
   const modes = ['click', 'drag', 'type', 'missing', 'keyboard'];
 
+  const { ref: dwellRef, dwelling, progress } = window.useDwell(800);
+
+  React.useEffect(() => {
+    if (dwelling) {
+      window.sfx && window.sfx.tap && window.sfx.tap();
+      onContinue && onContinue();
+    }
+  }, [dwelling]);
+
   return (
     <div style={{
       padding: '70px 20px 110px', minHeight: '100%',
@@ -58,12 +67,34 @@ function HomeScreen({ profile, onContinue, onPickMode, onOpenParent }) {
         <div style={{ fontSize: 'var(--fs-2xl)', fontWeight: 900, lineHeight: 1.05, marginTop: 4, marginBottom: 6 }}>Type the word</div>
         <div style={{ fontSize: 'var(--fs-md)', opacity: 0.9, fontWeight: 700 }}>Today's word: HAT</div>
         <div style={{ marginTop: 14 }}>
-          <button onClick={onContinue} style={{
-            background: 'white', color: 'var(--blue-ink)', border: 'none',
-            padding: '14px 22px', borderRadius: 999, fontSize: 16, fontWeight: 900,
-            cursor: 'pointer', fontFamily: 'inherit',
-            boxShadow: '0 3px 0 rgba(0,0,0,0.15)',
-          }}>▶ Continue</button>
+          <div style={{ position: 'relative', display: 'inline-block' }} ref={dwellRef}>
+            <svg
+              style={{
+                position: 'absolute',
+                inset: '-8px',
+                width: 'calc(100% + 16px)',
+                height: 'calc(100% + 16px)',
+                pointerEvents: 'none',
+                zIndex: 1,
+              }}
+              viewBox="0 0 200 60"
+              preserveAspectRatio="none"
+            >
+              <rect x="4" y="4" width="192" height="52" rx="26" ry="26"
+                    fill="none" stroke="rgba(108,142,255,0.2)" strokeWidth="4"/>
+              <rect x="4" y="4" width="192" height="52" rx="26" ry="26"
+                    fill="none" stroke="#6C8EFF" strokeWidth="4"
+                    strokeDasharray="480"
+                    strokeDashoffset={480 - 480 * progress}
+                    style={{ transition: 'stroke-dashoffset 0.05s linear' }}/>
+            </svg>
+            <button onClick={onContinue} style={{
+              background: 'white', color: 'var(--blue-ink)', border: 'none',
+              padding: '14px 22px', borderRadius: 999, fontSize: 16, fontWeight: 900,
+              cursor: 'pointer', fontFamily: 'inherit',
+              boxShadow: '0 3px 0 rgba(0,0,0,0.15)',
+            }}>▶ Continue</button>
+          </div>
         </div>
       </div>
 
