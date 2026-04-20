@@ -236,7 +236,8 @@ function WebGame({ mode, word, onClose, onDone }) {
     : mode === 'drag' ? DragGame
     : mode === 'type' ? TypeGame
     : mode === 'missing' ? MissingGame
-    : mode === 'keyboard' ? KeyboardGame : ClickGame;
+    : mode === 'keyboard' ? KeyboardGame
+    : mode === 'precision' ? PrecisionGame : ClickGame;
   const m = MODE_META[mode];
   const cssSoft = m.color === 'blue' ? '#E3EAFF' : m.color === 'pink' ? '#FFE0EF'
     : m.color === 'mint' ? '#D7F5E8' : m.color === 'coral' ? '#FFE3D5'

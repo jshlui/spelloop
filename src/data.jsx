@@ -49,4 +49,15 @@ const MODE_META = {
   boss:     { label: 'Boss',      color: 'coral', ink: 'var(--coral-ink)', soft: 'var(--coral-soft)', icon: '★' },
 };
 
-Object.assign(window, { WORDS_EASY, WORDS_MED, WORDS_HARD, getWordsForDifficulty, LEVELS, MODE_META });
+var PRECISION_TASKS = [
+  { id: 'p1', mode: 'precision', word: 'GO', stars: 0, done: false },
+  { id: 'p2', mode: 'precision', word: 'UP', stars: 0, done: false },
+  { id: 'p3', mode: 'precision', word: 'FLY', stars: 0, done: false },
+];
+window.PRECISION_TASKS = PRECISION_TASKS;
+
+window.MODE_META['precision'] = {
+  label: 'Precision', color: 'coral', ink: '#fff', soft: 'rgba(255,160,122,0.15)', icon: '🎯'
+};
+
+Object.assign(window, { WORDS_EASY, WORDS_MED, WORDS_HARD, getWordsForDifficulty, LEVELS, MODE_META, PRECISION_TASKS });

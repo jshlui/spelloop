@@ -120,6 +120,7 @@ function MobileApp({ profile, tweaks, setParentOpen, parentOpen }) {
     else if (route.mode === 'type') screen = <TypeGame {...props}/>;
     else if (route.mode === 'missing') screen = <MissingGame {...props}/>;
     else if (route.mode === 'keyboard') screen = <KeyboardGame {...props}/>;
+    else if (route.mode === 'precision') screen = <PrecisionGame {...props}/>;
   } else if (route.name === 'reward') {
     screen = <RewardScreen word={route.word} stars={route.stars} onNext={() => { setRoute({ name: 'home' }); setTab('map'); }} onHome={() => { setRoute({ name: 'home' }); setTab('map'); }}/>;
   }

@@ -481,4 +481,96 @@ function SequenceKeyboard({ onPress, target, flash }) {
   );
 }
 
-Object.assign(window, { ClickGame, DragGame, TypeGame, MissingGame, KeyboardGame });
+// ── 6. PRECISION click — tile teleports, click it while still ──
+var PRECISION_POSITIONS = [
+  { left: '20%', top: '30%' },
+  { left: '60%', top: '25%' },
+  { left: '42%', top: '60%' },
+];
+var TILE_COLORS = ['var(--blue)', 'var(--coral)', 'var(--mint)', 'var(--yellow)', 'var(--lilac)'];
+
+function PrecisionGame({ word, onDone, onClose }) {
+  const { recordClick, recordTaskComplete } = React.useContext(window.GameContext);
+  const [posIdx, setPosIdx] = React.useState(0);
+  const [transitioning, setTransitioning] = React.useState(false);
+  const [wrongCount, setWrongCount] = React.useState(0);
+  const [letterIdx, setLetterIdx] = React.useState(0);
+  const [burst, setBurst] = React.useState(false);
+  const taskStartRef = React.useRef(Date.now());
+
+  const letter = word[letterIdx];
+  const pos = PRECISION_POSITIONS[posIdx];
+  const color = TILE_COLORS[letterIdx % TILE_COLORS.length];
+
+  // Teleport tile every 2.5s
+  React.useEffect(function() {
+    var interval = setInterval(function() {
+      setTransitioning(true);
+      setTimeout(function() {
+        setPosIdx(function(p) { return (p + 1) % PRECISION_POSITIONS.length; });
+        setTransitioning(false);
+      }, 300);
+    }, 2500);
+    return function() { clearInterval(interval); };
+  }, [letterIdx]);
+
+  function handleClick() {
+    if (burst) return;
+    if (transitioning) {
+      setWrongCount(function(w) { return w + 1; });
+      recordClick(false, 'precision', 0);
+      window.sfx && window.sfx.playWrong && window.sfx.playWrong();
+      return;
+    }
+    recordClick(true, 'precision', Date.now() - taskStartRef.current);
+    window.sfx && window.sfx.playCorrect && window.sfx.playCorrect();
+    if (letterIdx + 1 >= word.length) {
+      recordTaskComplete('precision', Date.now() - taskStartRef.current);
+      window.sfx && window.sfx.playComplete && window.sfx.playComplete();
+      setBurst(true);
+      var stars = wrongCount === 0 ? 3 : wrongCount <= 2 ? 2 : 1;
+      setTimeout(function() { onDone(stars); }, 1000);
+    } else {
+      setLetterIdx(function(l) { return l + 1; });
+      taskStartRef.current = Date.now();
+    }
+  }
+
+  return (
+    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: 'var(--bg)' }}>
+      <GameHeader mode="precision" progress={letterIdx / word.length} onClose={onClose}/>
+      <div style={{ position: 'relative', flex: 1, overflow: 'hidden' }}>
+        <div style={{
+          position: 'absolute', top: '8%', left: 0, right: 0, textAlign: 'center',
+          fontSize: 'clamp(24px, 5vw, 34px)', fontWeight: 800, color: 'var(--ink, #1F2A44)',
+          fontFamily: 'inherit',
+        }}>
+          Click when still! ({letterIdx + 1}/{word.length})
+        </div>
+        <div
+          onClick={handleClick}
+          style={{
+            position: 'absolute',
+            left: pos.left,
+            top: pos.top,
+            width: 96, height: 96,
+            background: color,
+            borderRadius: 22,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: 48, fontWeight: 900, color: '#fff',
+            cursor: 'none',
+            transition: 'left 0.28s cubic-bezier(0.34,1.56,0.64,1), top 0.28s cubic-bezier(0.34,1.56,0.64,1)',
+            opacity: transitioning ? 0.45 : 1,
+            boxShadow: transitioning ? 'none' : '0 6px 20px rgba(0,0,0,0.18)',
+            userSelect: 'none',
+          }}
+        >
+          {letter}
+        </div>
+      </div>
+      <Burst show={burst}/>
+    </div>
+  );
+}
+
+Object.assign(window, { ClickGame, DragGame, TypeGame, MissingGame, KeyboardGame, PrecisionGame });
