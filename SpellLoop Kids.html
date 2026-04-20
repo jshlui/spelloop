@@ -12,15 +12,28 @@
 <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
 <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
 <script src="src/sfx.js"></script>
+<style>
+  body { cursor: none; }
+  .cursor-shake {
+    animation: cursorShake 200ms ease;
+  }
+  @keyframes cursorShake {
+    0%,100% { transform: translate(-50%,-50%) translateX(0); }
+    20%     { transform: translate(-50%,-50%) translateX(-6px); }
+    40%     { transform: translate(-50%,-50%) translateX(6px); }
+    60%     { transform: translate(-50%,-50%) translateX(-4px); }
+    80%     { transform: translate(-50%,-50%) translateX(4px); }
+  }
+</style>
 </head>
 <body>
 <div id="root"></div>
-<script type="text/babel" src="frames/ios-frame.jsx"></script>
-<script type="text/babel" src="frames/android-frame.jsx"></script>
-<script type="text/babel" src="frames/browser-window.jsx"></script>
 <script type="text/babel" src="src/data.jsx"></script>
 <script type="text/babel" src="src/avatars.jsx"></script>
 <script type="text/babel" src="src/ui.jsx"></script>
+<script type="text/babel" src="src/context.jsx"></script>
+<script type="text/babel" src="src/hooks.jsx"></script>
+<script type="text/babel" src="src/screens/Tutorial.jsx"></script>
 <script type="text/babel" src="src/screens/Home.jsx"></script>
 <script type="text/babel" src="src/screens/Map.jsx"></script>
 <script type="text/babel" src="src/screens/Games.jsx"></script>
@@ -30,7 +43,7 @@
 <script type="text/babel" src="src/web/WebApp.jsx"></script>
 <script type="text/babel" src="src/web/WebScreens.jsx"></script>
 <script type="text/babel" src="src/web/WebParent.jsx"></script>
-<script type="text/babel" src="src/Tweaks.jsx"></script>
 <script type="text/babel" src="src/App.jsx"></script>
+<script src="src/cursor.js"></script>
 </body>
 </html>

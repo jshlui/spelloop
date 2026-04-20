@@ -1,10 +1,142 @@
-// Web Parent Dashboard — full landscape layout with sidebar + rich panels.
+// Web Parent Dashboard — PIN-gated, full landscape layout.
 
-function WebParent({ profile, onClose }) {
-  const [tab, setTab] = React.useState('overview');
+function PinGate({ onSuccess, onCancel }) {
+  var storedPin = localStorage.getItem('spelloop-pin');
+  var isSetup = !storedPin;
+  var [step, setStep] = React.useState(isSetup ? 'setup' : 'verify');
+  var [digits, setDigits] = React.useState([]);
+  var [firstPin, setFirstPin] = React.useState('');
+  var [error, setError] = React.useState('');
+  var [shake, setShake] = React.useState(false);
+
+  function triggerError(msg) {
+    setError(msg);
+    setShake(true);
+    setTimeout(function() { setShake(false); }, 400);
+    setDigits([]);
+  }
+
+  function handleDigit(d) {
+    if (digits.length >= 4) return;
+    var next = digits.concat([String(d)]);
+    setDigits(next);
+    setError('');
+    if (next.length === 4) {
+      var pin = next.join('');
+      setTimeout(function() {
+        if (step === 'setup') {
+          setFirstPin(pin);
+          setStep('confirm');
+          setDigits([]);
+        } else if (step === 'confirm') {
+          if (pin === firstPin) {
+            localStorage.setItem('spelloop-pin', pin);
+            onSuccess();
+          } else {
+            triggerError("PINs don't match — try again");
+            setStep('setup');
+            setFirstPin('');
+          }
+        } else {
+          if (pin === storedPin) {
+            onSuccess();
+          } else {
+            triggerError('Wrong PIN — try again');
+          }
+        }
+      }, 150);
+    }
+  }
+
+  function handleDelete() {
+    setDigits(function(prev) { return prev.slice(0, -1); });
+    setError('');
+  }
+
+  var title = step === 'setup' ? 'Set a parent PIN'
+    : step === 'confirm' ? 'Confirm your PIN'
+    : 'Parent area';
+  var sub = step === 'setup' ? "Choose a 4-digit PIN to protect parent settings."
+    : step === 'confirm' ? "Enter the same PIN again to confirm."
+    : "Enter your PIN to continue.";
+
+  var numBtnStyle = {
+    width: 80, height: 80, borderRadius: 999,
+    background: 'white', border: '2px solid #E8ECF3',
+    fontSize: 28, fontWeight: 900, cursor: 'pointer',
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+    fontFamily: 'inherit', color: '#1F2A44',
+    boxShadow: '0 2px 4px rgba(0,0,0,0.06)',
+    transition: 'background 80ms',
+  };
+
   return (
     <div style={{
-      position: 'absolute', inset: 0, background: '#F7F9FC', zIndex: 300,
+      position: 'fixed', inset: 0, zIndex: 350,
+      background: '#F7F9FC',
+      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+      fontFamily: 'Nunito, system-ui, sans-serif',
+    }}>
+      <button onClick={onCancel} style={{
+        position: 'absolute', top: 24, left: 24,
+        background: '#ECEEF2', border: 'none', borderRadius: 8,
+        padding: '8px 14px', fontWeight: 700, fontSize: 13,
+        cursor: 'pointer', fontFamily: 'inherit', color: '#4B587A',
+      }}>← Back</button>
+
+      <div style={{ textAlign: 'center', marginBottom: 36 }}>
+        <div style={{ fontSize: 48, marginBottom: 12 }}>🔐</div>
+        <h1 style={{ fontSize: 28, fontWeight: 900, margin: '0 0 8px', color: '#1F2A44' }}>{title}</h1>
+        <p style={{ fontSize: 14, color: '#7C89A8', fontWeight: 600, margin: 0, maxWidth: 300 }}>{sub}</p>
+      </div>
+
+      {/* dot indicators */}
+      <div style={{ display: 'flex', gap: 18, marginBottom: 16 }}>
+        {[0,1,2,3].map(function(i) {
+          return <div key={i} style={{
+            width: 20, height: 20, borderRadius: '50%',
+            background: i < digits.length ? '#3F5FE2' : '#D4DAE5',
+            transition: 'background 0.12s',
+            transform: shake ? 'translateX(' + (i % 2 === 0 ? '-4px' : '4px') + ')' : 'none',
+            transition: shake ? 'transform 0.1s' : 'background 0.12s',
+          }}/>;
+        })}
+      </div>
+
+      {error
+        ? <div style={{ fontSize: 13, fontWeight: 700, color: '#F07171', marginBottom: 24, minHeight: 20 }}>{error}</div>
+        : <div style={{ minHeight: 37, marginBottom: 7 }}/>
+      }
+
+      {/* numpad */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 80px)', gap: 14 }}>
+        {[1,2,3,4,5,6,7,8,9].map(function(n) {
+          return <button key={n} onClick={function() { handleDigit(n); }} style={numBtnStyle}
+            onMouseDown={function(e) { e.currentTarget.style.background = '#E3EAFF'; }}
+            onMouseUp={function(e) { e.currentTarget.style.background = 'white'; }}
+          >{n}</button>;
+        })}
+        <div/>
+        <button onClick={function() { handleDigit(0); }} style={numBtnStyle}
+          onMouseDown={function(e) { e.currentTarget.style.background = '#E3EAFF'; }}
+          onMouseUp={function(e) { e.currentTarget.style.background = 'white'; }}
+        >0</button>
+        <button onClick={handleDelete} style={Object.assign({}, numBtnStyle, { fontSize: 22, color: '#7C89A8', border: 'none', background: 'transparent', boxShadow: 'none' })}>⌫</button>
+      </div>
+    </div>
+  );
+}
+
+function WebParent({ profile, levels, settings, setSettings, onClose }) {
+  var [pinVerified, setPinVerified] = React.useState(false);
+  var [tab, setTab] = React.useState('overview');
+
+  if (!pinVerified) {
+    return <PinGate onSuccess={function() { setPinVerified(true); }} onCancel={onClose} />;
+  }
+  return (
+    <div style={{
+      position: 'fixed', inset: 0, background: '#F7F9FC', zIndex: 300,
       display: 'flex', fontFamily: "Nunito, system-ui, sans-serif",
     }}>
       {/* sidebar */}
@@ -50,7 +182,7 @@ function WebParent({ profile, onClose }) {
         {tab === 'overview' && <OverviewTab profile={profile}/>}
         {tab === 'reports' && <ReportsTab/>}
         {tab === 'curriculum' && <CurriculumTab/>}
-        {tab === 'settings' && <SettingsTab/>}
+        {tab === 'settings' && <SettingsTab settings={settings} setSettings={setSettings}/>}
       </div>
     </div>
   );
@@ -86,7 +218,7 @@ function OverviewTab({ profile }) {
         <Metric label="Play time" value="65 min" delta="▲ +18%" tone="#30C285"/>
         <Metric label="Words mastered" value="14" delta="+3 new" tone="#30C285"/>
         <Metric label="Accuracy" value="86%" delta="▲ +4%" tone="#30C285"/>
-        <Metric label="Streak" value={`${profile.streak} days`} delta="On track" tone="#FFA000"/>
+        <Metric label="Streak" value={profile.streak + ' days'} delta="On track" tone="#FFA000"/>
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 16, marginBottom: 16 }}>
@@ -212,26 +344,33 @@ function CurriculumTab() {
   );
 }
 
-function SettingsTab() {
-  const [notif, setNotif] = React.useState(true);
-  const [sounds, setSounds] = React.useState(true);
+function SettingsTab({ settings, setSettings }) {
+  var s = settings || {};
+  function update(key, val) {
+    setSettings && setSettings(function(prev) { return Object.assign({}, prev, { [key]: val }); });
+  }
+  var diffLabel = s.difficulty === 'easy' ? 'Easy (3 letters)' : s.difficulty === 'hard' ? 'Hard (5+ letters)' : 'Medium (3–5 letters)';
+  var themeLabel = { blue: 'Blue (default)', sunny: 'Sunny yellow', berry: 'Berry purple', mint: 'Mint green' }[s.theme] || 'Blue';
+
   return (
     <div style={{ padding: 32, maxWidth: 720 }}>
       <h1 style={{ fontSize: 26, fontWeight: 900, margin: '0 0 20px' }}>Settings</h1>
       <div style={webCard}>
-        <WebSettingRow label="Daily goal" value="10 min" chev/>
-        <WebSettingRow label="Difficulty" value="Medium (3–5 letters)" chev/>
-        <WebSettingRow label="Allowed modes" value="All 5" chev last/>
+        <WebSettingRow label="Difficulty" value={diffLabel} chev
+          onChange={function() { update('difficulty', s.difficulty === 'easy' ? 'med' : s.difficulty === 'med' ? 'hard' : 'easy'); }}/>
+        <WebSettingRow label="Colour theme" value={themeLabel} chev
+          onChange={function() { var themes = ['blue','sunny','berry','mint']; update('theme', themes[(themes.indexOf(s.theme||'blue')+1)%themes.length]); }}/>
+        <WebSettingRow label="Avatar style" value={s.avatarStyle === 'geo' ? 'Geometric' : 'Animal'} chev last
+          onChange={function() { update('avatarStyle', s.avatarStyle === 'geo' ? 'animal' : 'geo'); }}/>
       </div>
       <div style={{ height: 14 }}/>
       <div style={webCard}>
-        <WebToggleRow label="Reminder notifications" sub="Daily at 4:30 PM" value={notif} onChange={setNotif}/>
-        <WebToggleRow label="Sound effects" sub="Chimes and taps" value={sounds} onChange={(v) => { setSounds(v); window.sfx?.setEnabled(v); }} last/>
+        <WebToggleRow label="Sound effects" sub="Chimes and taps" value={s.sounds !== false} onChange={function(v) { update('sounds', v); window.sfx && window.sfx.setEnabled && window.sfx.setEnabled(v); }} last/>
       </div>
       <div style={{ height: 14 }}/>
       <div style={webCard}>
-        <WebSettingRow label="Screen-time cap" value="30 min/day" chev/>
-        <WebSettingRow label="Bedtime lock" value="After 8:00 PM" chev last/>
+        <WebSettingRow label="Change parent PIN" value="••••" chev last
+          onChange={function() { if(confirm('Reset your parent PIN? You will need to set a new one.')) { localStorage.removeItem('spelloop-pin'); alert('PIN removed. You will be asked to set a new one next time.'); } }}/>
       </div>
     </div>
   );

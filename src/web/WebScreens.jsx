@@ -1,8 +1,8 @@
 // Web versions of Map, Me, Game shell, Reward — landscape/desktop layouts.
 
 // ─── MAP ────────────────────────────────────────────────
-function WebMap({ onPlayLevel }) {
-  const levels = LEVELS;
+function WebMap({ levels, onPlayLevel }) {
+  levels = levels || LEVELS;
   // horizontal-ish winding path for landscape
   const pts = [
     { x: 90,  y: 360 },
@@ -31,10 +31,10 @@ function WebMap({ onPlayLevel }) {
         <div style={{ fontSize: 13, color: 'var(--blue-ink)', fontWeight: 900, letterSpacing: 1, textTransform: 'uppercase' }}>Chapter 1 · The Word Forest</div>
         <div style={{ display: 'flex', alignItems: 'baseline', gap: 16 }}>
           <h1 style={{ fontSize: 36, fontWeight: 900, margin: 0, letterSpacing: '-0.02em' }}>Your journey</h1>
-          <span style={{ fontSize: 14, fontWeight: 800, color: 'var(--blue-ink)' }}>3 / 8 levels</span>
+          <span style={{ fontSize: 14, fontWeight: 800, color: 'var(--blue-ink)' }}>{levels.filter(function(l){return l.done;}).length} / {levels.length} levels</span>
         </div>
         <div className="progress-track" style={{ maxWidth: 480, marginTop: 8 }}>
-          <div className="progress-fill" style={{ width: '37%' }}/>
+          <div className="progress-fill" style={{ width: `${Math.round(levels.filter(function(l){return l.done;}).length / levels.length * 100)}%` }}/>
         </div>
       </div>
 
