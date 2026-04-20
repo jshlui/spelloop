@@ -1,87 +1,114 @@
 // Web versions of Map, Me, Game shell, Reward — landscape/desktop layouts.
 
 // ─── MAP ────────────────────────────────────────────────
+var CHAPTER_PTS = [
+  { x: 90,  y: 340 }, { x: 220, y: 260 }, { x: 360, y: 360 }, { x: 500, y: 220 },
+  { x: 640, y: 340 }, { x: 780, y: 240 }, { x: 920, y: 360 }, { x: 1060, y: 220 },
+];
+
+function buildPath(points) {
+  var d = 'M ' + points[0].x + ' ' + points[0].y;
+  for (var i = 0; i < points.length - 1; i++) {
+    var p0 = points[i], p1 = points[i + 1];
+    var mx = (p0.x + p1.x) / 2;
+    d += ' Q ' + mx + ' ' + p0.y + ', ' + mx + ' ' + ((p0.y + p1.y) / 2) + ' T ' + p1.x + ' ' + p1.y;
+  }
+  return d;
+}
+
 function WebMap({ levels, onPlayLevel }) {
   levels = levels || LEVELS;
-  // horizontal-ish winding path for landscape
-  const pts = [
-    { x: 90,  y: 360 },
-    { x: 220, y: 280 },
-    { x: 350, y: 380 },
-    { x: 480, y: 240 },
-    { x: 620, y: 360 },
-    { x: 770, y: 260 },
-    { x: 910, y: 380 },
-    { x: 1050, y: 240 },
+  var chapters = window.CHAPTER_META || [
+    { id: 1, name: 'The Word Forest', bg: 'linear-gradient(180deg,#D7F5E8 0%,#E3EAFF 100%)', emoji: '🌳' },
+    { id: 2, name: 'The Word Sea',    bg: 'linear-gradient(180deg,#E3EAFF 0%,#FFF6EA 100%)', emoji: '🌊' },
+    { id: 3, name: 'The Word Mountain', bg: 'linear-gradient(180deg,#FFF6EA 0%,#EDE4FF 100%)', emoji: '⛰️' },
   ];
-  function buildPath(points) {
-    let d = `M ${points[0].x} ${points[0].y}`;
-    for (let i = 0; i < points.length - 1; i++) {
-      const p0 = points[i]; const p1 = points[i+1];
-      const mx = (p0.x + p1.x) / 2;
-      d += ` Q ${mx} ${p0.y}, ${mx} ${(p0.y + p1.y)/2} T ${p1.x} ${p1.y}`;
-    }
-    return d;
-  }
-  const d = buildPath(pts);
+
+  var doneCount = levels.filter(function(l) { return l.done; }).length;
 
   return (
-    <div style={{ padding: '32px 40px 48px', background: 'linear-gradient(180deg, #E3EAFF 0%, #FFF6EA 60%, #D7F5E8 100%)', minHeight: '100%' }}>
-      <div style={{ marginBottom: 20 }}>
-        <div style={{ fontSize: 13, color: 'var(--blue-ink)', fontWeight: 900, letterSpacing: 1, textTransform: 'uppercase' }}>Chapter 1 · The Word Forest</div>
-        <div style={{ display: 'flex', alignItems: 'baseline', gap: 16 }}>
-          <h1 style={{ fontSize: 36, fontWeight: 900, margin: 0, letterSpacing: '-0.02em' }}>Your journey</h1>
-          <span style={{ fontSize: 14, fontWeight: 800, color: 'var(--blue-ink)' }}>{levels.filter(function(l){return l.done;}).length} / {levels.length} levels</span>
-        </div>
-        <div className="progress-track" style={{ maxWidth: 480, marginTop: 8 }}>
-          <div className="progress-fill" style={{ width: `${Math.round(levels.filter(function(l){return l.done;}).length / levels.length * 100)}%` }}/>
-        </div>
-      </div>
-
-      <div style={{ position: 'relative', background: 'var(--surface)', borderRadius: 24, padding: 20, boxShadow: 'var(--shadow-soft)', overflow: 'hidden' }}>
-        <svg width="100%" height="480" viewBox="0 0 1140 480" style={{ display: 'block' }}>
-          <defs>
-            <pattern id="dots" width="24" height="24" patternUnits="userSpaceOnUse">
-              <circle cx="2" cy="2" r="1" fill="rgba(31,42,68,0.08)"/>
-            </pattern>
-          </defs>
-          <rect width="100%" height="100%" fill="url(#dots)"/>
-          {/* decorative */}
-          <g opacity="0.5">
-            <circle cx="160" cy="140" r="28" fill="#8EE3C3"/>
-            <rect x="152" y="164" width="16" height="22" fill="#8B5A3C"/>
-            <circle cx="540" cy="130" r="22" fill="#FF9ECD"/>
-            <circle cx="860" cy="140" r="26" fill="#FFD166"/>
-            <circle cx="300" cy="100" r="14" fill="#C7B4FF"/>
-            <circle cx="720" cy="420" r="20" fill="#6C8EFF" opacity="0.5"/>
-          </g>
-          <path d={d} stroke="#FFFFFF" strokeWidth="18" fill="none" strokeLinecap="round"/>
-          <path d={d} stroke="rgba(31,42,68,0.08)" strokeWidth="18" fill="none" strokeLinecap="round" strokeDasharray="2 14"/>
-          {levels.map((lv, i) => (
-            <g key={lv.id} transform={`translate(${pts[i].x}, ${pts[i].y})`} style={{ cursor: lv.locked ? 'default' : 'pointer' }} onClick={() => !lv.locked && onPlayLevel(lv)}>
-              <WebLevelNode level={lv}/>
-            </g>
-          ))}
-        </svg>
-      </div>
-
-      {/* level legend */}
-      <div style={{ marginTop: 20, display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-        {['click', 'drag', 'type', 'missing', 'keyboard', 'boss'].map(m => (
-          <div key={m} style={{
-            display: 'flex', alignItems: 'center', gap: 8,
-            background: 'var(--surface)', padding: '8px 14px', borderRadius: 999,
-            boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
-          }}>
-            <div style={{
-              width: 22, height: 22, borderRadius: '50%',
-              background: `var(--${MODE_META[m].color})`, color: 'white',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontWeight: 900, fontSize: 12,
-            }}>{MODE_META[m].icon}</div>
-            <span style={{ fontSize: 13, fontWeight: 800 }}>{MODE_META[m].label}</span>
+    <div style={{ padding: '32px 40px 48px', minHeight: '100%', background: 'var(--bg)' }}>
+      {/* header */}
+      <div style={{ marginBottom: 24 }}>
+        <h1 style={{ fontSize: 36, fontWeight: 900, margin: '0 0 4px', letterSpacing: '-0.02em' }}>Your journey</h1>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+          <span style={{ fontSize: 14, fontWeight: 800, color: 'var(--blue-ink)' }}>{doneCount} / {levels.length} levels complete</span>
+          <div className="progress-track" style={{ flex: 1, maxWidth: 400 }}>
+            <div className="progress-fill" style={{ width: `${Math.round(doneCount / levels.length * 100)}%` }}/>
           </div>
-        ))}
+        </div>
+      </div>
+
+      {/* one card per chapter */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+        {chapters.map(function(ch) {
+          var chLevels = levels.filter(function(l) { return l.chapter === ch.id; });
+          var chDone = chLevels.filter(function(l) { return l.done; }).length;
+          var chLocked = chLevels.every(function(l) { return l.locked && !l.current; });
+          var d = buildPath(CHAPTER_PTS);
+          return (
+            <div key={ch.id} style={{
+              background: chLocked ? 'var(--surface)' : 'white',
+              borderRadius: 24, overflow: 'hidden',
+              boxShadow: 'var(--shadow-soft)',
+              opacity: chLocked ? 0.55 : 1,
+            }}>
+              {/* chapter header strip */}
+              <div style={{
+                padding: '14px 24px', background: ch.bg,
+                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+              }}>
+                <div>
+                  <div style={{ fontSize: 11, fontWeight: 900, letterSpacing: 1, textTransform: 'uppercase', color: 'var(--blue-ink)', opacity: 0.8 }}>Chapter {ch.id}</div>
+                  <div style={{ fontSize: 20, fontWeight: 900 }}>{ch.emoji} {ch.name}</div>
+                </div>
+                <div style={{ fontSize: 14, fontWeight: 800, color: 'var(--ink-soft)' }}>
+                  {chDone}/{chLevels.length}
+                  {chDone === chLevels.length && chLevels.length > 0 && <span style={{ marginLeft: 8, color: '#30C285' }}>✓ Complete!</span>}
+                </div>
+              </div>
+              {/* level path */}
+              <div style={{ padding: '0 12px 12px', background: 'rgba(0,0,0,0.01)' }}>
+                <svg width="100%" height="420" viewBox="0 0 1140 420" style={{ display: 'block', overflow: 'visible' }}>
+                  <defs>
+                    <pattern id={'dots' + ch.id} width="24" height="24" patternUnits="userSpaceOnUse">
+                      <circle cx="2" cy="2" r="1" fill="rgba(31,42,68,0.06)"/>
+                    </pattern>
+                  </defs>
+                  <rect width="100%" height="100%" fill={'url(#dots' + ch.id + ')'}/>
+                  <path d={d} stroke="#E8ECF5" strokeWidth="18" fill="none" strokeLinecap="round"/>
+                  <path d={d} stroke="rgba(31,42,68,0.06)" strokeWidth="18" fill="none" strokeLinecap="round" strokeDasharray="2 14"/>
+                  {chLevels.map(function(lv, i) {
+                    var pt = CHAPTER_PTS[i] || CHAPTER_PTS[CHAPTER_PTS.length - 1];
+                    return (
+                      <g key={lv.id} transform={'translate(' + pt.x + ',' + pt.y + ')'}
+                        style={{ cursor: lv.locked && !lv.current ? 'default' : 'pointer' }}
+                        onClick={function() { if (!lv.locked || lv.current) onPlayLevel(lv); }}>
+                        <WebLevelNode level={lv}/>
+                      </g>
+                    );
+                  })}
+                </svg>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* mode legend */}
+      <div style={{ marginTop: 20, display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+        {['click', 'drag', 'type', 'missing', 'keyboard', 'boss'].map(function(m) {
+          var meta = MODE_META[m];
+          var bg = meta.color === 'blue' ? '#6C8EFF' : meta.color === 'pink' ? '#FF9ECD'
+            : meta.color === 'mint' ? '#8EE3C3' : meta.color === 'coral' ? '#FFA07A'
+            : meta.color === 'lilac' ? '#C7B4FF' : '#FFD166';
+          return (
+            <div key={m} style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'var(--surface)', padding: '8px 14px', borderRadius: 999, boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+              <div style={{ width: 22, height: 22, borderRadius: '50%', background: bg, color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, fontSize: 12 }}>{meta.icon}</div>
+              <span style={{ fontSize: 13, fontWeight: 800 }}>{meta.label}</span>
+            </div>
+          );
+        })}
       </div>
     </div>
   );

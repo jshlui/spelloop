@@ -15,8 +15,13 @@ function App() {
   });
 
   var [levels, setLevels] = React.useState(function() {
-    try { var l = localStorage.getItem('spelloop-levels'); return l ? JSON.parse(l) : LEVELS.slice(); }
-    catch(e) { return LEVELS.slice(); }
+    try {
+      var l = localStorage.getItem('spelloop-levels');
+      var parsed = l ? JSON.parse(l) : null;
+      // Reset if stale (old build had only 8 levels, new has 24)
+      if (parsed && parsed.length < LEVELS.length) parsed = null;
+      return parsed || LEVELS.slice();
+    } catch(e) { return LEVELS.slice(); }
   });
 
   // Apply and persist settings
