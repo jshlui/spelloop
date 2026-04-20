@@ -2,11 +2,16 @@
 
 function RewardScreen({ word, stars, onNext, onHome }) {
   const [animIn, setAnimIn] = React.useState(false);
+  const [showConfetti, setShowConfetti] = React.useState(false);
   React.useEffect(() => {
     const t = setTimeout(() => setAnimIn(true), 100);
     // cascade star sounds
     [0, 300, 600].forEach((d, i) => { if (i < stars) setTimeout(() => window.sfx?.star(), d + 200); });
     return () => clearTimeout(t);
+  }, []);
+  React.useEffect(function() {
+    var t = setTimeout(function() { setShowConfetti(true); }, 200);
+    return function() { clearTimeout(t); };
   }, []);
 
   return (
@@ -16,6 +21,7 @@ function RewardScreen({ word, stars, onNext, onHome }) {
       display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
       padding: '60px 24px 40px', zIndex: 200, overflow: 'hidden',
     }}>
+      {showConfetti && <Confetti />}
       {/* confetti bg */}
       <svg width="100%" height="100%" viewBox="0 0 400 800" style={{ position: 'absolute', inset: 0, zIndex: 0, opacity: 0.3 }}>
         {Array.from({length: 24}).map((_, i) => {
