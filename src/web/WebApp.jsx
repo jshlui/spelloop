@@ -187,7 +187,7 @@ function WebApp({ profile, setProfile, levels, setLevels, settings, setSettings,
             onPickMode={startMode}
             onTab={function(t) { setTab(t); setRoute({ name: 'screen' }); }}/>
         )}
-        {route.name === 'screen' && tab === 'map'  && <WebMap levels={levels} onPlayLevel={startLevel}/>}
+        {route.name === 'screen' && tab === 'map'  && <WebMap levels={levels} onPlayLevel={startLevel} onBack={function() { setTab('home'); }}/>}
         {route.name === 'screen' && tab === 'me'   && <WebMe profile={profile} setProfile={setProfile} levels={levels} onOpenParent={onOpenParent}/>}
         {route.name === 'screen' && tab === 'code' && <WebCodeLab levels={levels} onPlayLevel={startLevel}/>}
         {route.name === 'screen' && tab === 'shop' && <WebShop profile={profile} setProfile={setProfile} levels={levels}/>}
@@ -1509,4 +1509,4 @@ function StarterSelect({ profile, setProfile }) {
   );
 }
 
-Object.assign(window, { WebApp, WebHome, WebStat, WebShop, WebCodeLab, WebPet, StarterSelect, isSpeciesUnlocked, getSpeciesDisplayPrice });
+Object.assign(window, { WebApp, WebHome, WebStat, WebShop, WebCodeLab, WebPet, StarterSelect, isSpeciesUnlocked, getSpeciesDisplayPrice, LandscapeShell, ScreenPanel });

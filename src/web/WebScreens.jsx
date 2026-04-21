@@ -18,139 +18,146 @@ function buildPath(points) {
   return d;
 }
 
-function WebMap({ levels, onPlayLevel }) {
+function WebMap({ levels, onPlayLevel, onBack }) {
   levels = levels || LEVELS;
   var chapters = window.CHAPTER_META || [
-    { id: 1, name: 'The Word Forest', bg: 'linear-gradient(180deg,#D7F5E8 0%,#E3EAFF 100%)', emoji: '🌳' },
-    { id: 2, name: 'The Word Sea',    bg: 'linear-gradient(180deg,#E3EAFF 0%,#FFF6EA 100%)', emoji: '🌊' },
-    { id: 3, name: 'The Word Mountain', bg: 'linear-gradient(180deg,#FFF6EA 0%,#EDE4FF 100%)', emoji: '⛰️' },
+    { id: 1, name: 'The Word Forest', emoji: '🌳' },
+    { id: 2, name: 'The Word Sea',    emoji: '🌊' },
+    { id: 3, name: 'The Word Mountain', emoji: '⛰️' },
   ];
+  var [activeChapter, setActiveChapter] = React.useState(function() {
+    var cur = levels.find(function(l) { return l.current; });
+    return cur ? cur.chapter : 1;
+  });
 
-  var doneCount = levels.filter(function(l) { return l.done; }).length;
+  var chLevels = levels.filter(function(l) { return l.chapter === activeChapter; });
+  var chDone   = chLevels.filter(function(l) { return l.done; }).length;
+  var ch = chapters.find(function(c) { return c.id === activeChapter; }) || chapters[0];
+
+  var chapterPills = (
+    <div style={{ display: 'flex', gap: 8 }}>
+      {chapters.map(function(c) {
+        var chLvs = levels.filter(function(l) { return l.chapter === c.id; });
+        var allDone = chLvs.length > 0 && chLvs.every(function(l) { return l.done; });
+        var isLocked = chLvs.every(function(l) { return l.locked && !l.current; });
+        var isActive = c.id === activeChapter;
+        return (
+          <button key={c.id}
+            onClick={function() { if (!isLocked) setActiveChapter(c.id); }}
+            style={{
+              padding: '6px 14px', borderRadius: 999, border: 'none', cursor: isLocked ? 'default' : 'pointer',
+              fontFamily: "'Fredoka One', cursive", fontSize: 13,
+              background: isActive ? '#1976D2' : allDone ? '#4CAF50' : isLocked ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.7)',
+              color: isActive ? 'white' : allDone ? 'white' : isLocked ? 'rgba(255,255,255,0.5)' : '#1A3A1A',
+              opacity: isLocked ? 0.6 : 1,
+            }}>
+            {allDone ? '✓ ' : ''}{c.emoji} {c.name}
+          </button>
+        );
+      })}
+    </div>
+  );
+
+  var pts = CHAPTER_PTS.slice(0, chLevels.length);
+  var d = pts.length > 1 ? buildPath(pts) : null;
+
+  var LandscapeShell = window.LandscapeShell;
 
   return (
-    <div style={{ padding: '32px 40px 48px', minHeight: '100%', background: 'var(--bg)' }}>
-      {/* header */}
-      <div style={{ marginBottom: 24 }}>
-        <h1 style={{ fontSize: 36, fontWeight: 900, margin: '0 0 4px', letterSpacing: '-0.02em' }}>Your journey</h1>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-          <span style={{ fontSize: 14, fontWeight: 800, color: 'var(--blue-ink)' }}>{doneCount} / {levels.length} levels complete</span>
-          <div className="progress-track" style={{ flex: 1, maxWidth: 400 }}>
-            <div className="progress-fill" style={{ width: `${Math.round(doneCount / levels.length * 100)}%` }}/>
-          </div>
+    <LandscapeShell title="Journey" onBack={onBack} topExtra={chapterPills}>
+      {/* Path + nodes drawn directly over the landscape */}
+      <div style={{ position: 'relative', width: '100%', minHeight: 'calc(100vh - 140px)', overflow: 'hidden' }}>
+        <svg
+          width="100%" height="100%"
+          viewBox="0 0 1140 420"
+          preserveAspectRatio="xMidYMid meet"
+          style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', overflow: 'visible' }}>
+          {d && (
+            <>
+              <path d={d} stroke="var(--path-main)" strokeWidth="30" fill="none" strokeLinecap="round"/>
+              <path d={d} stroke="var(--path-light)" strokeWidth="13" fill="none" strokeLinecap="round" strokeDasharray="3 18" opacity="0.7"/>
+            </>
+          )}
+          {chLevels.map(function(lv, i) {
+            var pt = pts[i] || pts[pts.length - 1];
+            return (
+              <g key={lv.id} transform={'translate(' + pt.x + ',' + pt.y + ')'}
+                style={{ cursor: lv.locked && !lv.current ? 'default' : 'pointer' }}
+                role={(!lv.locked || lv.current) ? 'button' : undefined}
+                tabIndex={(!lv.locked || lv.current) ? 0 : -1}
+                aria-label={lv.locked && !lv.current ? 'Level ' + lv.id + ' — locked' : 'Level ' + lv.id + ': ' + lv.word}
+                onKeyDown={function(e) { if ((e.key === 'Enter' || e.key === ' ') && (!lv.locked || lv.current)) { e.preventDefault(); onPlayLevel(lv); } }}
+                onClick={function() { if (!lv.locked || lv.current) onPlayLevel(lv); }}>
+                <WebLevelNode level={lv}/>
+              </g>
+            );
+          })}
+        </svg>
+      </div>
+
+      {/* Frosted progress bar at bottom */}
+      <div style={{
+        position: 'fixed', bottom: 0, left: 72, right: 0, zIndex: 30,
+        background: 'rgba(255,255,255,0.88)', backdropFilter: 'blur(10px)',
+        borderTop: '2px solid rgba(255,255,255,0.8)',
+        padding: '10px 24px', display: 'flex', alignItems: 'center', gap: 16,
+      }}>
+        <span style={{ fontFamily: "'Fredoka One', cursive", fontSize: 15, color: '#1A3A1A', whiteSpace: 'nowrap' }}>
+          {ch.emoji} {ch.name}
+        </span>
+        <div style={{ flex: 1, height: 12, background: 'rgba(0,0,0,0.1)', borderRadius: 999, overflow: 'hidden' }}>
+          <div style={{
+            height: '100%', borderRadius: 999,
+            background: 'linear-gradient(90deg, #4CAF50, #8BC34A)',
+            width: chLevels.length > 0 ? Math.round(chDone / chLevels.length * 100) + '%' : '0%',
+            transition: 'width 0.4s ease',
+          }}/>
         </div>
+        <span style={{ fontFamily: "'Nunito', sans-serif", fontWeight: 900, fontSize: 14, color: '#1A3A1A', whiteSpace: 'nowrap' }}>
+          {chDone} / {chLevels.length}
+        </span>
       </div>
-
-      {/* one card per chapter */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-        {chapters.map(function(ch) {
-          var chLevels = levels.filter(function(l) { return l.chapter === ch.id; });
-          var chDone = chLevels.filter(function(l) { return l.done; }).length;
-          var chLocked = chLevels.every(function(l) { return l.locked && !l.current; });
-          var d = buildPath(CHAPTER_PTS);
-          return (
-            <div key={ch.id} style={{
-              background: chLocked ? 'var(--surface)' : 'white',
-              borderRadius: 24, overflow: 'hidden',
-              boxShadow: chLocked ? 'var(--shadow-soft)' : 'var(--shadow-toy)',
-              opacity: chLocked ? 0.5 : 1,
-              transition: 'opacity var(--dur-mid) ease',
-            }}>
-              {/* chapter header strip */}
-              <div style={{
-                padding: '14px 24px', background: ch.bg,
-                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-              }}>
-                <div>
-                  <div style={{ fontSize: 11, fontWeight: 900, letterSpacing: 1, textTransform: 'uppercase', color: 'var(--blue-ink)', opacity: 0.8 }}>Chapter {ch.id}</div>
-                  <div style={{ fontSize: 20, fontWeight: 900 }}>{ch.emoji} {ch.name}</div>
-                </div>
-                <div style={{ fontSize: 14, fontWeight: 800, color: 'var(--ink-soft)' }}>
-                  {chDone}/{chLevels.length}
-                  {chDone === chLevels.length && chLevels.length > 0 && <span style={{ marginLeft: 8, color: '#30C285' }}>✓ Complete!</span>}
-                </div>
-              </div>
-              {/* level path */}
-              <div style={{ padding: '0 12px 12px', background: 'rgba(0,0,0,0.01)' }}>
-                <svg width="100%" height="420" viewBox="0 0 1140 420" style={{ display: 'block', overflow: 'visible' }}>
-                  <defs>
-                    <pattern id={'dots' + ch.id} width="24" height="24" patternUnits="userSpaceOnUse">
-                      <circle cx="2" cy="2" r="1" fill="var(--alpha-sm)"/>
-                    </pattern>
-                  </defs>
-                  <rect width="100%" height="100%" fill={'url(#dots' + ch.id + ')'}/>
-                  <path d={d} stroke="var(--blue-soft)" strokeWidth="18" fill="none" strokeLinecap="round"/>
-                  <path d={d} stroke="var(--alpha-sm)" strokeWidth="18" fill="none" strokeLinecap="round" strokeDasharray="2 14"/>
-                  {chLevels.map(function(lv, i) {
-                    var pt = CHAPTER_PTS[i] || CHAPTER_PTS[CHAPTER_PTS.length - 1];
-                    return (
-                      <g key={lv.id} transform={'translate(' + pt.x + ',' + pt.y + ')'}
-                        style={{ cursor: lv.locked && !lv.current ? 'default' : 'pointer' }}
-                        role={(!lv.locked || lv.current) ? 'button' : undefined}
-                        tabIndex={(!lv.locked || lv.current) ? 0 : -1}
-                        aria-label={lv.locked && !lv.current ? 'Level ' + lv.id + ' — locked' : 'Level ' + lv.id + ': ' + lv.word + (lv.done ? ', done with ' + lv.stars + ' stars' : lv.current ? ', current level' : ', unlocked')}
-                        onKeyDown={function(e) { if ((e.key === 'Enter' || e.key === ' ') && (!lv.locked || lv.current)) { e.preventDefault(); onPlayLevel(lv); } }}
-                        onClick={function() { if (!lv.locked || lv.current) onPlayLevel(lv); }}>
-                        <WebLevelNode level={lv}/>
-                      </g>
-                    );
-                  })}
-                </svg>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-
-      {/* mode legend */}
-      <div style={{ marginTop: 20, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-        {['click', 'drag', 'type', 'missing', 'keyboard', 'boss'].map(function(m) {
-          var meta = MODE_META[m];
-          return (
-            <div key={m} style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'var(--surface)', padding: '8px 14px', borderRadius: 'var(--r-pill)', boxShadow: 'var(--shadow-soft)' }}>
-              <div style={{ width: 22, height: 22, borderRadius: '50%', background: 'var(--' + meta.color + ')', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, fontSize: 11 }}>{meta.icon}</div>
-              <span style={{ fontSize: 13, fontWeight: 800 }}>{meta.label}</span>
-            </div>
-          );
-        })}
-      </div>
-    </div>
+    </LandscapeShell>
   );
 }
 
 function WebLevelNode({ level }) {
-  const m = MODE_META[level.mode];
-  const isDone = level.done, isCurrent = level.current, isLocked = level.locked;
-  const cssBg = isLocked ? 'var(--ink-mute)' : isDone ? 'var(--success)' : 'var(--' + m.color + ')';
+  var m = MODE_META[level.mode];
+  var isDone = level.done, isCurrent = level.current, isLocked = level.locked && !level.current;
+  var nodeFill = isLocked ? '#9E9E9E' : isDone ? '#4CAF50' : isCurrent ? '#1976D2' : ('var(--' + m.color + ')');
+  var nodeStroke = isCurrent ? 'white' : 'rgba(0,0,0,0.15)';
   return (
     <>
-      {isCurrent && (
-        <g>
-          <rect x="-50" y="-80" width="100" height="24" rx="12" fill="white"/>
-          <text x="0" y="-64" textAnchor="middle" fontSize="11" fontWeight="900" fill="var(--ink)" fontFamily="Nunito, system-ui">▶ YOU ARE HERE</text>
-          {!prefersReducedMotion && (
-            <circle r="46" fill="none" stroke="white" strokeWidth="3" opacity="0.7">
-              <animate attributeName="r" from="36" to="52" dur="1.5s" repeatCount="indefinite"/>
-              <animate attributeName="opacity" from="0.7" to="0" dur="1.5s" repeatCount="indefinite"/>
-            </circle>
-          )}
-        </g>
+      {isCurrent && !prefersReducedMotion && (
+        <circle r="46" fill="none" stroke="white" strokeWidth="4" opacity="0.6">
+          <animate attributeName="r" from="38" to="54" dur="1.4s" repeatCount="indefinite"/>
+          <animate attributeName="opacity" from="0.6" to="0" dur="1.4s" repeatCount="indefinite"/>
+        </circle>
       )}
-      <circle r="36" fill={cssBg} stroke={isCurrent ? 'white' : 'transparent'} strokeWidth="4"/>
-      <text x="0" y="8" textAnchor="middle" fontSize={isLocked ? 22 : 26} fontWeight="900" fill="white" fontFamily="Nunito, system-ui">
+      {isCurrent && (
+        <rect x="-52" y="-82" width="104" height="26" rx="13" fill="white" opacity="0.9"/>
+      )}
+      {isCurrent && (
+        <text x="0" y="-64" textAnchor="middle" fontSize="12" fontWeight="900" fill="#1976D2" fontFamily="Fredoka One, Nunito, system-ui">▶ YOU ARE HERE</text>
+      )}
+      <circle r="36" fill={nodeFill} stroke={nodeStroke} strokeWidth="4" opacity={isLocked ? 0.75 : 1}/>
+      <text x="0" y="9" textAnchor="middle" fontSize={isLocked ? 22 : 24} fontWeight="900" fill="white" fontFamily="Nunito, system-ui">
         {isLocked ? '🔒' : isDone ? '✓' : m.icon}
       </text>
-      <text x="0" y="58" textAnchor="middle" fontSize="14" fontWeight="900" fill="var(--ink)" fontFamily="Nunito, system-ui">
-        {isLocked ? `Level ${level.id}` : level.word}
+      <text x="0" y="58" textAnchor="middle" fontSize="13" fontWeight="900" fill="white" fontFamily="Nunito, system-ui"
+        style={{ textShadow: '0 1px 3px rgba(0,0,0,0.5)' }}>
+        {isLocked ? 'Level ' + level.id : level.word}
       </text>
       {isDone && (
-        <g transform="translate(-15, 66)">
-          {[0,1,2].map(i => (
-            <path key={i} transform={`translate(${i*11}, 0) scale(0.5)`}
-              d="M 6 0 L 7.5 3.5 L 11 4 L 8.5 6.5 L 9 10 L 6 8 L 3 10 L 3.5 6.5 L 1 4 L 4.5 3.5 Z"
-              fill={i < level.stars ? 'var(--yellow)' : 'var(--alpha-md)'}
-              stroke={i < level.stars ? 'var(--yellow-ink)' : 'none'} strokeWidth="0.5"/>
-          ))}
+        <g transform="translate(-16, 66)">
+          {[0,1,2].map(function(i) {
+            return (
+              <path key={i} transform={'translate(' + (i*12) + ', 0) scale(0.55)'}
+                d="M 6 0 L 7.5 3.5 L 11 4 L 8.5 6.5 L 9 10 L 6 8 L 3 10 L 3.5 6.5 L 1 4 L 4.5 3.5 Z"
+                fill={i < level.stars ? '#FFD700' : 'rgba(255,255,255,0.3)'}
+                stroke={i < level.stars ? '#C9A000' : 'none'} strokeWidth="0.5"/>
+            );
+          })}
         </g>
       )}
     </>
