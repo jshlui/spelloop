@@ -282,6 +282,110 @@ function WebSidebar({ tab, onTab, profile, settings, levels, onOpenParent }) {
   );
 }
 
+function LandscapeShell({ title, onBack, onHelp, topExtra, children }) {
+  return (
+    <div style={{ position: 'relative', minHeight: '100vh', overflow: 'hidden',
+      background: 'linear-gradient(180deg, var(--sky-top) 0%, var(--sky-bottom) 42%, var(--grass-top) 42%, var(--grass-mid) 65%, var(--grass-deep) 100%)',
+      fontFamily: "'Nunito', system-ui, sans-serif",
+    }}>
+      {/* Sun */}
+      <div style={{ position: 'absolute', top: 16, right: 80, width: 60, height: 60, borderRadius: '50%',
+        background: 'radial-gradient(circle, var(--sun-yellow) 60%, #FFD600)',
+        boxShadow: '0 0 0 10px rgba(255,220,0,0.15), 0 0 0 22px rgba(255,220,0,0.07)',
+        zIndex: 0, pointerEvents: 'none',
+      }}/>
+      {/* Clouds */}
+      {[
+        { w: 82, h: 28, top: 20, left: 80, bw: 40, bh: 40, bt: -20, bl: 12, aw: 30, ah: 30, at: -14, ar: 10 },
+        { w: 64, h: 22, top: 48, left: 240, bw: 30, bh: 30, bt: -14, bl: 9, aw: 24, ah: 24, at: -10, ar: 8, opacity: 0.75 },
+        { w: 74, h: 26, top: 18, left: 460, bw: 36, bh: 36, bt: -18, bl: 11, aw: 28, ah: 28, at: -13, ar: 9 },
+      ].map(function(c, i) {
+        return (
+          <div key={i} style={{ position: 'absolute', top: c.top, left: c.left, width: c.w, height: c.h,
+            background: 'white', borderRadius: 50, opacity: c.opacity || 0.92, zIndex: 0, pointerEvents: 'none',
+          }}>
+            <div style={{ position: 'absolute', width: c.bw, height: c.bh, borderRadius: '50%', background: 'white', top: c.bt, left: c.bl }}/>
+            <div style={{ position: 'absolute', width: c.aw, height: c.ah, borderRadius: '50%', background: 'white', top: c.at, right: c.ar }}/>
+          </div>
+        );
+      })}
+      {/* Rolling hills */}
+      {[
+        { w: 300, h: 140, left: -20, bg: '#3E9624' },
+        { w: 240, h: 110, left: 170, bg: '#348A1C' },
+        { w: 310, h: 150, right: -20, bg: '#4CAF2E' },
+        { w: 160, h: 80,  right: 170, bg: '#2D7A16' },
+      ].map(function(h, i) {
+        return (
+          <div key={i} style={{
+            position: 'absolute', bottom: 0,
+            left: h.left !== undefined ? h.left : undefined,
+            right: h.right !== undefined ? h.right : undefined,
+            width: h.w, height: h.h,
+            background: h.bg,
+            borderRadius: '50% 50% 0 0',
+            zIndex: 0, pointerEvents: 'none',
+          }}/>
+        );
+      })}
+
+      {/* Top chrome */}
+      <div style={{ position: 'relative', zIndex: 20,
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        padding: '12px 18px',
+        background: 'rgba(255,255,255,0.75)',
+        backdropFilter: 'blur(8px)',
+        borderBottom: '2px solid rgba(255,255,255,0.8)',
+      }}>
+        <button onClick={onBack} aria-label="Go back" style={{
+          width: 40, height: 40, borderRadius: '50%',
+          background: 'var(--btn-back-bg)', border: '3px solid var(--btn-back-border)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          fontSize: 18, fontWeight: 900, color: 'var(--btn-back-ink)',
+          boxShadow: '0 3px 0 var(--btn-back-shadow)',
+          cursor: 'pointer', fontFamily: 'inherit',
+        }}>←</button>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{ fontFamily: "'Fredoka One', cursive", fontSize: 24, color: '#1A3A1A' }}>{title}</div>
+          {topExtra}
+        </div>
+
+        <button onClick={onHelp || function() {}} aria-label="Help" style={{
+          width: 40, height: 40, borderRadius: '50%',
+          background: 'var(--btn-help-bg)', border: '3px solid var(--btn-help-border)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          fontSize: 18, fontWeight: 900, color: 'white',
+          boxShadow: '0 3px 0 var(--btn-help-shadow)',
+          cursor: 'pointer', fontFamily: 'inherit',
+        }}>?</button>
+      </div>
+
+      {/* Content layer over landscape */}
+      <div style={{ position: 'relative', zIndex: 10 }}>
+        {children}
+      </div>
+    </div>
+  );
+}
+
+function ScreenPanel({ children }) {
+  return (
+    <div style={{
+      margin: '16px 16px 16px',
+      background: 'rgba(255,255,255,0.88)',
+      backdropFilter: 'blur(10px)',
+      borderRadius: 20,
+      padding: 24,
+      boxShadow: '0 8px 32px rgba(0,0,0,0.10)',
+      minHeight: 'calc(100vh - 120px)',
+      overflow: 'auto',
+    }}>
+      {children}
+    </div>
+  );
+}
+
 function WebHome({ profile, levels, onContinue, onPickMode, onOpenParent }) {
   var modes = ['click', 'drag', 'type', 'missing', 'keyboard', 'scramble', 'speed'];
   var currentLevel = levels && levels.find(function(l) { return l.current; });
