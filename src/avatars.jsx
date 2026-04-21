@@ -1,10 +1,11 @@
 // Animal avatars — abstract, flat, friendly. No emoji.
 // Each is a self-contained SVG component. They accept `size` and optional `bg`.
 
-function AvatarFox({ size = 72, bg = '#FFE3D5' }) {
+function AvatarFox({ size = 72, bg = '#FFE3D5', bgColor }) {
+  var bgFill = bgColor !== undefined ? bgColor : bg;
   return (
     <svg width={size} height={size} viewBox="0 0 100 100">
-      <circle cx="50" cy="50" r="50" fill={bg}/>
+      <circle cx="50" cy="50" r="50" fill={bgFill}/>
       {/* ears */}
       <path d="M25 38 L32 22 L40 38 Z" fill="#FF8B5C"/>
       <path d="M75 38 L68 22 L60 38 Z" fill="#FF8B5C"/>
@@ -24,10 +25,11 @@ function AvatarFox({ size = 72, bg = '#FFE3D5' }) {
   );
 }
 
-function AvatarPanda({ size = 72, bg = '#EEE9FF' }) {
+function AvatarPanda({ size = 72, bg = '#EEE9FF', bgColor }) {
+  var bgFill = bgColor !== undefined ? bgColor : bg;
   return (
     <svg width={size} height={size} viewBox="0 0 100 100">
-      <circle cx="50" cy="50" r="50" fill={bg}/>
+      <circle cx="50" cy="50" r="50" fill={bgFill}/>
       {/* ears */}
       <circle cx="28" cy="32" r="9" fill="#2A2F3E"/>
       <circle cx="72" cy="32" r="9" fill="#2A2F3E"/>
@@ -49,10 +51,11 @@ function AvatarPanda({ size = 72, bg = '#EEE9FF' }) {
   );
 }
 
-function AvatarBunny({ size = 72, bg = '#FFE0EF' }) {
+function AvatarBunny({ size = 72, bg = '#FFE0EF', bgColor }) {
+  var bgFill = bgColor !== undefined ? bgColor : bg;
   return (
     <svg width={size} height={size} viewBox="0 0 100 100">
-      <circle cx="50" cy="50" r="50" fill={bg}/>
+      <circle cx="50" cy="50" r="50" fill={bgFill}/>
       {/* ears */}
       <ellipse cx="38" cy="24" rx="6" ry="16" fill="#FFFFFF"/>
       <ellipse cx="62" cy="24" rx="6" ry="16" fill="#FFFFFF"/>
@@ -77,10 +80,11 @@ function AvatarBunny({ size = 72, bg = '#FFE0EF' }) {
   );
 }
 
-function AvatarOwl({ size = 72, bg = '#E3EAFF' }) {
+function AvatarOwl({ size = 72, bg = '#E3EAFF', bgColor }) {
+  var bgFill = bgColor !== undefined ? bgColor : bg;
   return (
     <svg width={size} height={size} viewBox="0 0 100 100">
-      <circle cx="50" cy="50" r="50" fill={bg}/>
+      <circle cx="50" cy="50" r="50" fill={bgFill}/>
       {/* body */}
       <ellipse cx="50" cy="58" rx="28" ry="30" fill="#6C8EFF"/>
       {/* tufts */}
@@ -101,10 +105,11 @@ function AvatarOwl({ size = 72, bg = '#E3EAFF' }) {
   );
 }
 
-function AvatarCat({ size = 72, bg = '#FFF2CE' }) {
+function AvatarCat({ size = 72, bg = '#FFF2CE', bgColor }) {
+  var bgFill = bgColor !== undefined ? bgColor : bg;
   return (
     <svg width={size} height={size} viewBox="0 0 100 100">
-      <circle cx="50" cy="50" r="50" fill={bg}/>
+      <circle cx="50" cy="50" r="50" fill={bgFill}/>
       {/* ears */}
       <path d="M22 40 L26 20 L40 34 Z" fill="#C7B4FF"/>
       <path d="M78 40 L74 20 L60 34 Z" fill="#C7B4FF"/>
@@ -132,10 +137,11 @@ function AvatarCat({ size = 72, bg = '#FFF2CE' }) {
   );
 }
 
-function AvatarFrog({ size = 72, bg = '#D7F5E8' }) {
+function AvatarFrog({ size = 72, bg = '#D7F5E8', bgColor }) {
+  var bgFill = bgColor !== undefined ? bgColor : bg;
   return (
     <svg width={size} height={size} viewBox="0 0 100 100">
-      <circle cx="50" cy="50" r="50" fill={bg}/>
+      <circle cx="50" cy="50" r="50" fill={bgFill}/>
       {/* eye bumps */}
       <circle cx="34" cy="36" r="14" fill="#8EE3C3"/>
       <circle cx="66" cy="36" r="14" fill="#8EE3C3"/>
@@ -168,10 +174,11 @@ const AVATARS = [
 
 // "Flat geometric" variant — just a colored blob with initial letter
 // (alternate avatar style shown when tweak.avatarStyle === 'geo')
-function AvatarGeo({ size = 72, bg = '#6C8EFF', letter = 'A' }) {
+function AvatarGeo({ size = 72, bg = '#6C8EFF', bgColor, letter = 'A' }) {
+  var bgFill = bgColor !== undefined ? bgColor : bg;
   return (
     <svg width={size} height={size} viewBox="0 0 100 100">
-      <circle cx="50" cy="50" r="50" fill={bg}/>
+      <circle cx="50" cy="50" r="50" fill={bgFill}/>
       <text x="50" y="62" textAnchor="middle" fontFamily="Nunito, system-ui" fontWeight="900" fontSize="44" fill="white">{letter}</text>
     </svg>
   );
@@ -186,4 +193,46 @@ function Avatar({ id, size = 72, style = 'animal' }) {
   return <C size={size} bg={a.bg} />;
 }
 
-Object.assign(window, { AVATARS, Avatar, AvatarFox, AvatarPanda, AvatarBunny, AvatarOwl, AvatarCat, AvatarFrog, AvatarGeo });
+var HAT_OFFSETS  = { party: -0.22, flowers: -0.18, cowboy: -0.20, wizard: -0.26, crown: -0.20, helmet: -0.18 };
+var ACC_OFFSETS  = { glasses: 0.28, bowtie: 0.58, scarf: 0.52, medal: 0.60, heart: 0.55, star: 0.58 };
+
+function DressedAvatar({ id, size = 72, style = 'animal', equipped = {} }) {
+  var bgItem = equipped.bg ? (window.SHOP_ITEMS || []).find(function(it) { return it.id === equipped.bg; }) : null;
+  var ring = bgItem ? bgItem.ring : null;
+  var hatItem = equipped.hat ? (window.SHOP_ITEMS || []).find(function(it) { return it.id === equipped.hat; }) : null;
+  var accItem = equipped.acc ? (window.SHOP_ITEMS || []).find(function(it) { return it.id === equipped.acc; }) : null;
+
+  var hatOffset  = equipped.hat ? (HAT_OFFSETS[equipped.hat]  || -0.2)  : 0;
+  var accOffset  = equipped.acc ? (ACC_OFFSETS[equipped.acc]  || 0.55)  : 0;
+
+  return (
+    <div style={{
+      position: 'relative', display: 'inline-block',
+      width: size, height: size,
+      borderRadius: '50%',
+      boxShadow: ring ? ('0 0 0 3px ' + ring + ', 0 0 0 6px ' + ring + '33') : 'none',
+    }}>
+      <Avatar id={id} size={size} style={style}/>
+      {hatItem && (
+        <div style={{
+          position: 'absolute', left: '50%',
+          top: Math.round(size * hatOffset),
+          transform: 'translateX(-50%)',
+          fontSize: Math.round(size * 0.42),
+          lineHeight: 1, pointerEvents: 'none', userSelect: 'none',
+        }}>{hatItem.emoji}</div>
+      )}
+      {accItem && (
+        <div style={{
+          position: 'absolute', left: '50%',
+          top: Math.round(size * accOffset),
+          transform: 'translateX(-50%)',
+          fontSize: Math.round(size * 0.32),
+          lineHeight: 1, pointerEvents: 'none', userSelect: 'none',
+        }}>{accItem.emoji}</div>
+      )}
+    </div>
+  );
+}
+
+Object.assign(window, { AVATARS, Avatar, DressedAvatar, AvatarFox, AvatarPanda, AvatarBunny, AvatarOwl, AvatarCat, AvatarFrog, AvatarGeo });
