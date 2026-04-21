@@ -103,6 +103,34 @@
   --sp-5: 24px;
   --sp-6: 32px;
   --sp-7: 48px;
+
+  /* ── Storybook Landscape ── */
+  --sky-top:         #6EC8E8;
+  --sky-bottom:      #A8DFC8;
+  --grass-top:       #6DC54A;
+  --grass-mid:       #4CAF35;
+  --grass-deep:      #3D9A28;
+  --path-main:       #D4A04A;
+  --path-light:      #F0C86A;
+  --path-shadow:     rgba(160,110,30,0.25);
+  --sun-yellow:      #FFE84D;
+
+  /* ── Shared top-chrome buttons ── */
+  --btn-back-bg:     #FFD700;
+  --btn-back-border: #E8B800;
+  --btn-back-shadow: #C9A000;
+  --btn-back-ink:    #7A5A00;
+  --btn-help-bg:     #4A90D9;
+  --btn-help-border: #357ABD;
+  --btn-help-shadow: #2860A0;
+
+  /* ── Nav tile gradients (used as background values) ── */
+  --tile-play:    linear-gradient(145deg, #FF7043, #E64A19);
+  --tile-journey: linear-gradient(145deg, #42A5F5, #1976D2);
+  --tile-me:      linear-gradient(145deg, #AB47BC, #7B1FA2);
+  --tile-code:    linear-gradient(145deg, #26A69A, #00796B);
+  --tile-shop:    linear-gradient(145deg, #FFA726, #E65100);
+  --tile-pet:     linear-gradient(145deg, #EC407A, #AD1457);
 }
 
 /* age skew */
