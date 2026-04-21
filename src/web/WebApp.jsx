@@ -217,9 +217,7 @@ function WebSidebar({ tab, onTab, profile, settings, levels, onOpenParent }) {
     { id: 'me',   label: 'My stuff', icon: function(c) { return <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8" r="4" stroke={c} strokeWidth="2.2"/><path d="M4 20 C4 15 8 14 12 14 C16 14 20 15 20 20" stroke={c} strokeWidth="2.2" strokeLinecap="round"/></svg>; } },
     { id: 'code', label: 'Code Lab', icon: function(c) { return <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><polyline points="16 18 22 12 16 6" stroke={c} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/><polyline points="8 6 2 12 8 18" stroke={c} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/></svg>; } },
     { id: 'shop', label: 'Shop', icon: function(c) { return <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z" stroke={c} strokeWidth="2" strokeLinejoin="round"/><line x1="3" y1="6" x2="21" y2="6" stroke={c} strokeWidth="2"/><path d="M16 10a4 4 0 01-8 0" stroke={c} strokeWidth="2" strokeLinecap="round"/></svg>; } },
-  ].concat(profile.starterPicked ? [
-    { id: 'pet', label: activePetName, icon: function(c) { return <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M4.5 9.5a2.5 2.5 0 100-5 2.5 2.5 0 000 5zM19.5 9.5a2.5 2.5 0 100-5 2.5 2.5 0 000 5zM9 13.5a2.5 2.5 0 100-5 2.5 2.5 0 000 5zM15 13.5a2.5 2.5 0 100-5 2.5 2.5 0 000 5zM5 20c0-2.5 3-4 7-4s7 1.5 7 4" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>; } },
-  ] : []);
+  ];
   return (
     <aside aria-label="Main navigation" className="web-sidebar" style={{
       width: 72, flexShrink: 0,
@@ -261,7 +259,6 @@ function WebSidebar({ tab, onTab, profile, settings, levels, onOpenParent }) {
                 transition: 'background 120ms ease',
               }}>
               {it.icon(active ? activeColor : 'var(--ink-soft)')}
-              <span className="sidebar-label" style={{ fontSize: 9, fontWeight: 800, color: active ? activeColor : 'var(--ink-mute)', fontFamily: "'Fredoka One', cursive" }}>{it.label}</span>
             </button>
           );
         })}
@@ -271,7 +268,7 @@ function WebSidebar({ tab, onTab, profile, settings, levels, onOpenParent }) {
 
       {/* coins (icon-only pill) */}
       <div className="sidebar-coins" style={{
-        width: 52, height: 44, background: 'var(--yellow-soft)', borderRadius: 14,
+        width: 52, height: 40, background: 'var(--yellow-soft)', borderRadius: 999,
         display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
         gap: 1, marginBottom: 8,
       }}>
@@ -282,16 +279,17 @@ function WebSidebar({ tab, onTab, profile, settings, levels, onOpenParent }) {
   );
 }
 
-function LandscapeShell({ title, onBack, onHelp, topExtra, children }) {
+function LandscapeShell({ title, onBack, onHelp, topExtra, showBack, children }) {
+  var showBackBtn = showBack !== false;
   return (
     <div style={{ position: 'relative', minHeight: '100vh', overflow: 'hidden',
       background: 'linear-gradient(180deg, var(--sky-top) 0%, var(--sky-bottom) 42%, var(--grass-top) 42%, var(--grass-mid) 65%, var(--grass-deep) 100%)',
       fontFamily: "'Nunito', system-ui, sans-serif",
     }}>
       {/* Sun */}
-      <div style={{ position: 'absolute', top: 16, right: 80, width: 60, height: 60, borderRadius: '50%',
-        background: 'radial-gradient(circle, var(--sun-yellow) 60%, #FFD600)',
-        boxShadow: '0 0 0 10px rgba(255,220,0,0.15), 0 0 0 22px rgba(255,220,0,0.07)',
+      <div style={{ position: 'absolute', top: 16, right: 80, width: 64, height: 64, borderRadius: '50%',
+        background: 'radial-gradient(circle, #FFE066 60%, #FFD700 100%)',
+        boxShadow: '0 0 0 8px rgba(255,220,50,0.2), 0 0 0 16px rgba(255,220,50,0.1)',
         zIndex: 0, pointerEvents: 'none',
       }}/>
       {/* Clouds */}
@@ -337,17 +335,20 @@ function LandscapeShell({ title, onBack, onHelp, topExtra, children }) {
         backdropFilter: 'blur(8px)',
         borderBottom: '2px solid rgba(255,255,255,0.8)',
       }}>
-        <button onClick={onBack} aria-label="Go back" style={{
-          width: 40, height: 40, borderRadius: '50%',
-          background: 'var(--btn-back-bg)', border: '3px solid var(--btn-back-border)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontSize: 18, fontWeight: 900, color: 'var(--btn-back-ink)',
-          boxShadow: '0 3px 0 var(--btn-back-shadow)',
-          cursor: 'pointer', fontFamily: 'inherit',
-        }}>←</button>
+        {showBackBtn
+          ? <button onClick={onBack} aria-label="Go back" style={{
+              width: 40, height: 40, borderRadius: '50%',
+              background: 'var(--btn-back-bg)', border: '3px solid var(--btn-back-border)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: 18, fontWeight: 900, color: 'var(--btn-back-ink)',
+              boxShadow: '0 3px 0 var(--btn-back-shadow)',
+              cursor: 'pointer', fontFamily: 'inherit',
+            }}>←</button>
+          : <div style={{ width: 40 }}/>
+        }
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <div style={{ fontFamily: "'Fredoka One', cursive", fontSize: 24, color: '#1A3A1A' }}>{title}</div>
+          <div style={{ fontFamily: "'Fredoka One', cursive", fontSize: 26, color: '#1A3A1A' }}>{title}</div>
           {topExtra}
         </div>
 
@@ -372,7 +373,7 @@ function LandscapeShell({ title, onBack, onHelp, topExtra, children }) {
 function ScreenPanel({ children }) {
   return (
     <div style={{
-      margin: '16px 16px 16px',
+      margin: '0 16px 16px',
       background: 'rgba(255,255,255,0.88)',
       backdropFilter: 'blur(10px)',
       borderRadius: 20,
@@ -400,10 +401,13 @@ function WebHome({ profile, levels, onContinue, onPickMode, onTab }) {
   ];
 
   return (
-    <LandscapeShell title={'Hi, ' + profile.name + '! 👋'} onBack={function() {}}>
+    <LandscapeShell title="Home Base" showBack={false}>
 
-      {/* Greeting + stats */}
+      {/* Greeting strip — name + stats in one frosted pill */}
       <div style={{ textAlign: 'center', padding: '10px 0 0' }}>
+        <div style={{ fontFamily: "'Fredoka One', cursive", fontSize: 22, color: '#1A3A1A', textShadow: '0 2px 4px rgba(255,255,255,0.6)', marginBottom: 4 }}>
+          {'Hi, ' + profile.name + '! 👋'}
+        </div>
         <div style={{
           display: 'inline-flex', gap: 12, alignItems: 'center',
           background: 'rgba(255,255,255,0.85)', backdropFilter: 'blur(4px)',
