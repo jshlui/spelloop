@@ -59,7 +59,7 @@ function EmojiTarget({ emoji, position, onCollected }) {
         opacity: collected ? 0.4 : 1,
         display: 'inline-block',
         transition: 'opacity 0.3s ease',
-        animation: collected ? 'emojiCollect 0.4s cubic-bezier(0.34,1.56,0.64,1) both' : 'none',
+        animation: collected ? 'emojiCollect 0.4s cubic-bezier(0.34,1.1,0.64,1) both' : 'none',
       }}>
         {emoji}
       </span>

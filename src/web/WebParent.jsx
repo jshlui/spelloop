@@ -62,66 +62,65 @@ function PinGate({ onSuccess, onCancel }) {
 
   var numBtnStyle = {
     width: 80, height: 80, borderRadius: 999,
-    background: 'white', border: '2px solid #E8ECF3',
+    background: 'var(--surface)', border: '2px solid var(--alpha-md)',
     fontSize: 28, fontWeight: 900, cursor: 'pointer',
     display: 'flex', alignItems: 'center', justifyContent: 'center',
-    fontFamily: 'inherit', color: '#1F2A44',
-    boxShadow: '0 2px 4px rgba(0,0,0,0.06)',
+    fontFamily: 'inherit', color: 'var(--ink)',
+    boxShadow: 'var(--shadow-soft)',
     transition: 'background 80ms',
   };
 
   return (
     <div style={{
       position: 'fixed', inset: 0, zIndex: 350,
-      background: '#F7F9FC',
+      background: 'var(--bg)',
       display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
       fontFamily: 'Nunito, system-ui, sans-serif',
     }}>
       <button onClick={onCancel} style={{
         position: 'absolute', top: 24, left: 24,
-        background: '#ECEEF2', border: 'none', borderRadius: 8,
+        background: 'var(--alpha-sm)', border: 'none', borderRadius: 8,
         padding: '8px 14px', fontWeight: 700, fontSize: 13,
-        cursor: 'pointer', fontFamily: 'inherit', color: '#4B587A',
+        cursor: 'pointer', fontFamily: 'inherit', color: 'var(--ink-soft)',
       }}>← Back</button>
 
       <div style={{ textAlign: 'center', marginBottom: 36 }}>
         <div style={{ fontSize: 48, marginBottom: 12 }}>🔐</div>
-        <h1 style={{ fontSize: 28, fontWeight: 900, margin: '0 0 8px', color: '#1F2A44' }}>{title}</h1>
-        <p style={{ fontSize: 14, color: '#7C89A8', fontWeight: 600, margin: 0, maxWidth: 300 }}>{sub}</p>
+        <h1 style={{ fontSize: 28, fontWeight: 900, margin: '0 0 8px', color: 'var(--ink)' }}>{title}</h1>
+        <p style={{ fontSize: 14, color: 'var(--ink-mute)', fontWeight: 600, margin: 0, maxWidth: 300 }}>{sub}</p>
       </div>
 
       {/* dot indicators */}
-      <div style={{ display: 'flex', gap: 18, marginBottom: 16 }}>
+      <div role="group" aria-label="PIN digits entered" style={{ display: 'flex', gap: 18, marginBottom: 16 }}>
         {[0,1,2,3].map(function(i) {
-          return <div key={i} style={{
+          return <div key={i} aria-hidden="true" style={{
             width: 20, height: 20, borderRadius: '50%',
-            background: i < digits.length ? '#3F5FE2' : '#D4DAE5',
-            transition: 'background 0.12s',
-            transform: shake ? 'translateX(' + (i % 2 === 0 ? '-4px' : '4px') + ')' : 'none',
+            background: i < digits.length ? 'var(--blue-ink)' : 'var(--alpha-lg)',
             transition: shake ? 'transform 0.1s' : 'background 0.12s',
+            transform: shake ? 'translateX(' + (i % 2 === 0 ? '-4px' : '4px') + ')' : 'none',
           }}/>;
         })}
       </div>
 
       {error
-        ? <div style={{ fontSize: 13, fontWeight: 700, color: '#F07171', marginBottom: 24, minHeight: 20 }}>{error}</div>
+        ? <div role="alert" style={{ fontSize: 13, fontWeight: 700, color: 'var(--danger)', marginBottom: 24, minHeight: 20 }}>{error}</div>
         : <div style={{ minHeight: 37, marginBottom: 7 }}/>
       }
 
       {/* numpad */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 80px)', gap: 14 }}>
+      <div role="group" aria-label="PIN keypad" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 80px)', gap: 14 }}>
         {[1,2,3,4,5,6,7,8,9].map(function(n) {
-          return <button key={n} onClick={function() { handleDigit(n); }} style={numBtnStyle}
-            onMouseDown={function(e) { e.currentTarget.style.background = '#E3EAFF'; }}
-            onMouseUp={function(e) { e.currentTarget.style.background = 'white'; }}
+          return <button key={n} aria-label={String(n)} onClick={function() { handleDigit(n); }} style={numBtnStyle}
+            onMouseDown={function(e) { e.currentTarget.style.background = 'var(--blue-soft)'; }}
+            onMouseUp={function(e) { e.currentTarget.style.background = 'var(--surface)'; }}
           >{n}</button>;
         })}
         <div/>
-        <button onClick={function() { handleDigit(0); }} style={numBtnStyle}
-          onMouseDown={function(e) { e.currentTarget.style.background = '#E3EAFF'; }}
-          onMouseUp={function(e) { e.currentTarget.style.background = 'white'; }}
+        <button aria-label="0" onClick={function() { handleDigit(0); }} style={numBtnStyle}
+          onMouseDown={function(e) { e.currentTarget.style.background = 'var(--blue-soft)'; }}
+          onMouseUp={function(e) { e.currentTarget.style.background = 'var(--surface)'; }}
         >0</button>
-        <button onClick={handleDelete} style={Object.assign({}, numBtnStyle, { fontSize: 22, color: '#7C89A8', border: 'none', background: 'transparent', boxShadow: 'none' })}>⌫</button>
+        <button aria-label="Delete last digit" onClick={handleDelete} style={Object.assign({}, numBtnStyle, { fontSize: 22, color: 'var(--ink-mute)', border: 'none', background: 'transparent', boxShadow: 'none' })}>⌫</button>
       </div>
     </div>
   );
@@ -144,28 +143,28 @@ function WebParent({ profiles, activeId, profile, setProfile, levels, setLevels,
 
   return (
     <div style={{
-      position: 'fixed', inset: 0, background: '#F7F9FC', zIndex: 300,
+      position: 'fixed', inset: 0, background: 'var(--bg)', zIndex: 300,
       display: 'flex', fontFamily: "Nunito, system-ui, sans-serif",
     }}>
-      <aside style={{
-        width: 240, flexShrink: 0, background: 'white',
-        borderRight: '1px solid rgba(0,0,0,0.06)', padding: 18,
+      <aside aria-label="Parent area navigation" style={{
+        width: 240, flexShrink: 0, background: 'var(--surface)',
+        borderRight: '1px solid var(--alpha-sm)', padding: 18,
         display: 'flex', flexDirection: 'column',
       }}>
         <button onClick={onClose} style={{
-          background: '#F1F3F6', border: 'none', padding: '8px 12px',
-          borderRadius: 8, fontWeight: 700, fontSize: 12, color: '#1F2A44',
+          background: 'var(--alpha-sm)', border: 'none', padding: '8px 12px',
+          borderRadius: 8, fontWeight: 700, fontSize: 12, color: 'var(--ink)',
           cursor: 'pointer', fontFamily: 'inherit', display: 'inline-flex',
           alignItems: 'center', gap: 6, width: 'fit-content', marginBottom: 20,
         }}>← Back to app</button>
-        <div style={{ fontSize: 11, color: '#7C89A8', fontWeight: 800, letterSpacing: 0.5, textTransform: 'uppercase', marginBottom: 4 }}>Parent area</div>
+        <div style={{ fontSize: 11, color: 'var(--ink-mute)', fontWeight: 800, letterSpacing: 0.5, textTransform: 'uppercase', marginBottom: 4 }}>Parent area</div>
         <div style={{ fontSize: 16, fontWeight: 900, marginBottom: 20 }}>{profile.name}'s progress</div>
-        <nav style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+        <nav role="navigation" aria-label="Parent sections" style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
           {navItems.map(function(it) {
             return (
-              <button key={it.id} onClick={function() { setTab(it.id); }} style={{
-                background: tab === it.id ? '#EEF1F9' : 'transparent',
-                color: tab === it.id ? '#3F5FE2' : '#4B587A', border: 'none',
+              <button key={it.id} aria-current={tab === it.id ? 'page' : undefined} onClick={function() { setTab(it.id); }} style={{
+                background: tab === it.id ? 'var(--blue-soft)' : 'transparent',
+                color: tab === it.id ? 'var(--blue-ink)' : 'var(--ink-soft)', border: 'none',
                 padding: '10px 14px', borderRadius: 8, fontWeight: 700, fontSize: 13,
                 textAlign: 'left', cursor: 'pointer', fontFamily: 'inherit',
               }}>{it.label}</button>
@@ -173,11 +172,11 @@ function WebParent({ profiles, activeId, profile, setProfile, levels, setLevels,
           })}
         </nav>
         {/* Active kid chip */}
-        <div style={{ marginTop: 'auto', paddingTop: 16, display: 'flex', alignItems: 'center', gap: 10, background: '#F7F9FC', borderRadius: 10, padding: 10 }}>
+        <div style={{ marginTop: 'auto', paddingTop: 16, display: 'flex', alignItems: 'center', gap: 10, background: 'var(--bg)', borderRadius: 10, padding: 10 }}>
           <Avatar id={profile.avatar} size={36}/>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontWeight: 900, fontSize: 13 }}>{profile.name}</div>
-            <div style={{ fontSize: 11, color: '#7C89A8', fontWeight: 600 }}>Active profile</div>
+            <div style={{ fontSize: 11, color: 'var(--ink-mute)', fontWeight: 600 }}>Active profile</div>
           </div>
         </div>
       </aside>
@@ -225,7 +224,7 @@ function ProfilesTab({ profiles, activeId, onSwitch, onAdd, onDelete, onReset })
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
         <div>
           <h1 style={{ fontSize: 26, fontWeight: 900, margin: '0 0 4px' }}>Kids profiles</h1>
-          <div style={{ fontSize: 13, color: '#7C89A8', fontWeight: 600 }}>Each child has their own progress, avatar and levels.</div>
+          <div style={{ fontSize: 13, color: 'var(--ink-mute)', fontWeight: 600 }}>Each child has their own progress, avatar and levels.</div>
         </div>
         <button onClick={function() { setShowAdd(!showAdd); }} style={{
           background: 'var(--blue-ink)', color: 'white', border: 'none', borderRadius: 10,
@@ -240,18 +239,18 @@ function ProfilesTab({ profiles, activeId, onSwitch, onAdd, onDelete, onReset })
           <h3 style={{ margin: '0 0 16px', fontSize: 16, fontWeight: 900 }}>New profile</h3>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 120px', gap: 12, marginBottom: 16 }}>
             <div>
-              <div style={{ fontSize: 12, fontWeight: 700, color: '#7C89A8', marginBottom: 4 }}>Name</div>
+              <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--ink-mute)', marginBottom: 4 }}>Name</div>
               <input value={newName} onChange={function(e) { setNewName(e.target.value); }}
                 onKeyDown={function(e) { if (e.key === 'Enter') handleAdd(); }}
                 style={Object.assign({}, inputStyle, { width: '100%' })} placeholder="Child's name" autoFocus/>
             </div>
             <div>
-              <div style={{ fontSize: 12, fontWeight: 700, color: '#7C89A8', marginBottom: 4 }}>Age</div>
+              <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--ink-mute)', marginBottom: 4 }}>Age</div>
               <input value={newAge} onChange={function(e) { setNewAge(e.target.value); }}
                 style={Object.assign({}, inputStyle, { width: '100%' })} placeholder="Age" type="number" min="3" max="12"/>
             </div>
           </div>
-          <div style={{ fontSize: 12, fontWeight: 700, color: '#7C89A8', marginBottom: 8 }}>Avatar</div>
+          <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--ink-mute)', marginBottom: 8 }}>Avatar</div>
           <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 16 }}>
             {AVATARS.map(function(av) {
               var sel = newAvatar === av.id;
@@ -370,15 +369,15 @@ function OverviewTab({ profile, levels }) {
   return (
     <div style={{ padding: 32 }}>
       <div style={{ marginBottom: 24 }}>
-        <div style={{ fontSize: 12, fontWeight: 800, color: '#7C89A8', letterSpacing: 1, textTransform: 'uppercase' }}>Parent overview</div>
+        <div style={{ fontSize: 12, fontWeight: 800, color: 'var(--ink-mute)', letterSpacing: 1, textTransform: 'uppercase' }}>Parent overview</div>
         <h1 style={{ fontSize: 28, fontWeight: 900, margin: '4px 0 0' }}>{profile.name}'s progress 🌱</h1>
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14, marginBottom: 20 }}>
-        <Metric label="Words spelled" value={profile.words} delta={profile.words >= 5 ? '🏆 5+ milestone' : (5 - profile.words) + ' to next badge'} tone="#30C285"/>
-        <Metric label="Total stars" value={profile.totalStars} delta={'XP: ' + (profile.totalStars * 10)} tone="#FFA000"/>
-        <Metric label="Accuracy" value={accuracy !== null ? accuracy + '%' : '—'} delta={accuracy !== null ? (accuracy >= 80 ? '🎉 Excellent!' : 'Keep practising') : 'Play to track'} tone={accuracy !== null && accuracy >= 80 ? '#30C285' : '#7C89A8'}/>
-        <Metric label="Streak" value={profile.streak + ' days'} delta={profile.streak >= 3 ? '🔥 On fire!' : 'Keep it up'} tone={profile.streak >= 3 ? '#FF7043' : '#FFA000'}/>
+        <Metric label="Words spelled" value={profile.words} delta={profile.words >= 5 ? '🏆 5+ milestone' : (5 - profile.words) + ' to next badge'} tone="var(--success)"/>
+        <Metric label="Total stars" value={profile.totalStars} delta={'XP: ' + (profile.totalStars * 10)} tone="var(--warn)"/>
+        <Metric label="Accuracy" value={accuracy !== null ? accuracy + '%' : '—'} delta={accuracy !== null ? (accuracy >= 80 ? '🎉 Excellent!' : 'Keep practising') : 'Play to track'} tone={accuracy !== null && accuracy >= 80 ? 'var(--success)' : 'var(--ink-mute)'}/>
+        <Metric label="Streak" value={profile.streak + ' days'} delta={profile.streak >= 3 ? '🔥 On fire!' : 'Keep it up'} tone={profile.streak >= 3 ? 'var(--coral-ink)' : 'var(--warn)'}/>
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
@@ -405,7 +404,7 @@ function OverviewTab({ profile, levels }) {
         {/* Recent completed levels */}
         <div style={webCard}>
           <h3 style={{ margin: '0 0 14px', fontSize: 16, fontWeight: 900 }}>Recent levels ({doneCount} total)</h3>
-          {doneLevels.length === 0 && <div style={{ fontSize: 13, color: '#7C89A8', fontWeight: 600 }}>No levels completed yet — play some rounds!</div>}
+          {doneLevels.length === 0 && <div style={{ fontSize: 13, color: 'var(--ink-mute)', fontWeight: 600 }}>No levels completed yet — play some rounds!</div>}
           {doneLevels.map(function(lv, i) {
             var m = MODE_META[lv.mode] || MODE_META.click;
             return (
@@ -424,7 +423,7 @@ function OverviewTab({ profile, levels }) {
 
       <div style={webCard}>
         <h3 style={{ margin: '0 0 8px', fontSize: 16, fontWeight: 900 }}>Overall journey</h3>
-        <div style={{ fontSize: 13, color: '#4B587A', fontWeight: 600, marginBottom: 10 }}>{doneCount} of {levels ? levels.length : 24} levels complete</div>
+        <div style={{ fontSize: 13, color: 'var(--ink-soft)', fontWeight: 600, marginBottom: 10 }}>{doneCount} of {levels ? levels.length : 24} levels complete</div>
         <div style={{ height: 14, borderRadius: 7, background: 'var(--bg)', overflow: 'hidden' }}>
           <div style={{ height: '100%', width: (levels && levels.length ? Math.round(doneCount / levels.length * 100) : 0) + '%', background: 'var(--blue)', borderRadius: 7, transition: 'width 0.5s var(--ease-toy)' }}/>
         </div>
@@ -473,7 +472,7 @@ function CurriculumTab({ levels, setLevels }) {
   return (
     <div style={{ padding: 32, maxWidth: 800 }}>
       <h1 style={{ fontSize: 26, fontWeight: 900, margin: '0 0 6px' }}>Level Manager</h1>
-      <p style={{ fontSize: 13, color: '#7C89A8', fontWeight: 600, margin: '0 0 24px' }}>Reset individual levels or whole chapters to let your child replay them.</p>
+      <p style={{ fontSize: 13, color: 'var(--ink-mute)', fontWeight: 600, margin: '0 0 24px' }}>Reset individual levels or whole chapters to let your child replay them.</p>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
         {chapters.map(function(ch) {
           var chLevels = levels ? levels.filter(function(l) { return l.chapter === ch.id; }) : [];
@@ -483,10 +482,10 @@ function CurriculumTab({ levels, setLevels }) {
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
                 <div>
                   <div style={{ fontSize: 16, fontWeight: 900 }}>{ch.emoji} {ch.name}</div>
-                  <div style={{ fontSize: 12, color: '#7C89A8', fontWeight: 600 }}>{doneCt}/{chLevels.length} complete</div>
+                  <div style={{ fontSize: 12, color: 'var(--ink-mute)', fontWeight: 600 }}>{doneCt}/{chLevels.length} complete</div>
                 </div>
                 <button onClick={function() { resetChapter(ch.id); }} style={{
-                  background: '#FFF0F0', border: '1px solid #FFB3B3', color: '#C0392B',
+                  background: 'var(--danger-soft)', border: '1px solid var(--alpha-md)', color: 'var(--danger-text)',
                   borderRadius: 8, padding: '6px 12px', fontSize: 12, fontWeight: 800,
                   cursor: 'pointer', fontFamily: 'inherit',
                 }}>↺ Reset chapter</button>
@@ -506,7 +505,7 @@ function CurriculumTab({ levels, setLevels }) {
                       <div style={{ fontSize: 11, fontWeight: 700, color: statusColor, marginBottom: 6 }}>{statusLabel}</div>
                       {lv.done && (
                         <button onClick={function() { resetLevel(lv.id); }} style={{
-                          background: 'white', border: '1px solid #E1E5EC', color: '#4B587A',
+                          background: 'var(--surface)', border: '1px solid var(--alpha-md)', color: 'var(--ink-soft)',
                           borderRadius: 6, padding: '3px 8px', fontSize: 11, fontWeight: 700,
                           cursor: 'pointer', fontFamily: 'inherit', width: '100%',
                         }}>↺ Replay</button>
@@ -606,13 +605,13 @@ function SettingsTab({ profile, setProfile, settings, setSettings }) {
         <h3 style={{ margin: '0 0 14px', fontSize: 15, fontWeight: 900 }}>Child profile</h3>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 120px', gap: 12, marginBottom: 12 }}>
           <div>
-            <div style={{ fontSize: 12, fontWeight: 700, color: '#7C89A8', marginBottom: 4 }}>Name</div>
+            <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--ink-mute)', marginBottom: 4 }}>Name</div>
             <input value={nameVal} onChange={function(e) { setNameVal(e.target.value); }}
               onKeyDown={function(e) { if (e.key === 'Enter') saveProfile(); }}
               style={inputStyle} placeholder="Child's name"/>
           </div>
           <div>
-            <div style={{ fontSize: 12, fontWeight: 700, color: '#7C89A8', marginBottom: 4 }}>Age</div>
+            <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--ink-mute)', marginBottom: 4 }}>Age</div>
             <input value={ageVal} onChange={function(e) { setAgeVal(e.target.value); }}
               onKeyDown={function(e) { if (e.key === 'Enter') saveProfile(); }}
               style={inputStyle} placeholder="Age" type="number" min="3" max="12"/>
@@ -646,7 +645,7 @@ function SettingsTab({ profile, setProfile, settings, setSettings }) {
         <h3 style={{ margin: '0 0 14px', fontSize: 15, fontWeight: 900 }}>🔊 Voice settings</h3>
 
         <div style={{ marginBottom: 14 }}>
-          <div style={{ fontSize: 12, fontWeight: 700, color: '#7C89A8', marginBottom: 4 }}>ElevenLabs API Key</div>
+          <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--ink-mute)', marginBottom: 4 }}>ElevenLabs API Key</div>
           <div style={{ display: 'flex', gap: 8 }}>
             <input
               type="password"
@@ -658,23 +657,23 @@ function SettingsTab({ profile, setProfile, settings, setSettings }) {
             />
             <button onClick={saveElKey} style={{
               flexShrink: 0, padding: '8px 14px', borderRadius: 8, border: 'none',
-              background: elKeySaved ? 'var(--mint, #8EE3C3)' : 'var(--blue-ink, #3F5FE2)',
+              background: elKeySaved ? 'var(--success)' : 'var(--blue-ink)',
               color: 'white', fontFamily: 'inherit', fontWeight: 800, fontSize: 13, cursor: 'pointer',
               transition: 'background 200ms',
             }}>{elKeySaved ? '✓ Saved' : 'Save'}</button>
             {elKey && (
               <button onClick={clearElKey} style={{
                 flexShrink: 0, padding: '8px 14px', borderRadius: 8, border: 'none',
-                background: '#FFE8DF', color: '#C0392B',
+                background: 'var(--danger-soft)', color: 'var(--danger-text)',
                 fontFamily: 'inherit', fontWeight: 800, fontSize: 13, cursor: 'pointer',
               }}>Clear</button>
             )}
           </div>
-          {elKeyError && <div style={{ fontSize: 12, color: '#F07171', fontWeight: 700, marginTop: 4 }}>{elKeyError}</div>}
+          {elKeyError && <div style={{ fontSize: 12, color: 'var(--danger)', fontWeight: 700, marginTop: 4 }}>{elKeyError}</div>}
         </div>
 
         <div style={{ marginBottom: 14 }}>
-          <div style={{ fontSize: 12, fontWeight: 700, color: '#7C89A8', marginBottom: 4 }}>Voice</div>
+          <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--ink-mute)', marginBottom: 4 }}>Voice</div>
           <select
             value={elVoice}
             onChange={handleVoiceChange}
@@ -686,7 +685,7 @@ function SettingsTab({ profile, setProfile, settings, setSettings }) {
           </select>
         </div>
 
-        <div style={{ fontSize: 12, color: '#7C89A8', fontWeight: 700, lineHeight: 1.5, background: '#F7F9FC', borderRadius: 8, padding: '10px 12px' }}>
+        <div style={{ fontSize: 12, color: 'var(--ink-mute)', fontWeight: 700, lineHeight: 1.5, background: 'var(--bg)', borderRadius: 8, padding: '10px 12px' }}>
           ℹ️ Get a free key at <strong>elevenlabs.io</strong> (10,000 characters/month free).<br/>
           Without a key, the app uses your device's built-in voice.
         </div>
@@ -702,8 +701,8 @@ function WebSettingRow({ label, value, chev, last, onChange }) {
       borderBottom: last ? 'none' : '1px solid var(--alpha-sm)', cursor: chev ? 'pointer' : 'default',
     }}>
       <div style={{ flex: 1, fontSize: 14, fontWeight: 700 }}>{label}</div>
-      <div style={{ fontSize: 13, color: '#7C89A8', fontWeight: 700 }}>{value}</div>
-      {chev && <svg width="8" height="14" viewBox="0 0 8 14" style={{ marginLeft: 10 }}><path d="M1 1l6 6-6 6" stroke="#B0BCCF" strokeWidth="2" fill="none" strokeLinecap="round"/></svg>}
+      <div style={{ fontSize: 13, color: 'var(--ink-mute)', fontWeight: 700 }}>{value}</div>
+      {chev && <svg width="8" height="14" viewBox="0 0 8 14" style={{ marginLeft: 10 }}><path d="M1 1l6 6-6 6" stroke="var(--ink-mute)" strokeWidth="2" fill="none" strokeLinecap="round"/></svg>}
     </div>
   );
 }
@@ -716,7 +715,7 @@ function WebToggleRow({ label, sub, value, onChange, last }) {
     }}>
       <div style={{ flex: 1 }}>
         <div style={{ fontSize: 14, fontWeight: 700 }}>{label}</div>
-        {sub && <div style={{ fontSize: 12, color: '#7C89A8', fontWeight: 600 }}>{sub}</div>}
+        {sub && <div style={{ fontSize: 12, color: 'var(--ink-mute)', fontWeight: 600 }}>{sub}</div>}
       </div>
       <div onClick={function() { onChange(!value); }} style={{
         width: 44, height: 26, borderRadius: 13, background: value ? 'var(--blue-ink)' : 'var(--alpha-lg)',
@@ -735,24 +734,24 @@ function WebToggleRow({ label, sub, value, onChange, last }) {
 function Metric({ label, value, delta, tone }) {
   return (
     <div style={webCard}>
-      <div style={{ fontSize: 11, fontWeight: 800, color: '#7C89A8', letterSpacing: 0.5, textTransform: 'uppercase' }}>{label}</div>
+      <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--ink-mute)', letterSpacing: 0.5, textTransform: 'uppercase' }}>{label}</div>
       <div style={{ fontSize: 30, fontWeight: 900, margin: '4px 0 2px', letterSpacing: '-0.02em' }}>{value}</div>
       <div style={{ fontSize: 12, color: tone, fontWeight: 800 }}>{delta}</div>
     </div>
   );
 }
 function Focus({ word, accuracy, note }) {
-  const tone = accuracy < 50 ? '#F07171' : accuracy < 70 ? '#FFA000' : '#30C285';
+  var tone = accuracy < 50 ? 'var(--danger)' : accuracy < 70 ? 'var(--warn)' : 'var(--success)';
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
         <span style={{ fontSize: 14, fontWeight: 900 }}>{word}</span>
         <span style={{ fontSize: 12, fontWeight: 800, color: tone }}>{accuracy}%</span>
       </div>
-      <div style={{ height: 8, borderRadius: 4, background: '#EEF1F5', overflow: 'hidden', marginBottom: 4 }}>
-        <div style={{ height: '100%', width: `${accuracy}%`, background: tone }}/>
+      <div style={{ height: 8, borderRadius: 4, background: 'var(--bg)', overflow: 'hidden', marginBottom: 4 }}>
+        <div style={{ height: '100%', width: accuracy + '%', background: tone }}/>
       </div>
-      <div style={{ fontSize: 11, color: '#7C89A8', fontWeight: 600 }}>{note}</div>
+      <div style={{ fontSize: 11, color: 'var(--ink-mute)', fontWeight: 600 }}>{note}</div>
     </div>
   );
 }

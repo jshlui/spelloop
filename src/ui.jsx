@@ -1,5 +1,7 @@
 // Shared UI bits used across screens.
 
+var prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
 function Star({ filled = false, size = 22 }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24">
@@ -94,7 +96,7 @@ function Burst({ show, onDone }) {
         background: colors[i % colors.length],
         transform: `translate(${x}px, ${y}px) rotate(${Math.random() * 360}deg)`,
         opacity: 0,
-        animation: `burst${i} 900ms ease-out forwards`,
+        animation: prefersReducedMotion ? 'none' : `burst${i} 900ms ease-out forwards`,
       }} />
     );
   }
@@ -256,7 +258,7 @@ function SpeakButton({ word, size = 56, big = false }) {
         <div style={{
           width: s * 0.38, height: s * 0.38, border: '3px solid rgba(255,255,255,0.3)',
           borderTopColor: 'white', borderRadius: '50%',
-          animation: 'elSpin 700ms linear infinite',
+          animation: prefersReducedMotion ? 'none' : 'elSpin 700ms linear infinite',
         }}/>
       ) : (
         <svg width={s * 0.45} height={s * 0.45} viewBox="0 0 24 24" fill="white">
@@ -291,7 +293,7 @@ function LevelTransition({ level, color, onDone }) {
       background: color || 'var(--blue, #6C8EFF)',
       zIndex: 200,
       display: 'flex', alignItems: 'center', justifyContent: 'center',
-      animation: 'levelFlash 600ms ease both',
+      animation: prefersReducedMotion ? 'none' : 'levelFlash 600ms ease both',
       pointerEvents: 'none',
     }}>
       <span style={{
@@ -336,7 +338,7 @@ function StreakBadge() {
       padding: '10px 20px',
       fontWeight: 800, fontSize: 18, fontFamily: 'inherit',
       boxShadow: 'var(--shadow-toy)',
-      animation: 'streakIn 0.4s var(--ease-spring) both',
+      animation: prefersReducedMotion ? 'none' : 'streakIn 0.4s var(--ease-spring) both',
       pointerEvents: 'none',
     }}>
       {label}
@@ -364,7 +366,7 @@ function Confetti() {
         'position:absolute', 'left:50%', 'top:50%',
         'width:' + size + 'px', 'height:' + size + 'px',
         'background:' + color, 'border-radius:2px',
-        'animation:confettiFly' + (i % 5) + ' 1.4s ease-out both',
+        prefersReducedMotion ? '' : 'animation:confettiFly' + (i % 5) + ' 1.4s ease-out both',
         '--tx:' + tx + 'px', '--ty:' + ty + 'px', '--rot:' + angle + 'deg',
       ].join(';');
       container.appendChild(el);

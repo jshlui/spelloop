@@ -23,7 +23,7 @@ function SessionReport({ onClose }) {
   return (
     <div style={{
       position: 'fixed', inset: 0, zIndex: 500,
-      background: 'rgba(31,42,68,0.7)', backdropFilter: 'blur(4px)',
+      background: 'rgba(31,42,68,0.7)',
       display: 'flex', alignItems: 'center', justifyContent: 'center',
     }} onClick={onClose}>
       <div onClick={function(e) { e.stopPropagation(); }} style={{
@@ -50,7 +50,7 @@ function SessionReport({ onClose }) {
           ].map(function(item) {
             return React.createElement('div', {
               key: item.label,
-              style: { background: '#F3F6FA', borderRadius: 18, padding: '16px 20px' },
+              style: { background: 'var(--bg)', borderRadius: 18, padding: '16px 20px' },
             },
               React.createElement('div', { style: { fontSize: 13, color: 'var(--ink-mute, #7C89A8)', marginBottom: 4, fontWeight: 700, fontFamily: 'inherit' } }, item.label),
               React.createElement('div', { style: { fontSize: 28, fontWeight: 900, color: 'var(--ink, #1F2A44)', fontFamily: 'inherit' } }, item.value)
@@ -70,7 +70,7 @@ function SessionReport({ onClose }) {
                 <span style={{ textTransform: 'capitalize' }}>{s.mode}</span>
                 <span>{s.pct}%</span>
               </div>
-              <div style={{ height: 12, background: '#E8ECF5', borderRadius: 6, overflow: 'hidden' }}>
+              <div style={{ height: 12, background: 'var(--alpha-sm)', borderRadius: 6, overflow: 'hidden' }}>
                 <div style={{ height: '100%', width: s.pct + '%', background: barColor, borderRadius: 6, transition: 'width 0.6s ease' }} />
               </div>
             </div>
@@ -81,13 +81,24 @@ function SessionReport({ onClose }) {
   );
 }
 
-function RewardScreen({ word, stars, onNext, onHome }) {
+var CONFETTI_BG = React.createElement('svg', {
+  width: '100%', height: '100%', viewBox: '0 0 400 800',
+  style: { position: 'absolute', inset: 0, zIndex: 0, opacity: 0.3 },
+}, Array.from({ length: 24 }).map(function(_, i) {
+  var cs = ['var(--yellow)', 'var(--pink)', 'var(--mint)', 'var(--blue)', 'var(--coral)', 'var(--lilac)'];
+  var x = ((i * 173) % 400).toFixed(0);
+  var y = ((i * 97 + 37) % 800).toFixed(0);
+  var rot = ((i * 47) % 360).toFixed(0);
+  return React.createElement('rect', { key: i, x: x, y: y, width: 8, height: 14, rx: 2, fill: cs[i % cs.length], transform: 'rotate(' + rot + ' ' + x + ' ' + y + ')' });
+}));
+
+function RewardScreen({ word, stars, coins, onNext, onHome }) {
+  coins = coins != null ? coins : (stars === 3 ? 15 : stars === 2 ? 10 : 5);
   const [animIn, setAnimIn] = React.useState(false);
   const [showConfetti, setShowConfetti] = React.useState(false);
   const [showReport, setShowReport] = React.useState(false);
   React.useEffect(() => {
     const t = setTimeout(() => setAnimIn(true), 100);
-    // cascade star sounds
     [0, 300, 600].forEach((d, i) => { if (i < stars) setTimeout(() => window.sfx?.star(), d + 200); });
     return () => clearTimeout(t);
   }, []);
@@ -99,18 +110,12 @@ function RewardScreen({ word, stars, onNext, onHome }) {
   return (
     <div style={{
       position: 'absolute', inset: 0,
-      background: 'linear-gradient(180deg, #FFF2CE 0%, #FFE0EF 100%)',
+      background: 'linear-gradient(180deg, var(--yellow-soft) 0%, var(--pink-soft) 100%)',
       display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
       padding: '60px 24px 40px', zIndex: 200, overflow: 'hidden',
     }}>
       {showConfetti && <Confetti />}
-      {/* confetti bg */}
-      <svg width="100%" height="100%" viewBox="0 0 400 800" style={{ position: 'absolute', inset: 0, zIndex: 0, opacity: 0.3 }}>
-        {Array.from({length: 24}).map((_, i) => {
-          const cs = ['#FFD166', '#FF9ECD', '#8EE3C3', '#6C8EFF', '#FFA07A', '#C7B4FF'];
-          return <rect key={i} x={Math.random()*400} y={Math.random()*800} width="8" height="14" rx="2" fill={cs[i % cs.length]} transform={`rotate(${Math.random()*360} ${Math.random()*400} ${Math.random()*800})`}/>;
-        })}
-      </svg>
+      {CONFETTI_BG}
 
       <div style={{ position: 'relative', zIndex: 1, textAlign: 'center' }}>
         <div style={{
@@ -127,7 +132,6 @@ function RewardScreen({ word, stars, onNext, onHome }) {
           You spelled <span style={{ color: 'var(--blue-ink)', fontWeight: 900 }}>{word}</span>
         </div>
 
-        {/* stars */}
         <div style={{ display: 'flex', gap: 12, justifyContent: 'center', marginBottom: 32 }}>
           {[0, 1, 2].map(i => (
             <div key={i} style={{
@@ -139,7 +143,6 @@ function RewardScreen({ word, stars, onNext, onHome }) {
           ))}
         </div>
 
-        {/* reward: coin / badge */}
         <div style={{
           background: 'var(--surface)', borderRadius: 'var(--r-lg)', padding: '16px 20px',
           display: 'inline-flex', alignItems: 'center', gap: 12,
@@ -148,29 +151,25 @@ function RewardScreen({ word, stars, onNext, onHome }) {
           transition: 'opacity 500ms 800ms, transform 500ms 800ms',
         }}>
           <svg width="40" height="40" viewBox="0 0 40 40">
-            <circle cx="20" cy="20" r="18" fill="#FFD166" stroke="#C8942A" strokeWidth="2"/>
-            <text x="20" y="26" textAnchor="middle" fontSize="18" fontWeight="900" fill="#7A5B0A" fontFamily="system-ui">+5</text>
+            <circle cx="20" cy="20" r="18" fill="var(--yellow)" stroke="var(--yellow-ink)" strokeWidth="2"/>
+            <text x="20" y="26" textAnchor="middle" fontSize="18" fontWeight="900" fill="var(--yellow-ink)" fontFamily="system-ui">+{coins}</text>
           </svg>
           <div style={{ textAlign: 'left' }}>
-            <div style={{ fontSize: 16, fontWeight: 900 }}>+5 coins</div>
+            <div style={{ fontSize: 16, fontWeight: 900 }}>+{coins} coins</div>
             <div style={{ fontSize: 12, color: 'var(--ink-mute)', fontWeight: 700 }}>Save them for sticker packs</div>
           </div>
         </div>
 
-        <div style={{ display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap', alignItems: 'center' }}>
           <BigButton onClick={onHome} color="yellow" style={{ background: 'var(--surface)', color: 'var(--ink)' }}>Map</BigButton>
           <BigButton onClick={onNext} color="coral">Next level ▶</BigButton>
+          <button onClick={() => setShowReport(true)} style={{
+            background: 'transparent', color: 'var(--ink-soft)', border: '2px solid var(--ink-soft)',
+            borderRadius: 999, padding: '14px 20px', fontWeight: 800, fontSize: 'var(--fs-md)',
+            cursor: 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: 6,
+          }}>📊 Report</button>
         </div>
       </div>
-
-      <button onClick={() => setShowReport(true)} aria-label="Session report" style={{
-        position: 'absolute', bottom: 24, right: 24,
-        width: 44, height: 44, borderRadius: '50%',
-        background: 'var(--ink-soft, #4B587A)', color: '#fff',
-        border: 'none', fontSize: 20, cursor: 'pointer',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        boxShadow: '0 4px 12px rgba(0,0,0,0.2)', zIndex: 1,
-      }}>📊</button>
 
       {showReport && <SessionReport onClose={() => setShowReport(false)} />}
     </div>

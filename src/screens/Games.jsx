@@ -78,7 +78,7 @@ function ClickGame({ word, onDone, onClose }) {
             <div key={i} className={`tile small ${i < idx ? 'correct' : i === idx ? 'hint' : 'slot'} ${i < idx ? '' : 'slot'} ${i < idx ? 'filled' : ''}`} style={{
               background: i < idx ? 'var(--success)' : 'rgba(31,42,68,0.06)',
               color: i < idx ? 'white' : 'transparent',
-              border: i === idx ? '3px dashed var(--blue-ink)' : (i < idx ? 'none' : '3px dashed rgba(31,42,68,0.15)'),
+              border: i === idx ? '2px dashed var(--blue-ink)' : (i < idx ? 'none' : '2px dashed var(--alpha-md)'),
               boxShadow: 'none',
             }}>{i < idx ? l : '?'}</div>
           ))}
@@ -274,7 +274,7 @@ function TypeGame({ word, onDone, onClose, device }) {
               width: 54, height: 68, fontSize: 36,
               background: i < typed.length ? 'var(--success)' : 'rgba(31,42,68,0.06)',
               color: i < typed.length ? 'white' : 'transparent',
-              border: i === typed.length ? '3px dashed var(--coral-ink)' : (i < typed.length ? 'none' : '3px dashed rgba(31,42,68,0.15)'),
+              border: i === typed.length ? '2px dashed var(--coral-ink)' : (i < typed.length ? 'none' : '2px dashed var(--alpha-md)'),
               boxShadow: 'none',
             }}>{i < typed.length ? l : '?'}</div>
           ))}
@@ -305,7 +305,13 @@ function KidKeyboard({ onPress, device }) {
               color: 'var(--ink)', fontWeight: 900, fontSize: 20,
               borderRadius: 10, cursor: 'pointer', fontFamily: 'inherit',
               boxShadow: '0 2px 0 rgba(31,42,68,0.12)',
-            }}>{l}</button>
+              transition: 'background var(--dur-fast), transform var(--dur-fast)',
+            }}
+            onMouseEnter={function(e) { e.currentTarget.style.background = 'var(--blue-soft)'; }}
+            onMouseLeave={function(e) { e.currentTarget.style.background = 'var(--surface)'; }}
+            onMouseDown={function(e) { e.currentTarget.style.transform = 'scale(0.92)'; }}
+            onMouseUp={function(e) { e.currentTarget.style.transform = 'scale(1)'; }}
+            >{l}</button>
           ))}
         </div>
       ))}
@@ -373,9 +379,9 @@ function MissingGame({ word, onDone, onClose }) {
           {word.split('').map((l, i) => (
             <div key={i} className={`tile ${i === missingIdx ? 'slot' : ''}`} style={{
               width: 58, height: 72, fontSize: 40,
-              background: i === missingIdx ? (picked === target ? 'var(--success)' : 'rgba(31,42,68,0.06)') : 'var(--mint)',
-              color: i === missingIdx ? (picked === target ? 'white' : 'rgba(31,42,68,0.35)') : '#0f5c42',
-              border: i === missingIdx && picked !== target ? '3px dashed var(--mint-ink)' : 'none',
+              background: i === missingIdx ? (picked === target ? 'var(--success)' : 'var(--alpha-sm)') : 'var(--mint)',
+              color: i === missingIdx ? (picked === target ? 'white' : 'var(--disabled)') : 'var(--mint-ink)',
+              border: i === missingIdx && picked !== target ? '2px dashed var(--mint-ink)' : 'none',
               boxShadow: i === missingIdx ? 'none' : 'var(--shadow-tile)',
             }}>{i === missingIdx ? (picked === target ? target : '?') : l}</div>
           ))}
@@ -493,8 +499,13 @@ function SequenceKeyboard({ onPress, target, flash }) {
                 color: col, fontWeight: 900, fontSize: 18,
                 borderRadius: 10, cursor: 'pointer', fontFamily: 'inherit',
                 boxShadow: '0 2px 0 rgba(31,42,68,0.12)',
-                transition: 'background 80ms',
-              }}>{l}</button>
+                transition: 'background var(--dur-fast), transform var(--dur-fast)',
+              }}
+              onMouseEnter={function(e) { e.currentTarget.style.background = isFlash ? bg : 'var(--blue-soft)'; }}
+              onMouseLeave={function(e) { e.currentTarget.style.background = bg; }}
+              onMouseDown={function(e) { e.currentTarget.style.transform = 'scale(0.92)'; }}
+              onMouseUp={function(e) { e.currentTarget.style.transform = 'scale(1)'; }}
+              >{l}</button>
             );
           })}
         </div>
@@ -581,7 +592,7 @@ function PrecisionGame({ word, onDone, onClose }) {
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             fontSize: 48, fontWeight: 900, color: '#fff',
             cursor: 'none',
-            transition: 'left 0.28s cubic-bezier(0.34,1.56,0.64,1), top 0.28s cubic-bezier(0.34,1.56,0.64,1)',
+            transition: 'left 0.28s cubic-bezier(0.34,1.1,0.64,1), top 0.28s cubic-bezier(0.34,1.1,0.64,1)',
             opacity: transitioning ? 0.45 : 1,
             boxShadow: transitioning ? 'none' : '0 6px 20px rgba(0,0,0,0.18)',
             userSelect: 'none',
@@ -648,9 +659,9 @@ function ScrambleGame({ word, onDone, onClose }) {
               <div key={i} style={{
                 width: 58, height: 72, borderRadius: 14, fontSize: 36, fontWeight: 900,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                background: i < typed.length ? 'var(--mint)' : 'rgba(31,42,68,0.06)',
-                color: i < typed.length ? '#0f5c42' : 'transparent',
-                border: i === typed.length ? '3px dashed var(--mint-ink)' : i < typed.length ? 'none' : '3px dashed rgba(31,42,68,0.15)',
+                background: i < typed.length ? 'var(--mint)' : 'var(--alpha-sm)',
+                color: i < typed.length ? 'var(--mint-ink)' : 'transparent',
+                border: i === typed.length ? '2px dashed var(--mint-ink)' : i < typed.length ? 'none' : '2px dashed var(--alpha-md)',
                 boxShadow: 'none',
               }}>{i < typed.length ? typed[i] : ''}</div>
             );
@@ -727,7 +738,7 @@ function SpeedGame({ word, onDone, onClose }) {
   }, [typed, done, timeLeft]);
 
   const pct = timeLeft / TIME;
-  const timerColor = pct > 0.6 ? '#30C285' : pct > 0.3 ? '#FFA000' : '#F07171';
+  const timerColor = pct > 0.6 ? 'var(--success)' : pct > 0.3 ? 'var(--warn)' : 'var(--danger)';
 
   return (
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: 'var(--bg)' }}>
@@ -749,7 +760,7 @@ function SpeedGame({ word, onDone, onClose }) {
                 display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900,
                 background: i < typed.length ? 'var(--success)' : 'rgba(31,42,68,0.06)',
                 color: i < typed.length ? 'white' : 'transparent',
-                border: i === typed.length ? '3px dashed var(--coral-ink)' : i < typed.length ? 'none' : '3px dashed rgba(31,42,68,0.15)',
+                border: i === typed.length ? '2px dashed var(--coral-ink)' : i < typed.length ? 'none' : '2px dashed var(--alpha-md)',
                 boxShadow: 'none',
               }}>{i < typed.length ? l : ''}</div>
             );
@@ -762,4 +773,464 @@ function SpeedGame({ word, onDone, onClose }) {
   );
 }
 
-Object.assign(window, { ClickGame, DragGame, TypeGame, MissingGame, KeyboardGame, PrecisionGame, ScrambleGame, SpeedGame });
+// ── 9. ECHO — hear the word, spell it without seeing it ──
+function EchoGame({ word, onDone, onClose }) {
+  const { recordClick, recordTaskComplete } = React.useContext(window.GameContext);
+  const [typed, setTyped] = React.useState('');
+  const [wrongCount, setWrongCount] = React.useState(0);
+  const [shake, setShake] = React.useState(false);
+  const [burst, setBurst] = React.useState(false);
+  const taskStartRef = React.useRef(Date.now());
+
+  function speak() {
+    window.sfx?.tap();
+    try {
+      window.speechSynthesis.cancel();
+      var u = new SpeechSynthesisUtterance(word.toLowerCase());
+      u.lang = 'en-AU'; u.rate = 0.65; u.pitch = 1.05; u.volume = 1;
+      var voices = window.speechSynthesis.getVoices();
+      var auVoice = voices.find(function(v) { return v.lang === 'en-AU'; })
+        || voices.find(function(v) { return v.lang.startsWith('en-'); })
+        || null;
+      if (auVoice) u.voice = auVoice;
+      window.speechSynthesis.speak(u);
+    } catch(e) {}
+  }
+
+  React.useEffect(function() {
+    var t = setTimeout(speak, 500);
+    return function() { clearTimeout(t); };
+  }, []);
+
+  function press(letter) {
+    if (typed.length >= word.length) return;
+    var expected = word[typed.length];
+    if (letter === expected) {
+      window.sfx?.playCorrect();
+      recordClick(true, 'echo', Date.now() - taskStartRef.current);
+      var nt = typed + letter;
+      setTyped(nt);
+      if (nt === word) {
+        recordTaskComplete('echo', Date.now() - taskStartRef.current);
+        setBurst(true); window.sfx?.complete();
+        setTimeout(function() { onDone(wrongCount === 0 ? 3 : wrongCount <= 2 ? 2 : 1); }, 1000);
+      }
+    } else {
+      window.sfx?.playWrong();
+      recordClick(false, 'echo', Date.now() - taskStartRef.current);
+      setWrongCount(function(w) { return w + 1; });
+      setShake(true);
+      setTimeout(function() { setShake(false); }, 300);
+    }
+  }
+
+  React.useEffect(function() {
+    function onKey(e) {
+      if (e.key.length === 1 && /[a-zA-Z]/.test(e.key)) press(e.key.toUpperCase());
+      if (e.key === 'Backspace') setTyped(function(t) { return t.slice(0, -1); });
+    }
+    window.addEventListener('keydown', onKey);
+    return function() { window.removeEventListener('keydown', onKey); };
+  }, [typed, wrongCount, word]);
+
+  return (
+    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: 'var(--bg)' }}>
+      <GameHeader mode="echo" progress={typed.length / word.length} onClose={onClose}/>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'space-between', padding: '24px 16px 32px' }}>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ fontSize: 12, color: 'var(--ink-mute)', fontWeight: 800, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 20 }}>
+            Listen, then spell!
+          </div>
+          <button onClick={speak} style={{
+            width: 100, height: 100, borderRadius: '50%',
+            background: 'var(--lilac)', border: 'none', cursor: 'pointer',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            boxShadow: 'var(--shadow-toy)',
+            transition: 'transform var(--dur-fast) var(--ease-toy)',
+          }}
+          onMouseEnter={function(e) { e.currentTarget.style.transform = 'scale(1.08)'; }}
+          onMouseLeave={function(e) { e.currentTarget.style.transform = 'scale(1)'; }}
+          onMouseDown={function(e) { e.currentTarget.style.transform = 'scale(0.94)'; }}
+          onMouseUp={function(e) { e.currentTarget.style.transform = 'scale(1.08)'; }}
+          >
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="white">
+              <path d="M3 9v6h4l5 5V4L7 9H3z"/>
+              <path d="M15 8 Q18 12 15 16" stroke="white" strokeWidth="2" fill="none" strokeLinecap="round"/>
+              <path d="M18 5 Q23 12 18 19" stroke="white" strokeWidth="2" fill="none" strokeLinecap="round"/>
+            </svg>
+          </button>
+          <div style={{ fontSize: 13, color: 'var(--ink-mute)', fontWeight: 700, marginTop: 12 }}>Tap to hear again</div>
+        </div>
+
+        <div style={{ display: 'flex', gap: 10, justifyContent: 'center', animation: shake ? 'shake 300ms' : 'none' }}>
+          {word.split('').map(function(l, i) {
+            return (
+              <div key={i} style={{
+                width: 54, height: 68, borderRadius: 14, fontSize: 36, fontWeight: 900,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                background: i < typed.length ? 'var(--success)' : 'var(--alpha-sm)',
+                color: i < typed.length ? 'white' : 'var(--ink-mute)',
+                border: i === typed.length ? '2px dashed var(--lilac-ink)' : i < typed.length ? 'none' : '2px dashed var(--alpha-md)',
+                fontSize: i < typed.length ? 36 : 24,
+              }}>{i < typed.length ? typed[i] : '–'}</div>
+            );
+          })}
+        </div>
+
+        <KidKeyboard onPress={press}/>
+      </div>
+      <Burst show={burst}/>
+    </div>
+  );
+}
+
+// ── 10. FLASH — see the word briefly, then spell from memory ──
+function FlashGame({ word, onDone, onClose }) {
+  const { recordClick, recordTaskComplete } = React.useContext(window.GameContext);
+  const [phase, setPhase] = React.useState('flash'); // 'flash' | 'spell'
+  const [typed, setTyped] = React.useState('');
+  const [wrongCount, setWrongCount] = React.useState(0);
+  const [peeksLeft, setPeeksLeft] = React.useState(1);
+  const [peeking, setPeeking] = React.useState(false);
+  const [shake, setShake] = React.useState(false);
+  const [burst, setBurst] = React.useState(false);
+  const [flashProgress, setFlashProgress] = React.useState(0);
+  const taskStartRef = React.useRef(Date.now());
+  const FLASH_DURATION = 2500;
+
+  React.useEffect(function() {
+    if (phase !== 'flash' && !peeking) return;
+    var start = Date.now();
+    var raf;
+    var duration = peeking ? 800 : FLASH_DURATION;
+    function tick() {
+      var p = Math.min((Date.now() - start) / duration, 1);
+      setFlashProgress(p);
+      if (p < 1) {
+        raf = requestAnimationFrame(tick);
+      } else {
+        if (peeking) { setPeeking(false); }
+        else { setPhase('spell'); taskStartRef.current = Date.now(); }
+      }
+    }
+    raf = requestAnimationFrame(tick);
+    return function() { cancelAnimationFrame(raf); };
+  }, [phase, peeking]);
+
+  function peek() {
+    if (peeksLeft <= 0 || peeking) return;
+    setPeeksLeft(0); setPeeking(true); setFlashProgress(0);
+  }
+
+  function press(letter) {
+    if (phase !== 'spell' || peeking || typed.length >= word.length) return;
+    var expected = word[typed.length];
+    if (letter === expected) {
+      window.sfx?.playCorrect();
+      recordClick(true, 'flash', Date.now() - taskStartRef.current);
+      var nt = typed + letter;
+      setTyped(nt);
+      if (nt === word) {
+        recordTaskComplete('flash', Date.now() - taskStartRef.current);
+        setBurst(true); window.sfx?.complete();
+        setTimeout(function() { onDone(wrongCount === 0 ? 3 : wrongCount <= 2 ? 2 : 1); }, 1000);
+      }
+    } else {
+      window.sfx?.playWrong();
+      recordClick(false, 'flash', Date.now() - taskStartRef.current);
+      setWrongCount(function(w) { return w + 1; });
+      setShake(true);
+      setTimeout(function() { setShake(false); }, 300);
+    }
+  }
+
+  React.useEffect(function() {
+    if (phase !== 'spell') return;
+    function onKey(e) {
+      if (e.key.length === 1 && /[a-zA-Z]/.test(e.key)) press(e.key.toUpperCase());
+      if (e.key === 'Backspace') setTyped(function(t) { return t.slice(0, -1); });
+    }
+    window.addEventListener('keydown', onKey);
+    return function() { window.removeEventListener('keydown', onKey); };
+  }, [phase, typed, wrongCount, word]);
+
+  var showWord = phase === 'flash' || peeking;
+  var trackLen = word.length <= 4 ? 300 : word.length <= 6 ? 400 : 500;
+
+  return (
+    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: 'var(--bg)' }}>
+      <GameHeader mode="flash" progress={typed.length / word.length} onClose={onClose}/>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'space-between', padding: '24px 16px 32px' }}>
+
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ fontSize: 12, color: 'var(--ink-mute)', fontWeight: 800, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 16 }}>
+            {showWord ? 'Remember it!' : 'Now spell it!'}
+          </div>
+          <div style={{ position: 'relative', display: 'inline-block', padding: '16px 24px' }}>
+            {(phase === 'flash' || peeking) && (
+              <svg style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none' }} viewBox={'0 0 ' + (trackLen + 32) + ' 96'}>
+                <rect x="4" y="4" width={trackLen + 24} height="88" rx="18" fill="none" stroke="var(--yellow)" strokeWidth="4" strokeOpacity="0.2"/>
+                <rect x="4" y="4" width={trackLen + 24} height="88" rx="18" fill="none" stroke="var(--yellow)" strokeWidth="4"
+                  strokeDasharray={2 * (trackLen + 24) + 2 * 88}
+                  strokeDashoffset={(2 * (trackLen + 24) + 2 * 88) * (1 - flashProgress)}/>
+              </svg>
+            )}
+            <div style={{
+              fontFamily: "'Grandstander','Nunito',system-ui,sans-serif",
+              fontSize: 'clamp(40px,7vw,72px)', fontWeight: 900,
+              color: 'var(--yellow-ink)', letterSpacing: 6,
+              opacity: showWord ? 1 : 0,
+              transition: 'opacity 200ms',
+              minWidth: 80, textAlign: 'center',
+            }}>{word}</div>
+          </div>
+        </div>
+
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 }}>
+          <div style={{ display: 'flex', gap: 10, justifyContent: 'center', animation: shake ? 'shake 300ms' : 'none' }}>
+            {word.split('').map(function(l, i) {
+              return (
+                <div key={i} style={{
+                  width: 54, height: 68, borderRadius: 14, fontWeight: 900,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  background: i < typed.length ? 'var(--success)' : 'var(--alpha-sm)',
+                  color: i < typed.length ? 'white' : 'transparent',
+                  border: i === typed.length ? '2px dashed var(--yellow-ink)' : i < typed.length ? 'none' : '2px dashed var(--alpha-md)',
+                  fontSize: i < typed.length ? 36 : 0,
+                }}>{i < typed.length ? typed[i] : ''}</div>
+              );
+            })}
+          </div>
+          {phase === 'spell' && peeksLeft > 0 && !peeking && (
+            <button onClick={peek} style={{
+              background: 'var(--yellow-soft)', color: 'var(--yellow-ink)',
+              border: '1px solid var(--alpha-md)', borderRadius: 999,
+              padding: '8px 20px', fontWeight: 800, fontSize: 13,
+              cursor: 'pointer', fontFamily: 'inherit',
+              transition: 'transform var(--dur-fast)',
+            }}
+            onMouseEnter={function(e) { e.currentTarget.style.transform = 'scale(1.05)'; }}
+            onMouseLeave={function(e) { e.currentTarget.style.transform = 'scale(1)'; }}
+            >👁 Peek ({peeksLeft} left)</button>
+          )}
+        </div>
+
+        {phase === 'spell' ? <KidKeyboard onPress={press}/> : <div style={{ height: 200 }}/>}
+      </div>
+      <Burst show={burst}/>
+    </div>
+  );
+}
+
+// ── 11. CODING — Build the Path (sequence builder) ──
+var CODING_LEVEL_CONFIGS = {
+  'L1': { start: [2,1], goal: [2,3], minSteps: 2 },
+  'L2': { start: [2,0], goal: [1,2], minSteps: 3 },
+  'L3': { start: [4,0], goal: [2,3], minSteps: 5 },
+};
+
+var CODING_DIRS = [
+  { label: 'Move Right', icon: '→', key: 'R', dr: 0,  dc: 1  },
+  { label: 'Move Left',  icon: '←', key: 'L', dr: 0,  dc: -1 },
+  { label: 'Move Up',    icon: '↑', key: 'U', dr: -1, dc: 0  },
+  { label: 'Move Down',  icon: '↓', key: 'D', dr: 1,  dc: 0  },
+];
+
+function CodingGame({ word, onDone, onClose }) {
+  var GRID = 5;
+  var level = CODING_LEVEL_CONFIGS[word] || CODING_LEVEL_CONFIGS['L1'];
+
+  var [sequence, setSequence] = React.useState([]);
+  var [playerPos, setPlayerPos] = React.useState(level.start.slice());
+  var [running, setRunning] = React.useState(false);
+  var [activeStep, setActiveStep] = React.useState(-1);
+  var [result, setResult] = React.useState(null);
+  var [wrongRuns, setWrongRuns] = React.useState(0);
+  var [burst, setBurst] = React.useState(false);
+
+  function addStep(dir) {
+    if (running || result === 'success') return;
+    window.sfx?.tap();
+    setSequence(function(s) { return s.concat(dir); });
+  }
+
+  function clearSequence() {
+    if (running) return;
+    window.sfx?.tap();
+    setSequence([]);
+    setPlayerPos(level.start.slice());
+    setResult(null);
+    setActiveStep(-1);
+  }
+
+  function runSequence() {
+    if (running || sequence.length === 0 || result === 'success') return;
+    setResult(null);
+    setActiveStep(-1);
+    setRunning(true);
+
+    // Compute full path upfront
+    var path = [level.start.slice()];
+    var cur = level.start.slice();
+    var success = false;
+    for (var i = 0; i < sequence.length; i++) {
+      var d = sequence[i];
+      var nr = Math.max(0, Math.min(GRID - 1, cur[0] + d.dr));
+      var nc = Math.max(0, Math.min(GRID - 1, cur[1] + d.dc));
+      cur = [nr, nc];
+      path.push(cur.slice());
+      if (nr === level.goal[0] && nc === level.goal[1]) { success = true; break; }
+    }
+
+    var STEP_MS = 420;
+    for (var step = 1; step < path.length; step++) {
+      (function(s, p) {
+        setTimeout(function() {
+          setPlayerPos(p);
+          setActiveStep(s - 1);
+        }, s * STEP_MS);
+      })(step, path[step]);
+    }
+
+    setTimeout(function() {
+      setRunning(false);
+      if (success) {
+        setBurst(true);
+        window.sfx?.complete();
+        var stars = wrongRuns === 0 ? 3 : wrongRuns === 1 ? 2 : 1;
+        setTimeout(function() { onDone(stars); }, 1000);
+      } else {
+        setResult('fail');
+        setWrongRuns(function(w) { return w + 1; });
+        window.sfx?.playWrong();
+      }
+    }, path.length * STEP_MS);
+  }
+
+  var progress = result === 'success' ? 1 : running && sequence.length > 0 ? (activeStep + 1) / sequence.length : 0;
+  var CELL = 48;
+
+  return (
+    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: 'var(--bg)' }}>
+      <GameHeader mode="coding" progress={progress} onClose={onClose}/>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'space-between', padding: '10px 16px 20px', overflowY: 'auto' }}>
+
+        <div style={{ fontSize: 12, color: 'var(--ink-mute)', fontWeight: 800, letterSpacing: 1, textTransform: 'uppercase' }}>
+          Build the path to the ⭐
+        </div>
+
+        {/* Grid Board */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(' + GRID + ', ' + CELL + 'px)', gap: 4 }}>
+          {Array.from({ length: GRID * GRID }).map(function(_, idx) {
+            var r = Math.floor(idx / GRID);
+            var c = idx % GRID;
+            var isPlayer = playerPos[0] === r && playerPos[1] === c;
+            var isGoal = level.goal[0] === r && level.goal[1] === c;
+            var isStart = !running && result === null && level.start[0] === r && level.start[1] === c && !isPlayer;
+            return (
+              <div key={idx} style={{
+                width: CELL, height: CELL, borderRadius: 10,
+                background: isPlayer ? 'var(--blue)' : isGoal ? 'var(--yellow-soft)' : 'var(--alpha-sm)',
+                border: isPlayer ? 'none' : isGoal ? '2px dashed var(--yellow-ink)' : '1px solid var(--alpha-md)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                transition: 'background 200ms',
+              }}>
+                {isPlayer && isGoal && <span style={{ fontSize: 22 }}>🎉</span>}
+                {isPlayer && !isGoal && <div style={{ width: 26, height: 26, borderRadius: '50%', background: 'white', boxShadow: '0 2px 6px rgba(0,0,0,0.3)' }}/>}
+                {!isPlayer && isGoal && <span style={{ fontSize: 22 }}>⭐</span>}
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Sequence display */}
+        <div style={{
+          display: 'flex', gap: 6, flexWrap: 'wrap', justifyContent: 'center',
+          minHeight: 48, padding: '8px 12px', background: 'var(--alpha-sm)',
+          borderRadius: 14, width: '100%', alignItems: 'center',
+        }}>
+          {sequence.length === 0 ? (
+            <span style={{ color: 'var(--ink-mute)', fontSize: 13, fontWeight: 700 }}>Tap buttons to build your sequence…</span>
+          ) : sequence.map(function(step, i) {
+            var isActive = activeStep === i;
+            var isPast = activeStep > i;
+            return (
+              <div key={i} style={{
+                width: 36, height: 36, borderRadius: 8,
+                background: isPast ? 'var(--success)' : isActive ? 'var(--coral)' : 'var(--blue)',
+                color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: 18, fontWeight: 900,
+                transform: isActive ? 'scale(1.2)' : 'scale(1)',
+                transition: 'transform 200ms, background 200ms',
+                opacity: isPast ? 0.5 : 1,
+              }}>{step.icon}</div>
+            );
+          })}
+        </div>
+
+        {/* Result feedback */}
+        {result && (
+          <div style={{
+            padding: '10px 20px', borderRadius: 12, textAlign: 'center',
+            background: result === 'success' ? 'var(--success)' : 'var(--coral-soft)',
+            color: result === 'success' ? 'white' : 'var(--coral-ink)',
+            fontWeight: 800, fontSize: 14,
+          }}>
+            {result === 'fail' ? '❌ Not quite — adjust your sequence and try again!' : '🎉 You made it!'}
+          </div>
+        )}
+
+        {/* Direction buttons */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, width: '100%' }}>
+          {CODING_DIRS.map(function(dir) {
+            var disabled = running || result === 'success';
+            return (
+              <button key={dir.key} onClick={function() { addStep(dir); }} disabled={disabled}
+                style={{
+                  padding: '11px 8px', borderRadius: 14, border: 'none',
+                  background: disabled ? 'var(--alpha-sm)' : 'var(--blue-soft)',
+                  color: disabled ? 'var(--ink-mute)' : 'var(--blue-ink)',
+                  fontFamily: 'inherit', fontWeight: 800, fontSize: 14,
+                  cursor: disabled ? 'default' : 'pointer',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                  transition: 'background 150ms, color 150ms',
+                }}
+                onMouseEnter={function(e) { if (!disabled) { e.currentTarget.style.background = 'var(--blue)'; e.currentTarget.style.color = 'white'; } }}
+                onMouseLeave={function(e) { if (!disabled) { e.currentTarget.style.background = 'var(--blue-soft)'; e.currentTarget.style.color = 'var(--blue-ink)'; } }}
+              >
+                <span style={{ fontSize: 20 }}>{dir.icon}</span>
+                <span>{dir.label}</span>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Clear + Run */}
+        <div style={{ display: 'flex', gap: 10, width: '100%' }}>
+          <button onClick={clearSequence} disabled={running}
+            style={{
+              flex: 1, padding: '12px', borderRadius: 14,
+              border: '2px solid var(--alpha-md)', background: 'var(--surface)',
+              color: running ? 'var(--ink-mute)' : 'var(--ink-soft)',
+              fontFamily: 'inherit', fontWeight: 800, fontSize: 14,
+              cursor: running ? 'default' : 'pointer',
+            }}>🗑 Clear</button>
+          <button onClick={runSequence} disabled={running || sequence.length === 0}
+            style={{
+              flex: 2, padding: '12px', borderRadius: 14, border: 'none',
+              background: running || sequence.length === 0 ? 'var(--alpha-sm)' : 'var(--coral)',
+              color: running || sequence.length === 0 ? 'var(--ink-mute)' : 'white',
+              fontFamily: 'inherit', fontWeight: 900, fontSize: 15,
+              cursor: running || sequence.length === 0 ? 'default' : 'pointer',
+              transition: 'background 150ms',
+            }}>
+            {running ? '⏳ Running…' : '▶ Run'}
+          </button>
+        </div>
+      </div>
+      <Burst show={burst}/>
+    </div>
+  );
+}
+
+Object.assign(window, { ClickGame, DragGame, TypeGame, MissingGame, KeyboardGame, PrecisionGame, ScrambleGame, SpeedGame, EchoGame, FlashGame, CodingGame });
