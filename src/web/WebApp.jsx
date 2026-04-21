@@ -379,7 +379,7 @@ function LandscapeShell({ title, onBack, onHelp, topExtra, showBack, children })
       </div>
 
       {/* Content layer over landscape */}
-      <div style={{ position: 'relative', zIndex: 10 }}>
+      <div style={{ position: 'relative', zIndex: 10, minHeight: 'calc(100vh - 68px)' }}>
         {children}
       </div>
     </div>
@@ -1525,4 +1525,4 @@ function StarterSelect({ profile, setProfile }) {
   );
 }
 
-Object.assign(window, { WebApp, WebHome, WebStat, WebShop, WebCodeLab, WebPet, StarterSelect, isSpeciesUnlocked, getSpeciesDisplayPrice, LandscapeShell, ScreenPanel });
+Object.assign(window, { WebApp, WebHome, WebShop, WebCodeLab, WebPet, StarterSelect, isSpeciesUnlocked, getSpeciesDisplayPrice, LandscapeShell, ScreenPanel });
