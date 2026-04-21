@@ -281,7 +281,7 @@ function ProfilesTab({ profiles, activeId, onSwitch, onAdd, onDelete, onReset })
       {confirmState && (
         <div style={{
           position: 'fixed', inset: 0, zIndex: 400,
-          background: 'rgba(31,42,68,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+          background: 'var(--alpha-mask)', display: 'flex', alignItems: 'center', justifyContent: 'center',
         }}>
           <div style={Object.assign({}, webCard, { maxWidth: 380, width: '90vw', textAlign: 'center' })}>
             <div style={{ fontSize: 36, marginBottom: 12 }}>{confirmState.action === 'delete' ? '🗑️' : '↺'}</div>

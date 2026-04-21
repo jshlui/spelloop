@@ -1,5 +1,7 @@
 // Web versions of Map, Me, Game shell, Reward — landscape/desktop layouts.
 
+var prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
 // ─── MAP ────────────────────────────────────────────────
 var CHAPTER_PTS = [
   { x: 90,  y: 340 }, { x: 220, y: 260 }, { x: 360, y: 360 }, { x: 500, y: 220 },
@@ -50,8 +52,9 @@ function WebMap({ levels, onPlayLevel }) {
             <div key={ch.id} style={{
               background: chLocked ? 'var(--surface)' : 'white',
               borderRadius: 24, overflow: 'hidden',
-              boxShadow: 'var(--shadow-soft)',
-              opacity: chLocked ? 0.55 : 1,
+              boxShadow: chLocked ? 'var(--shadow-soft)' : 'var(--shadow-toy)',
+              opacity: chLocked ? 0.5 : 1,
+              transition: 'opacity var(--dur-mid) ease',
             }}>
               {/* chapter header strip */}
               <div style={{
@@ -72,17 +75,21 @@ function WebMap({ levels, onPlayLevel }) {
                 <svg width="100%" height="420" viewBox="0 0 1140 420" style={{ display: 'block', overflow: 'visible' }}>
                   <defs>
                     <pattern id={'dots' + ch.id} width="24" height="24" patternUnits="userSpaceOnUse">
-                      <circle cx="2" cy="2" r="1" fill="rgba(31,42,68,0.06)"/>
+                      <circle cx="2" cy="2" r="1" fill="var(--alpha-sm)"/>
                     </pattern>
                   </defs>
                   <rect width="100%" height="100%" fill={'url(#dots' + ch.id + ')'}/>
-                  <path d={d} stroke="#E8ECF5" strokeWidth="18" fill="none" strokeLinecap="round"/>
-                  <path d={d} stroke="rgba(31,42,68,0.06)" strokeWidth="18" fill="none" strokeLinecap="round" strokeDasharray="2 14"/>
+                  <path d={d} stroke="var(--blue-soft)" strokeWidth="18" fill="none" strokeLinecap="round"/>
+                  <path d={d} stroke="var(--alpha-sm)" strokeWidth="18" fill="none" strokeLinecap="round" strokeDasharray="2 14"/>
                   {chLevels.map(function(lv, i) {
                     var pt = CHAPTER_PTS[i] || CHAPTER_PTS[CHAPTER_PTS.length - 1];
                     return (
                       <g key={lv.id} transform={'translate(' + pt.x + ',' + pt.y + ')'}
                         style={{ cursor: lv.locked && !lv.current ? 'default' : 'pointer' }}
+                        role={(!lv.locked || lv.current) ? 'button' : undefined}
+                        tabIndex={(!lv.locked || lv.current) ? 0 : -1}
+                        aria-label={lv.locked && !lv.current ? 'Level ' + lv.id + ' — locked' : 'Level ' + lv.id + ': ' + lv.word + (lv.done ? ', done with ' + lv.stars + ' stars' : lv.current ? ', current level' : ', unlocked')}
+                        onKeyDown={function(e) { if ((e.key === 'Enter' || e.key === ' ') && (!lv.locked || lv.current)) { e.preventDefault(); onPlayLevel(lv); } }}
                         onClick={function() { if (!lv.locked || lv.current) onPlayLevel(lv); }}>
                         <WebLevelNode level={lv}/>
                       </g>
@@ -96,15 +103,12 @@ function WebMap({ levels, onPlayLevel }) {
       </div>
 
       {/* mode legend */}
-      <div style={{ marginTop: 20, display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+      <div style={{ marginTop: 20, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
         {['click', 'drag', 'type', 'missing', 'keyboard', 'boss'].map(function(m) {
           var meta = MODE_META[m];
-          var bg = meta.color === 'blue' ? '#6C8EFF' : meta.color === 'pink' ? '#FF9ECD'
-            : meta.color === 'mint' ? '#8EE3C3' : meta.color === 'coral' ? '#FFA07A'
-            : meta.color === 'lilac' ? '#C7B4FF' : '#FFD166';
           return (
-            <div key={m} style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'var(--surface)', padding: '8px 14px', borderRadius: 999, boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
-              <div style={{ width: 22, height: 22, borderRadius: '50%', background: bg, color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, fontSize: 12 }}>{meta.icon}</div>
+            <div key={m} style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'var(--surface)', padding: '8px 14px', borderRadius: 'var(--r-pill)', boxShadow: 'var(--shadow-soft)' }}>
+              <div style={{ width: 22, height: 22, borderRadius: '50%', background: 'var(--' + meta.color + ')', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, fontSize: 11 }}>{meta.icon}</div>
               <span style={{ fontSize: 13, fontWeight: 800 }}>{meta.label}</span>
             </div>
           );
@@ -117,28 +121,26 @@ function WebMap({ levels, onPlayLevel }) {
 function WebLevelNode({ level }) {
   const m = MODE_META[level.mode];
   const isDone = level.done, isCurrent = level.current, isLocked = level.locked;
-  const bg = isLocked ? '#A7B1C6' : isDone ? '#30C285' : `var(--${m.color})`;
-  const cssBg = isLocked ? '#A7B1C6' : isDone ? '#30C285'
-    : m.color === 'blue' ? '#6C8EFF' : m.color === 'pink' ? '#FF9ECD'
-    : m.color === 'mint' ? '#8EE3C3' : m.color === 'coral' ? '#FFA07A'
-    : m.color === 'lilac' ? '#C7B4FF' : '#FFD166';
+  const cssBg = isLocked ? 'var(--ink-mute)' : isDone ? 'var(--success)' : 'var(--' + m.color + ')';
   return (
     <>
       {isCurrent && (
         <g>
           <rect x="-50" y="-80" width="100" height="24" rx="12" fill="white"/>
-          <text x="0" y="-64" textAnchor="middle" fontSize="11" fontWeight="900" fill="#1F2A44" fontFamily="Nunito, system-ui">▶ YOU ARE HERE</text>
-          <circle r="46" fill="none" stroke="white" strokeWidth="3" opacity="0.7">
-            <animate attributeName="r" from="36" to="52" dur="1.5s" repeatCount="indefinite"/>
-            <animate attributeName="opacity" from="0.7" to="0" dur="1.5s" repeatCount="indefinite"/>
-          </circle>
+          <text x="0" y="-64" textAnchor="middle" fontSize="11" fontWeight="900" fill="var(--ink)" fontFamily="Nunito, system-ui">▶ YOU ARE HERE</text>
+          {!prefersReducedMotion && (
+            <circle r="46" fill="none" stroke="white" strokeWidth="3" opacity="0.7">
+              <animate attributeName="r" from="36" to="52" dur="1.5s" repeatCount="indefinite"/>
+              <animate attributeName="opacity" from="0.7" to="0" dur="1.5s" repeatCount="indefinite"/>
+            </circle>
+          )}
         </g>
       )}
       <circle r="36" fill={cssBg} stroke={isCurrent ? 'white' : 'transparent'} strokeWidth="4"/>
       <text x="0" y="8" textAnchor="middle" fontSize={isLocked ? 22 : 26} fontWeight="900" fill="white" fontFamily="Nunito, system-ui">
         {isLocked ? '🔒' : isDone ? '✓' : m.icon}
       </text>
-      <text x="0" y="58" textAnchor="middle" fontSize="14" fontWeight="900" fill="#1F2A44" fontFamily="Nunito, system-ui">
+      <text x="0" y="58" textAnchor="middle" fontSize="14" fontWeight="900" fill="var(--ink)" fontFamily="Nunito, system-ui">
         {isLocked ? `Level ${level.id}` : level.word}
       </text>
       {isDone && (
@@ -146,8 +148,8 @@ function WebLevelNode({ level }) {
           {[0,1,2].map(i => (
             <path key={i} transform={`translate(${i*11}, 0) scale(0.5)`}
               d="M 6 0 L 7.5 3.5 L 11 4 L 8.5 6.5 L 9 10 L 6 8 L 3 10 L 3.5 6.5 L 1 4 L 4.5 3.5 Z"
-              fill={i < level.stars ? '#FFD166' : 'rgba(31,42,68,0.15)'}
-              stroke={i < level.stars ? '#C8942A' : 'none'} strokeWidth="0.5"/>
+              fill={i < level.stars ? 'var(--yellow)' : 'var(--alpha-md)'}
+              stroke={i < level.stars ? 'var(--yellow-ink)' : 'none'} strokeWidth="0.5"/>
           ))}
         </g>
       )}
@@ -197,7 +199,7 @@ function WebMe({ profile, setProfile, levels, onOpenParent }) {
       {avatarOpen && (
         <div onClick={function() { setAvatarOpen(false); }} style={{
           position: 'fixed', inset: 0, zIndex: 200,
-          background: 'rgba(31,42,68,0.55)', backdropFilter: 'blur(4px)',
+          background: 'var(--alpha-mask)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
         }}>
           <div onClick={function(e) { e.stopPropagation(); }} style={{
@@ -229,18 +231,31 @@ function WebMe({ profile, setProfile, levels, onOpenParent }) {
         </div>
       )}
 
-      <div style={{ display: 'grid', gridTemplateColumns: '280px 1fr', gap: 24 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'min(280px,30vw) 1fr', gap: 24 }}>
         {/* left — avatar panel */}
         <div className="card" style={{ textAlign: 'center', padding: '28px 20px' }}>
           <div style={{ display: 'inline-block', position: 'relative' }}>
             <Avatar id={profile.avatar} size={140} style={avatarStyle}/>
             <div style={{
-              position: 'absolute', bottom: 4, right: -6,
+              position: 'absolute', bottom: -2, right: -8,
               background: 'var(--coral)', color: 'white', fontWeight: 900,
-              fontSize: 14, padding: '4px 12px', borderRadius: 999,
-              boxShadow: 'var(--shadow-tile)',
+              fontSize: 14, padding: '4px 12px', borderRadius: 'var(--r-pill)',
+              boxShadow: '0 0 0 3px var(--bg), var(--shadow-toy)',
             }}>Lv {profile.level}</div>
           </div>
+          {(function() {
+            var equipped = profile.equipped || {};
+            var avItems = window.AVATAR_ITEMS || [];
+            var headItem = avItems.find(function(i) { return i.id === equipped.head; });
+            var badgeItem = avItems.find(function(i) { return i.id === equipped.badge; });
+            if (!headItem && !badgeItem) return null;
+            return (
+              <div style={{ display: 'flex', gap: 8, justifyContent: 'center', marginTop: 10 }}>
+                {headItem && <span style={{ fontSize: 24 }} title={headItem.name}>{headItem.emoji}</span>}
+                {badgeItem && <span style={{ fontSize: 24 }} title={badgeItem.name}>{badgeItem.emoji}</span>}
+              </div>
+            );
+          })()}
           {editingName ? (
             <div style={{ margin: '14px 0 4px' }}>
               <input autoFocus value={nameInput}
@@ -262,9 +277,9 @@ function WebMe({ profile, setProfile, levels, onOpenParent }) {
             </h2>
           )}
           <div style={{ fontSize: 13, color: 'var(--ink-mute)', fontWeight: 700, marginBottom: 18 }}>Age {profile.age}</div>
-          <button onClick={function() { setAvatarOpen(true); }} style={{
+          <button className="btn-3d" onClick={function() { setAvatarOpen(true); }} style={{
             background: 'var(--lilac-soft)', color: 'var(--lilac-ink)',
-            border: 'none', padding: '10px 18px', borderRadius: 999,
+            border: 'none', padding: '10px 18px', borderRadius: 'var(--r-pill)',
             fontWeight: 900, fontSize: 13, cursor: 'pointer', fontFamily: 'inherit',
           }}>Change avatar</button>
         </div>
@@ -298,11 +313,11 @@ function WebMe({ profile, setProfile, levels, onOpenParent }) {
                     background: b.unlocked ? 'var(--yellow-soft)' : 'var(--bg)',
                     borderRadius: 14, padding: 14,
                     display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6,
-                    opacity: b.unlocked ? 1 : 0.4, filter: b.unlocked ? 'none' : 'grayscale(1)',
+                    opacity: b.unlocked ? 1 : 0.3,
                   }}>
                     <div style={{
                       width: 56, height: 56, borderRadius: '50%',
-                      background: b.unlocked ? 'var(--yellow)' : 'rgba(31,42,68,0.08)',
+                      background: b.unlocked ? 'var(--yellow)' : 'var(--alpha-md)',
                       display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28,
                       boxShadow: b.unlocked ? 'var(--shadow-soft)' : 'none',
                     }}>{b.icon}</div>
@@ -314,7 +329,7 @@ function WebMe({ profile, setProfile, levels, onOpenParent }) {
           </div>
 
           {/* parent link */}
-          <button onClick={onOpenParent} className="card" style={{
+          <button onClick={onOpenParent} className="card btn-3d" style={{
             border: 'none', cursor: 'pointer', textAlign: 'left', fontFamily: 'inherit',
             display: 'flex', alignItems: 'center', gap: 14,
           }}>
@@ -346,36 +361,46 @@ function WebGame({ mode, word, onClose, onDone }) {
     : mode === 'keyboard' ? KeyboardGame
     : mode === 'precision' ? PrecisionGame
     : mode === 'scramble' ? ScrambleGame
-    : mode === 'speed' ? SpeedGame : ClickGame;
+    : mode === 'speed' ? SpeedGame
+    : mode === 'echo' ? EchoGame
+    : mode === 'flash' ? FlashGame
+    : mode === 'coding' ? CodingGame : ClickGame;
   const m = MODE_META[mode];
   const cssSoft = m.color === 'blue' ? '#E3EAFF' : m.color === 'pink' ? '#FFE0EF'
     : m.color === 'mint' ? '#D7F5E8' : m.color === 'coral' ? '#FFE3D5'
     : m.color === 'lilac' ? '#EDE4FF' : '#FFF2CE';
+
+  var gameCtx = window.GameContext ? React.useContext(window.GameContext) : null;
+  function handleDone(stars) {
+    var accuracy = (gameCtx && gameCtx.totalClicks > 0) ? gameCtx.accuracy : 1;
+    onDone(stars, accuracy);
+  }
+
   return (
     <div style={{
       minHeight: '100%', background: `linear-gradient(180deg, ${cssSoft} 0%, var(--bg) 100%)`,
       padding: 32, display: 'flex', alignItems: 'center', justifyContent: 'center',
     }}>
       <div style={{
-        width: 560, background: 'var(--surface)', borderRadius: 28,
-        boxShadow: 'var(--shadow-pop)', overflow: 'hidden',
-        position: 'relative', height: 640,
+        width: 'min(560px, 92vw)', background: 'var(--surface)', borderRadius: 28,
+        boxShadow: 'var(--shadow-toy)', overflow: 'hidden',
+        position: 'relative', height: 'min(640px, 82vh)',
       }}>
-        <GameComp word={word} onClose={onClose} onDone={onDone}/>
+        <GameComp word={word} onClose={onClose} onDone={handleDone}/>
       </div>
     </div>
   );
 }
 
 // ─── REWARD ────────────────────────────────────────────
-function WebReward({ word, stars, onNext, onHome }) {
+function WebReward({ word, stars, coins, onNext, onHome }) {
   return (
     <div style={{
       minHeight: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center',
-      background: 'linear-gradient(180deg, #FFF2CE 0%, #FFE0EF 100%)', padding: 32,
+      background: 'linear-gradient(180deg, var(--yellow-soft) 0%, var(--pink-soft) 100%)', padding: 32,
       position: 'relative', overflow: 'hidden',
     }}>
-      <RewardScreen word={word} stars={stars} onNext={onNext} onHome={onHome}/>
+      <RewardScreen word={word} stars={stars} coins={coins} onNext={onNext} onHome={onHome}/>
     </div>
   );
 }

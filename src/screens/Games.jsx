@@ -32,9 +32,16 @@ function ClickGame({ word, onDone, onClose }) {
 
   const target = word[idx];
   const choices = React.useMemo(() => {
-    const pool = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').filter(c => c !== target);
-    const others = pool.sort(() => Math.random() - 0.5).slice(0, distractorCount - 1);
-    return [...others, target].sort(() => Math.random() - 0.5);
+    function shuffle(arr) {
+      for (var i = arr.length - 1; i > 0; i--) {
+        var j = Math.floor(Math.random() * (i + 1));
+        var tmp = arr[i]; arr[i] = arr[j]; arr[j] = tmp;
+      }
+      return arr;
+    }
+    var pool = shuffle('ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').filter(function(c) { return c !== target; }));
+    var others = pool.slice(0, distractorCount - 1);
+    return shuffle([...others, target]);
   }, [idx, word, distractorCount]);
 
   function pick(letter) {
@@ -66,6 +73,9 @@ function ClickGame({ word, onDone, onClose }) {
 
   return (
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: 'var(--bg)' }}>
+      <div role="status" aria-live="polite" aria-atomic="true" style={{ position: 'absolute', width: 1, height: 1, overflow: 'hidden', clip: 'rect(0,0,0,0)' }}>
+        {feedback ? (feedback.correct ? 'Correct!' : 'Try again') : ''}
+      </div>
       <GameHeader mode="click" progress={idx / word.length} onClose={onClose}/>
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'space-between', padding: '20px 16px 32px' }}>
         <div style={{ textAlign: 'center' }}>
@@ -76,7 +86,7 @@ function ClickGame({ word, onDone, onClose }) {
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'center', padding: '20px 0' }}>
           {word.split('').map((l, i) => (
             <div key={i} className={`tile small ${i < idx ? 'correct' : i === idx ? 'hint' : 'slot'} ${i < idx ? '' : 'slot'} ${i < idx ? 'filled' : ''}`} style={{
-              background: i < idx ? 'var(--success)' : 'rgba(31,42,68,0.06)',
+              background: i < idx ? 'var(--success)' : 'var(--alpha-sm)',
               color: i < idx ? 'white' : 'transparent',
               border: i === idx ? '2px dashed var(--blue-ink)' : (i < idx ? 'none' : '2px dashed var(--alpha-md)'),
               boxShadow: 'none',
@@ -84,14 +94,14 @@ function ClickGame({ word, onDone, onClose }) {
           ))}
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, width: '100%', maxWidth: 340 }}>
+        <div role="group" aria-label="Letter choices" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, width: '100%', maxWidth: 340 }}>
           {choices.map((c, i) => {
             const isPicked = feedback && feedback.letter === c;
             const cls = isPicked ? (feedback.correct ? 'tile correct' : 'tile wrong') : 'tile';
             const color = c.charCodeAt(0) % 5;
             const colorCls = ['blue', 'pink', 'mint', 'coral', 'lilac'][color];
             return (
-              <button key={c} onClick={() => pick(c)} className={cls + ' ' + colorCls + ' tile-entry' + (isPicked && feedback.correct ? ' tile-correct' : isPicked && !feedback.correct ? ' tile-wrong' : '')} style={{
+              <button key={i} aria-label={'Letter ' + c} onClick={() => pick(c)} className={cls + ' ' + colorCls + ' tile-entry' + (isPicked && feedback.correct ? ' tile-correct' : isPicked && !feedback.correct ? ' tile-wrong' : '')} style={{
                 width: 'auto', height: 88, fontSize: 42, border: 'none', cursor: 'pointer', fontFamily: 'inherit',
                 animationDelay: `${i * 50}ms`
               }}>{c}</button>
@@ -272,7 +282,7 @@ function TypeGame({ word, onDone, onClose, device }) {
           {word.split('').map((l, i) => (
             <div key={i} className={`tile ${i < typed.length ? 'slot filled correct' : 'slot'}`} style={{
               width: 54, height: 68, fontSize: 36,
-              background: i < typed.length ? 'var(--success)' : 'rgba(31,42,68,0.06)',
+              background: i < typed.length ? 'var(--success)' : 'var(--alpha-sm)',
               color: i < typed.length ? 'white' : 'transparent',
               border: i === typed.length ? '2px dashed var(--coral-ink)' : (i < typed.length ? 'none' : '2px dashed var(--alpha-md)'),
               boxShadow: 'none',
@@ -304,7 +314,7 @@ function KidKeyboard({ onPress, device }) {
               border: 'none', background: 'var(--surface)',
               color: 'var(--ink)', fontWeight: 900, fontSize: 20,
               borderRadius: 10, cursor: 'pointer', fontFamily: 'inherit',
-              boxShadow: '0 2px 0 rgba(31,42,68,0.12)',
+              boxShadow: '0 2px 0 var(--alpha-lg)',
               transition: 'background var(--dur-fast), transform var(--dur-fast)',
             }}
             onMouseEnter={function(e) { e.currentTarget.style.background = 'var(--blue-soft)'; }}
@@ -330,10 +340,17 @@ function MissingGame({ word, onDone, onClose }) {
   }, [word]);
   const target = word[missingIdx];
   const choices = React.useMemo(() => {
-    const choiceCount = Math.min(distractorCount, 4);
-    const pool = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').filter(c => c !== target);
-    const others = pool.sort(() => Math.random() - 0.5).slice(0, choiceCount - 1);
-    return [...others, target].sort(() => Math.random() - 0.5);
+    function shuffle(arr) {
+      for (var i = arr.length - 1; i > 0; i--) {
+        var j = Math.floor(Math.random() * (i + 1));
+        var tmp = arr[i]; arr[i] = arr[j]; arr[j] = tmp;
+      }
+      return arr;
+    }
+    var choiceCount = Math.min(distractorCount, 4);
+    var pool = shuffle('ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').filter(function(c) { return c !== target; }));
+    var others = pool.slice(0, choiceCount - 1);
+    return shuffle([...others, target]);
   }, [target, distractorCount]);
   const [picked, setPicked] = React.useState(null);
   const [wrongCount, setWrongCount] = React.useState(0);
@@ -387,13 +404,13 @@ function MissingGame({ word, onDone, onClose }) {
           ))}
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, width: '100%', maxWidth: 340 }}>
+        <div role="group" aria-label="Letter choices" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, width: '100%', maxWidth: 340 }}>
           {choices.map((c, i) => {
             const isPicked = picked === c;
             const cls = isPicked ? (c === target ? 'tile correct' : 'tile wrong') : 'tile';
             const color = ['blue', 'pink', 'mint', 'coral'][c.charCodeAt(0) % 4];
             return (
-              <button key={c} onClick={() => pick(c)} className={cls + ' ' + color + ' tile-entry'} style={{
+              <button key={i} aria-label={'Letter ' + c} onClick={() => pick(c)} className={cls + ' ' + color + ' tile-entry'} style={{
                 width: 'auto', height: 80, fontSize: 38, border: 'none', cursor: 'pointer', fontFamily: 'inherit',
                 animationDelay: `${i * 50}ms`
               }}>{c}</button>
@@ -466,7 +483,7 @@ function KeyboardGame({ word, onDone, onClose }) {
           {word.split('').map((l, i) => (
             <div key={i} style={{
               width: 26, height: 6, borderRadius: 3,
-              background: i < idx ? 'var(--lilac)' : 'rgba(31,42,68,0.12)',
+              background: i < idx ? 'var(--lilac)' : 'var(--alpha-lg)',
             }}/>
           ))}
         </div>
@@ -498,11 +515,11 @@ function SequenceKeyboard({ onPress, target, flash }) {
                 border: 'none', background: bg,
                 color: col, fontWeight: 900, fontSize: 18,
                 borderRadius: 10, cursor: 'pointer', fontFamily: 'inherit',
-                boxShadow: '0 2px 0 rgba(31,42,68,0.12)',
+                boxShadow: '0 2px 0 var(--alpha-lg)',
                 transition: 'background var(--dur-fast), transform var(--dur-fast)',
               }}
-              onMouseEnter={function(e) { e.currentTarget.style.background = isFlash ? bg : 'var(--blue-soft)'; }}
-              onMouseLeave={function(e) { e.currentTarget.style.background = bg; }}
+              onMouseEnter={function(e) { if (!flash || flash.l !== l) e.currentTarget.style.background = 'var(--blue-soft)'; }}
+              onMouseLeave={function(e) { e.currentTarget.style.background = flash && flash.l === l ? (flash.ok ? 'var(--success)' : 'var(--danger)') : 'var(--surface)'; }}
               onMouseDown={function(e) { e.currentTarget.style.transform = 'scale(0.92)'; }}
               onMouseUp={function(e) { e.currentTarget.style.transform = 'scale(1)'; }}
               >{l}</button>
@@ -744,7 +761,7 @@ function SpeedGame({ word, onDone, onClose }) {
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: 'var(--bg)' }}>
       <GameHeader mode="speed" progress={progress} onClose={onClose}/>
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '16px 16px 12px', gap: 14 }}>
-        <div style={{ width: '100%', height: 12, borderRadius: 6, background: 'rgba(31,42,68,0.08)', overflow: 'hidden' }}>
+        <div style={{ width: '100%', height: 12, borderRadius: 6, background: 'var(--alpha-md)', overflow: 'hidden' }}>
           <div style={{ height: '100%', width: (pct * 100) + '%', background: timerColor, borderRadius: 6, transition: 'width 1s linear, background 0.3s' }}/>
         </div>
         <div style={{ fontSize: 32, fontWeight: 900, color: timerColor, lineHeight: 1 }}>{timeLeft}s</div>
@@ -758,7 +775,7 @@ function SpeedGame({ word, onDone, onClose }) {
               <div key={i} style={{
                 width: 54, height: 68, fontSize: 36, borderRadius: 14,
                 display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900,
-                background: i < typed.length ? 'var(--success)' : 'rgba(31,42,68,0.06)',
+                background: i < typed.length ? 'var(--success)' : 'var(--alpha-sm)',
                 color: i < typed.length ? 'white' : 'transparent',
                 border: i === typed.length ? '2px dashed var(--coral-ink)' : i < typed.length ? 'none' : '2px dashed var(--alpha-md)',
                 boxShadow: 'none',

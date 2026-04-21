@@ -3,7 +3,62 @@
 function makeId() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 5); }
 
 var DEFAULT_SETTINGS = { theme: 'blue', difficulty: 'med', ageSkew: '', avatarStyle: 'animal', sounds: true };
-var DEFAULT_PROFILE  = { name: 'Sam', age: 7, avatar: 'fox', level: 1, streak: 0, totalStars: 0, words: 0 };
+var DEFAULT_PROFILE  = {
+  name: 'Sam', age: 7, avatar: 'fox', level: 1, streak: 0,
+  lastStreakDate: null,
+  totalStars: 0, words: 0, coins: 0,
+  inventory: [], equipped: {},
+  starterPicked: false,
+  ownedSpecies:  [],
+  activePetId:   null,
+  feedCount:     0,
+  petData:       {},
+  treats:        {},
+  powerups:      {},
+};
+
+function migrateProfile(p) {
+  var out = Object.assign({}, p);
+  // Legacy field migrations
+  if (!out.inventory) out.inventory = [];
+  if (!out.equipped)  out.equipped  = {};
+  if (out.feedCount == null) out.feedCount = 0;
+  if (!out.petData)   out.petData   = {};
+  if (!out.treats)    out.treats    = {};
+  if (!out.powerups)  out.powerups  = {};
+  if (out.lastStreakDate === undefined) out.lastStreakDate = null;
+  // Migrate existing petData entries to include room + toys
+  Object.keys(out.petData).forEach(function(id) {
+    if (out.petData[id].room === undefined) out.petData[id].room = null;
+    if (!out.petData[id].toys) out.petData[id].toys = [];
+  });
+
+  if (out.starterPicked == null) {
+    // Existing users get treated as having picked Pebble
+    out.starterPicked = true;
+    out.ownedSpecies  = out.ownedSpecies || ['pebble'];
+    out.activePetId   = out.activePetId  || 'pebble';
+    if (!out.petData.pebble) {
+      out.petData = Object.assign({}, out.petData, {
+        pebble: {
+          name:         out.petName      || 'Pebble',
+          mood:         out.petMood != null ? out.petMood : 80,
+          lastPlayed:   out.petLastPlayed || null,
+          equipped:     out.petEquipped  || {},
+          shiny:        false,
+          happyDays:    0,
+          lastMoodDate: null,
+        }
+      });
+    }
+  }
+  // Remove old flat pet fields now nested in petData
+  delete out.petMood;
+  delete out.petName;
+  delete out.petLastPlayed;
+  delete out.petEquipped;
+  return out;
+}
 
 function App() {
   var [settings, setSettings] = React.useState(function() {
@@ -15,11 +70,11 @@ function App() {
   var [profiles, setProfilesRaw] = React.useState(function() {
     try {
       var ps = localStorage.getItem('spelloop-profiles');
-      if (ps) return JSON.parse(ps);
+      if (ps) return JSON.parse(ps).map(migrateProfile);
       // Migrate from old single-profile
       var op = localStorage.getItem('spelloop-profile');
       var id = makeId();
-      var p = op ? Object.assign({}, JSON.parse(op), { id: id }) : Object.assign({}, DEFAULT_PROFILE, { id: id });
+      var p = op ? migrateProfile(Object.assign({}, JSON.parse(op), { id: id })) : Object.assign({}, DEFAULT_PROFILE, { id: id });
       var arr = [p];
       localStorage.setItem('spelloop-profiles', JSON.stringify(arr));
       return arr;
@@ -82,13 +137,26 @@ function App() {
   }
 
   // ── Levels (per profile) ───────────────────────────────────────────
+  function mergeWithCanonical(parsed) {
+    if (!parsed || parsed.length < LEVELS.length) return LEVELS.slice();
+    var canonById = {};
+    LEVELS.forEach(function(lv) { canonById[lv.id] = lv; });
+    return parsed.map(function(sv) {
+      var canon = canonById[sv.id];
+      if (!canon) return sv;
+      // Never-played level: respect canonical lock state so new unlocked entries aren't frozen
+      if (!sv.done && sv.stars === 0 && sv.locked && !canon.locked) {
+        return Object.assign({}, sv, { locked: false });
+      }
+      return sv;
+    });
+  }
+
   var [levels, setLevels] = React.useState(function() {
     try {
       var key = 'spelloop-levels-' + profile.id;
       var l = localStorage.getItem(key) || localStorage.getItem('spelloop-levels');
-      var parsed = l ? JSON.parse(l) : null;
-      if (parsed && parsed.length < LEVELS.length) parsed = null;
-      return parsed || LEVELS.slice();
+      return mergeWithCanonical(l ? JSON.parse(l) : null);
     } catch(e) { return LEVELS.slice(); }
   });
 
@@ -99,8 +167,7 @@ function App() {
     try {
       var key = 'spelloop-levels-' + activeId;
       var l = localStorage.getItem(key);
-      var parsed = l ? JSON.parse(l) : null;
-      setLevels(parsed && parsed.length >= LEVELS.length ? parsed : LEVELS.slice());
+      setLevels(mergeWithCanonical(l ? JSON.parse(l) : null));
     } catch(e) { setLevels(LEVELS.slice()); }
   }, [activeId]);
 
