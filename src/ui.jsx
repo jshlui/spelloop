@@ -86,7 +86,7 @@ function Burst({ show, onDone }) {
     const dist = 80 + Math.random() * 40;
     const x = Math.cos(angle) * dist;
     const y = Math.sin(angle) * dist;
-    const colors = ['#FFD166', '#FF9ECD', '#8EE3C3', '#6C8EFF', '#FFA07A', '#C7B4FF'];
+    const colors = ['var(--yellow)', 'var(--pink)', 'var(--mint)', 'var(--blue)', 'var(--coral)', 'var(--lilac)'];
     bits.push(
       <div key={i} style={{
         position: 'absolute', left: '50%', top: '50%',
@@ -117,75 +117,164 @@ function Burst({ show, onDone }) {
   );
 }
 
-// Kid-friendly primary button with depressed feel
+// Kid-friendly primary button with 3D toy feel
 function BigButton({ children, onClick, color = 'blue', style = {} }) {
   const bg = color === 'blue' ? 'var(--blue)'
     : color === 'mint' ? 'var(--mint)'
     : color === 'coral' ? 'var(--coral)'
     : color === 'pink' ? 'var(--pink)'
     : color === 'yellow' ? 'var(--yellow)' : 'var(--blue)';
-  const text = color === 'mint' ? '#0f5c42' : color === 'yellow' ? 'var(--yellow-ink)' : 'white';
+  const text = color === 'mint' ? 'var(--mint-ink)'
+    : color === 'yellow' ? 'var(--yellow-ink)'
+    : color === 'coral' ? 'var(--coral-ink)' : 'white';
   return (
-    <button onClick={() => { window.sfx?.tap(); onClick && onClick(); }} style={{
+    <button className="btn-3d" onClick={() => { window.sfx?.tap(); onClick && onClick(); }} style={{
       background: bg, color: text, border: 'none', cursor: 'pointer',
       padding: '16px 28px', fontWeight: 900, fontSize: 'var(--fs-lg)',
-      borderRadius: 999, fontFamily: 'inherit', letterSpacing: '-0.01em',
-      boxShadow: '0 4px 0 rgba(31,42,68,0.12)',
-      transition: 'transform 80ms',
+      borderRadius: 999, fontFamily: 'inherit', letterSpacing: 'var(--ls-tight)',
       ...style,
-    }}
-    onMouseDown={e => e.currentTarget.style.transform = 'translateY(2px)'}
-    onMouseUp={e => e.currentTarget.style.transform = 'translateY(0)'}
-    onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}
-    >{children}</button>
+    }}>{children}</button>
   );
 }
 
-// Speak button — Australian accent, clear and slow
-function SpeakButton({ word, size = 56, big = false }) {
-  const [playing, setPlaying] = React.useState(false);
-  function speak() {
-    setPlaying(true);
-    window.sfx?.tap();
+// ElevenLabs + browser-speech word pronunciation
+var EL_DEFAULT_VOICE = 'pNInz6obpgDQGcFmaJgB'; // Adam
+
+function speakWord(word, onStart, onEnd) {
+  var key = (word || '').toUpperCase();
+  var cacheKey = 'spelloop-audio-' + key;
+
+  function playDataUrl(dataUrl) {
+    try {
+      var audio = new Audio(dataUrl);
+      audio.onplay  = function() { onStart && onStart(); };
+      audio.onended = function() { onEnd   && onEnd();   };
+      audio.onerror = function() { onEnd   && onEnd();   };
+      audio.play();
+    } catch(e) { onEnd && onEnd(); }
+  }
+
+  function browserFallback() {
+    onStart && onStart();
     try {
       if (window.speechSynthesis) {
         window.speechSynthesis.cancel();
-        const u = new SpeechSynthesisUtterance(word.toLowerCase());
+        var u = new SpeechSynthesisUtterance(word.toLowerCase());
         u.lang = 'en-AU';
         u.rate = 0.72;
         u.pitch = 1.05;
         u.volume = 1;
-        const voices = window.speechSynthesis.getVoices();
-        const auVoice = voices.find(function(v) { return v.lang === 'en-AU'; })
+        var voices = window.speechSynthesis.getVoices();
+        var auVoice = voices.find(function(v) { return v.lang === 'en-AU'; })
           || voices.find(function(v) { return v.lang.startsWith('en-AU'); })
           || voices.find(function(v) { return v.lang.startsWith('en-GB'); })
           || null;
         if (auVoice) u.voice = auVoice;
+        u.onend = function() { onEnd && onEnd(); };
         window.speechSynthesis.speak(u);
+      } else {
+        onEnd && onEnd();
       }
-    } catch (e) {}
-    setTimeout(() => setPlaying(false), 1400);
+    } catch(e) { onEnd && onEnd(); }
   }
-  const s = big ? 88 : size;
+
+  // 1. Check cache
+  try {
+    var cached = localStorage.getItem(cacheKey);
+    if (cached) { playDataUrl(cached); return; }
+  } catch(e) {}
+
+  // 2. Try ElevenLabs
+  var elKey = '';
+  try { elKey = localStorage.getItem('spelloop-el-key') || ''; } catch(e) {}
+
+  if (!elKey) { browserFallback(); return; }
+
+  var voiceId = '';
+  try { voiceId = localStorage.getItem('spelloop-el-voice') || EL_DEFAULT_VOICE; } catch(e) {}
+  if (!voiceId) voiceId = EL_DEFAULT_VOICE;
+
+  onStart && onStart(); // show loading state immediately
+
+  fetch('https://api.elevenlabs.io/v1/text-to-speech/' + voiceId, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'xi-api-key': elKey,
+    },
+    body: JSON.stringify({ text: word.toLowerCase(), model_id: 'eleven_turbo_v2' }),
+  })
+  .then(function(res) {
+    if (!res.ok) throw new Error('EL ' + res.status);
+    return res.blob();
+  })
+  .then(function(blob) {
+    var reader = new FileReader();
+    reader.onload = function() {
+      var dataUrl = reader.result;
+      try { localStorage.setItem(cacheKey, dataUrl); } catch(e) {}
+      playDataUrl(dataUrl);
+    };
+    reader.readAsDataURL(blob);
+  })
+  .catch(function() {
+    browserFallback();
+  });
+}
+
+// Speak button — Australian accent, clear and slow
+function SpeakButton({ word, size = 56, big = false }) {
+  var [loading, setLoading] = React.useState(false);
+
+  function speak() {
+    if (loading) return;
+    window.sfx?.tap();
+    speakWord(
+      word,
+      function() { setLoading(true);  },
+      function() { setLoading(false); }
+    );
+  }
+
+  var s = big ? 88 : size;
   return (
     <button onClick={speak} style={{
       width: s, height: s, borderRadius: '50%',
-      background: 'var(--blue)', border: 'none', cursor: 'pointer',
+      background: loading ? 'var(--blue-ink, #3F5FE2)' : 'var(--blue)',
+      border: 'none', cursor: loading ? 'wait' : 'pointer',
       display: 'flex', alignItems: 'center', justifyContent: 'center',
-      boxShadow: 'var(--shadow-pop)',
+      boxShadow: 'var(--shadow-toy)',
       position: 'relative',
-    }}>
-      <svg width={s * 0.45} height={s * 0.45} viewBox="0 0 24 24" fill="white">
-        <path d="M3 9v6h4l5 5V4L7 9H3z"/>
-        <path d="M15 8 Q18 12 15 16" stroke="white" strokeWidth="2" fill="none" strokeLinecap="round"/>
-        <path d="M18 5 Q23 12 18 19" stroke="white" strokeWidth="2" fill="none" strokeLinecap="round" opacity={playing ? 1 : 0.5}/>
-      </svg>
-      {playing && <div style={{
-        position: 'absolute', inset: -8, borderRadius: '50%',
-        border: '3px solid var(--blue)', opacity: 0.6,
-        animation: 'ping 900ms ease-out',
-      }}/>}
-      <style>{`@keyframes ping { from { transform: scale(1); opacity: 0.6 } to { transform: scale(1.4); opacity: 0 } }`}</style>
+      transition: 'transform var(--dur-fast) var(--ease-toy), box-shadow var(--dur-fast) var(--ease-toy), background var(--dur-fast) ease',
+    }}
+    onMouseEnter={function(e) { if (!loading) { e.currentTarget.style.transform = 'scale(1.08)'; e.currentTarget.style.boxShadow = 'var(--shadow-hover)'; } }}
+    onMouseLeave={function(e) { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.boxShadow = 'var(--shadow-toy)'; }}
+    onMouseDown={function(e) { if (!loading) e.currentTarget.style.transform = 'scale(0.94)'; }}
+    onMouseUp={function(e)   { if (!loading) e.currentTarget.style.transform = 'scale(1.08)'; }}
+    >
+      {loading ? (
+        <div style={{
+          width: s * 0.38, height: s * 0.38, border: '3px solid rgba(255,255,255,0.3)',
+          borderTopColor: 'white', borderRadius: '50%',
+          animation: 'elSpin 700ms linear infinite',
+        }}/>
+      ) : (
+        <svg width={s * 0.45} height={s * 0.45} viewBox="0 0 24 24" fill="white">
+          <path d="M3 9v6h4l5 5V4L7 9H3z"/>
+          <path d="M15 8 Q18 12 15 16" stroke="white" strokeWidth="2" fill="none" strokeLinecap="round"/>
+          <path d="M18 5 Q23 12 18 19" stroke="white" strokeWidth="2" fill="none" strokeLinecap="round" opacity="0.5"/>
+        </svg>
+      )}
+      {!loading && (
+        <div style={{
+          position: 'absolute', inset: -8, borderRadius: '50%',
+          border: '3px solid var(--blue)', opacity: 0,
+        }}/>
+      )}
+      <style>{`
+        @keyframes ping { from { transform: scale(1); opacity: 0.6 } to { transform: scale(1.4); opacity: 0 } }
+        @keyframes elSpin { to { transform: rotate(360deg); } }
+      `}</style>
     </button>
   );
 }
@@ -207,8 +296,9 @@ function LevelTransition({ level, color, onDone }) {
     }}>
       <span style={{
         fontSize: 'clamp(40px, 8vw, 64px)',
-        fontWeight: 900, color: '#fff', fontFamily: 'inherit',
-        animation: 'pop 400ms 100ms cubic-bezier(0.34,1.56,0.64,1) both',
+        fontWeight: 900, color: '#fff',
+        fontFamily: "'Grandstander', 'Nunito', system-ui, sans-serif",
+        animation: 'pop 400ms 100ms var(--ease-spring) both',
       }}>
         Level {level}!
       </span>
@@ -235,17 +325,18 @@ function StreakBadge() {
   if (!visible || streak < 3) return null;
 
   var label = streak >= 5 ? ('⚡ ' + streak + ' streak!') : ('🔥 ' + streak + ' in a row!');
-  var bg = streak >= 5 ? 'var(--yellow, #FFD166)' : 'var(--coral, #FFA07A)';
+  var bg = streak >= 5 ? 'var(--yellow)' : 'var(--coral)';
+  var textColor = streak >= 5 ? 'var(--yellow-ink)' : 'white';
 
   return (
     <div style={{
       position: 'fixed', top: 24, right: 24, zIndex: 300,
-      background: bg, color: '#fff',
-      borderRadius: '999px',
+      background: bg, color: textColor,
+      borderRadius: 'var(--r-pill)',
       padding: '10px 20px',
       fontWeight: 800, fontSize: 18, fontFamily: 'inherit',
-      boxShadow: '0 4px 16px rgba(0,0,0,0.18)',
-      animation: 'streakIn 0.4s cubic-bezier(0.34,1.56,0.64,1) both',
+      boxShadow: 'var(--shadow-toy)',
+      animation: 'streakIn 0.4s var(--ease-spring) both',
       pointerEvents: 'none',
     }}>
       {label}
@@ -254,7 +345,7 @@ function StreakBadge() {
 }
 
 function Confetti() {
-  var PALETTE = ['#6C8EFF','#FFD166','#FF9ECD','#8EE3C3','#FFA07A','#C7B4FF'];
+  var PALETTE = ['var(--blue)','var(--yellow)','var(--pink)','var(--mint)','var(--coral)','var(--lilac)'];
   var count = 20;
 
   React.useEffect(function() {

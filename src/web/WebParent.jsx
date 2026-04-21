@@ -197,6 +197,7 @@ function ProfilesTab({ profiles, activeId, onSwitch, onAdd, onDelete, onReset })
   var [newName, setNewName] = React.useState('');
   var [newAge, setNewAge] = React.useState('');
   var [newAvatar, setNewAvatar] = React.useState('fox');
+  var [confirmState, setConfirmState] = React.useState(null); // { id, action: 'reset'|'delete', name }
 
   function handleAdd() {
     var n = newName.trim();
@@ -206,9 +207,16 @@ function ProfilesTab({ profiles, activeId, onSwitch, onAdd, onDelete, onReset })
     setShowAdd(false);
   }
 
+  function handleConfirm() {
+    if (!confirmState) return;
+    if (confirmState.action === 'reset') onReset(confirmState.id);
+    else onDelete(confirmState.id);
+    setConfirmState(null);
+  }
+
   var inputStyle = {
-    border: '1px solid #D4DAE5', borderRadius: 8, padding: '8px 12px',
-    fontSize: 14, fontFamily: 'inherit', fontWeight: 700, color: '#1F2A44',
+    border: '1px solid var(--alpha-md)', borderRadius: 8, padding: '8px 12px',
+    fontSize: 14, fontFamily: 'inherit', fontWeight: 700, color: 'var(--ink)',
     outline: 'none',
   };
 
@@ -220,7 +228,7 @@ function ProfilesTab({ profiles, activeId, onSwitch, onAdd, onDelete, onReset })
           <div style={{ fontSize: 13, color: '#7C89A8', fontWeight: 600 }}>Each child has their own progress, avatar and levels.</div>
         </div>
         <button onClick={function() { setShowAdd(!showAdd); }} style={{
-          background: '#3F5FE2', color: 'white', border: 'none', borderRadius: 10,
+          background: 'var(--blue-ink)', color: 'white', border: 'none', borderRadius: 10,
           padding: '10px 18px', fontWeight: 800, fontSize: 13, cursor: 'pointer',
           fontFamily: 'inherit',
         }}>+ Add child</button>
@@ -228,7 +236,7 @@ function ProfilesTab({ profiles, activeId, onSwitch, onAdd, onDelete, onReset })
 
       {/* Add child form */}
       {showAdd && (
-        <div style={Object.assign({}, webCard, { marginBottom: 20, border: '2px solid #3F5FE2' })}>
+        <div style={Object.assign({}, webCard, { marginBottom: 20, border: '2px solid var(--blue-ink)' })}>
           <h3 style={{ margin: '0 0 16px', fontSize: 16, fontWeight: 900 }}>New profile</h3>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 120px', gap: 12, marginBottom: 16 }}>
             <div>
@@ -249,23 +257,53 @@ function ProfilesTab({ profiles, activeId, onSwitch, onAdd, onDelete, onReset })
               var sel = newAvatar === av.id;
               return (
                 <button key={av.id} onClick={function() { setNewAvatar(av.id); }} style={{
-                  border: 'none', background: sel ? '#E3EAFF' : '#F7F9FC', borderRadius: 14,
+                  border: 'none', background: sel ? 'var(--blue-soft)' : 'var(--bg)', borderRadius: 14,
                   padding: '10px 8px', cursor: 'pointer', display: 'flex', flexDirection: 'column',
                   alignItems: 'center', gap: 4,
-                  outline: sel ? '3px solid #3F5FE2' : 'none', outlineOffset: 2,
+                  outline: sel ? '3px solid var(--blue-ink)' : 'none', outlineOffset: 2,
                 }}>
                   <Avatar id={av.id} size={52}/>
-                  <div style={{ fontSize: 11, fontWeight: 800, color: sel ? '#3F5FE2' : '#7C89A8' }}>{av.name}</div>
+                  <div style={{ fontSize: 11, fontWeight: 800, color: sel ? 'var(--blue-ink)' : 'var(--ink-mute)' }}>{av.name}</div>
                 </button>
               );
             })}
           </div>
           <div style={{ display: 'flex', gap: 10 }}>
             <button onClick={handleAdd} style={{
-              background: '#3F5FE2', color: 'white', border: 'none', borderRadius: 8,
+              background: 'var(--blue-ink)', color: 'white', border: 'none', borderRadius: 8,
               padding: '10px 20px', fontWeight: 800, fontSize: 13, cursor: 'pointer', fontFamily: 'inherit',
             }}>Create profile</button>
             <button onClick={function() { setShowAdd(false); }} style={Object.assign({}, btnGhost)}>Cancel</button>
+          </div>
+        </div>
+      )}
+
+      {/* Inline confirm overlay */}
+      {confirmState && (
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 400,
+          background: 'rgba(31,42,68,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}>
+          <div style={Object.assign({}, webCard, { maxWidth: 380, width: '90vw', textAlign: 'center' })}>
+            <div style={{ fontSize: 36, marginBottom: 12 }}>{confirmState.action === 'delete' ? '🗑️' : '↺'}</div>
+            <div style={{ fontSize: 17, fontWeight: 900, marginBottom: 8 }}>
+              {confirmState.action === 'delete' ? 'Delete ' + confirmState.name + '?' : 'Reset ' + confirmState.name + '?'}
+            </div>
+            <div style={{ fontSize: 13, color: 'var(--ink-mute)', fontWeight: 600, marginBottom: 20 }}>
+              {confirmState.action === 'delete'
+                ? 'This profile and all their progress will be permanently removed.'
+                : 'All stars, words and level progress will be cleared. This cannot be undone.'}
+            </div>
+            <div style={{ display: 'flex', gap: 10, justifyContent: 'center' }}>
+              <button onClick={function() { setConfirmState(null); }} style={Object.assign({}, btnGhost)}>Cancel</button>
+              <button onClick={handleConfirm} style={{
+                background: 'var(--danger-soft)', color: 'var(--danger-text)', border: '1px solid var(--danger-text)',
+                borderRadius: 8, padding: '10px 20px', fontSize: 13, fontWeight: 800,
+                cursor: 'pointer', fontFamily: 'inherit',
+              }}>
+                {confirmState.action === 'delete' ? 'Yes, delete' : 'Yes, reset'}
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -276,7 +314,7 @@ function ProfilesTab({ profiles, activeId, onSwitch, onAdd, onDelete, onReset })
           var isActive = p.id === activeId;
           return (
             <div key={p.id} style={Object.assign({}, webCard, {
-              border: isActive ? '2px solid #3F5FE2' : '2px solid transparent',
+              border: isActive ? '2px solid var(--blue-ink)' : '2px solid transparent',
               display: 'flex', alignItems: 'center', gap: 20,
             })}>
               <div style={{ position: 'relative', flexShrink: 0 }}>
@@ -284,14 +322,14 @@ function ProfilesTab({ profiles, activeId, onSwitch, onAdd, onDelete, onReset })
                 {isActive && (
                   <div style={{
                     position: 'absolute', bottom: -4, right: -4,
-                    background: '#3F5FE2', color: 'white', borderRadius: 999,
+                    background: 'var(--blue-ink)', color: 'white', borderRadius: 999,
                     fontSize: 9, fontWeight: 900, padding: '2px 6px', whiteSpace: 'nowrap',
                   }}>ACTIVE</div>
                 )}
               </div>
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: 18, fontWeight: 900 }}>{p.name}</div>
-                <div style={{ fontSize: 13, color: '#7C89A8', fontWeight: 600 }}>
+                <div style={{ fontSize: 13, color: 'var(--ink-mute)', fontWeight: 600 }}>
                   Age {p.age} &nbsp;·&nbsp; {p.words} words &nbsp;·&nbsp; {p.totalStars}⭐ &nbsp;·&nbsp; {p.streak} day streak
                 </div>
               </div>
@@ -301,21 +339,14 @@ function ProfilesTab({ profiles, activeId, onSwitch, onAdd, onDelete, onReset })
                     Switch
                   </button>
                 )}
-                <button onClick={function() {
-                  if (window.confirm('Reset ALL progress for ' + p.name + '? Stars, words and level progress will be cleared.')) {
-                    onReset(p.id);
-                  }
-                }} style={{
-                  background: '#FFF4F0', border: '1px solid #FFB3A0', color: '#C0392B',
+                <button onClick={function() { setConfirmState({ id: p.id, action: 'reset', name: p.name }); }} style={{
+                  background: 'var(--danger-soft)', border: '1px solid var(--alpha-md)', color: 'var(--danger-text)',
                   borderRadius: 8, padding: '8px 14px', fontSize: 13, fontWeight: 800,
                   cursor: 'pointer', fontFamily: 'inherit',
                 }}>↺ Reset</button>
                 {profiles.length > 1 && (
-                  <button onClick={function() {
-                    if (window.confirm('Delete ' + p.name + "'s profile? This cannot be undone.")) {
-                      onDelete(p.id);
-                    }
-                  }} style={Object.assign({}, btnGhost, { color: '#E74C3C', borderColor: '#FFB3A0' })}>✕</button>
+                  <button onClick={function() { setConfirmState({ id: p.id, action: 'delete', name: p.name }); }}
+                    style={Object.assign({}, btnGhost, { color: 'var(--danger-text)', borderColor: 'var(--alpha-md)' })}>✕</button>
                 )}
               </div>
             </div>
@@ -331,9 +362,10 @@ function OverviewTab({ profile, levels }) {
   var accuracy = ctx.totalClicks > 0 ? Math.round(ctx.accuracy * 100) : null;
   var doneCount = levels ? levels.filter(function(l) { return l.done; }).length : 0;
   var doneLevels = levels ? levels.filter(function(l) { return l.done; }).slice(-5).reverse() : [];
-  var ch1Done = levels ? levels.filter(function(l) { return l.chapter === 1; }).filter(function(l) { return l.done; }).length : 0;
-  var ch2Done = levels ? levels.filter(function(l) { return l.chapter === 2; }).filter(function(l) { return l.done; }).length : 0;
-  var ch3Done = levels ? levels.filter(function(l) { return l.chapter === 3; }).filter(function(l) { return l.done; }).length : 0;
+  var chapterStats = (window.CHAPTER_META || []).map(function(ch) {
+    var chLevels = levels ? levels.filter(function(l) { return l.chapter === ch.id; }) : [];
+    return { id: ch.id, name: ch.name, emoji: ch.emoji, done: chLevels.filter(function(l) { return l.done; }).length, total: chLevels.length };
+  }).filter(function(ch) { return ch.total > 0; });
 
   return (
     <div style={{ padding: 32 }}>
@@ -353,21 +385,17 @@ function OverviewTab({ profile, levels }) {
         {/* Chapter progress */}
         <div style={webCard}>
           <h3 style={{ margin: '0 0 16px', fontSize: 16, fontWeight: 900 }}>Chapter progress</h3>
-          {[
-            { id: 1, name: 'The Word Forest', emoji: '🌳', done: ch1Done, total: 8 },
-            { id: 2, name: 'The Word Sea', emoji: '🌊', done: ch2Done, total: 8 },
-            { id: 3, name: 'The Word Mountain', emoji: '⛰️', done: ch3Done, total: 8 },
-          ].map(function(ch) {
+          {chapterStats.map(function(ch) {
             var pct = Math.round(ch.done / ch.total * 100);
-            var tone = pct === 100 ? '#30C285' : pct > 0 ? '#3F5FE2' : '#B0BCCF';
+            var tone = pct === 100 ? 'var(--success)' : pct > 0 ? 'var(--blue-ink)' : 'var(--ink-mute)';
             return (
               <div key={ch.id} style={{ marginBottom: 14 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
                   <span style={{ fontSize: 14, fontWeight: 800 }}>{ch.emoji} {ch.name}</span>
                   <span style={{ fontSize: 13, fontWeight: 800, color: tone }}>{ch.done}/{ch.total}</span>
                 </div>
-                <div style={{ height: 10, borderRadius: 5, background: '#EEF1F5', overflow: 'hidden' }}>
-                  <div style={{ height: '100%', width: pct + '%', background: tone, borderRadius: 5, transition: 'width 0.5s' }}/>
+                <div style={{ height: 10, borderRadius: 5, background: 'var(--bg)', overflow: 'hidden' }}>
+                  <div style={{ height: '100%', width: pct + '%', background: tone, borderRadius: 5, transition: 'width 0.5s var(--ease-toy)' }}/>
                 </div>
               </div>
             );
@@ -381,11 +409,11 @@ function OverviewTab({ profile, levels }) {
           {doneLevels.map(function(lv, i) {
             var m = MODE_META[lv.mode] || MODE_META.click;
             return (
-              <div key={lv.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '8px 0', borderTop: i === 0 ? 'none' : '1px solid #F1F3F6' }}>
-                <div style={{ width: 34, height: 34, borderRadius: 10, background: '#F1F3F6', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 900 }}>{m.icon}</div>
+              <div key={lv.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '8px 0', borderTop: i === 0 ? 'none' : '1px solid var(--alpha-sm)' }}>
+                <div style={{ width: 34, height: 34, borderRadius: 10, background: 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 900 }}>{m.icon}</div>
                 <div style={{ flex: 1 }}>
                   <div style={{ fontSize: 14, fontWeight: 800 }}>Level {lv.id} — {lv.word}</div>
-                  <div style={{ fontSize: 11, color: '#7C89A8', fontWeight: 600 }}>Chapter {lv.chapter} · {m.label}</div>
+                  <div style={{ fontSize: 11, color: 'var(--ink-mute)', fontWeight: 600 }}>Chapter {lv.chapter} · {m.label}</div>
                 </div>
                 <StarRow filled={lv.stars} size={14} gap={2}/>
               </div>
@@ -397,8 +425,8 @@ function OverviewTab({ profile, levels }) {
       <div style={webCard}>
         <h3 style={{ margin: '0 0 8px', fontSize: 16, fontWeight: 900 }}>Overall journey</h3>
         <div style={{ fontSize: 13, color: '#4B587A', fontWeight: 600, marginBottom: 10 }}>{doneCount} of {levels ? levels.length : 24} levels complete</div>
-        <div style={{ height: 14, borderRadius: 7, background: '#EEF1F5', overflow: 'hidden' }}>
-          <div style={{ height: '100%', width: (levels && levels.length ? Math.round(doneCount / levels.length * 100) : 0) + '%', background: 'linear-gradient(90deg, #6C8EFF, #30C285)', borderRadius: 7, transition: 'width 0.5s' }}/>
+        <div style={{ height: 14, borderRadius: 7, background: 'var(--bg)', overflow: 'hidden' }}>
+          <div style={{ height: '100%', width: (levels && levels.length ? Math.round(doneCount / levels.length * 100) : 0) + '%', background: 'var(--blue)', borderRadius: 7, transition: 'width 0.5s var(--ease-toy)' }}/>
         </div>
       </div>
     </div>
@@ -466,14 +494,14 @@ function CurriculumTab({ levels, setLevels }) {
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10 }}>
                 {chLevels.map(function(lv) {
                   var m = MODE_META[lv.mode] || MODE_META.click;
-                  var statusColor = lv.done ? '#30C285' : lv.current ? '#3F5FE2' : lv.locked ? '#B0BCCF' : '#FFA000';
-                  var statusLabel = lv.done ? ('★'.repeat(lv.stars) + '☆'.repeat(3 - lv.stars)) : lv.current ? 'Current' : lv.locked ? 'Locked' : 'Unlocked';
+                  var statusColor = lv.done ? 'var(--success)' : lv.current ? 'var(--blue-ink)' : lv.locked ? 'var(--ink-mute)' : 'var(--warn)';
+                  var statusLabel = lv.done ? (lv.stars + '★ earned') : lv.current ? 'Current' : lv.locked ? 'Locked' : 'Unlocked';
                   return (
                     <div key={lv.id} style={{
-                      background: '#F7F9FC', borderRadius: 10, padding: 10,
-                      border: lv.current ? '2px solid #3F5FE2' : '2px solid transparent',
+                      background: 'var(--bg)', borderRadius: 10, padding: 10,
+                      border: lv.current ? '2px solid var(--blue-ink)' : '2px solid transparent',
                     }}>
-                      <div style={{ fontSize: 11, fontWeight: 800, color: '#7C89A8', marginBottom: 2 }}>Lv {lv.id} · {m.label}</div>
+                      <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--ink-mute)', marginBottom: 2 }}>Lv {lv.id} · {m.label}</div>
                       <div style={{ fontSize: 14, fontWeight: 900, marginBottom: 2 }}>{lv.word}</div>
                       <div style={{ fontSize: 11, fontWeight: 700, color: statusColor, marginBottom: 6 }}>{statusLabel}</div>
                       {lv.done && (
@@ -499,6 +527,53 @@ function SettingsTab({ profile, setProfile, settings, setSettings }) {
   var s = settings || {};
   var [nameVal, setNameVal] = React.useState(profile ? profile.name : '');
   var [ageVal, setAgeVal] = React.useState(profile ? String(profile.age) : '');
+  var [elKey, setElKey]           = React.useState(function() { try { return localStorage.getItem('spelloop-el-key') || ''; } catch(e) { return ''; } });
+  var [elVoice, setElVoice]       = React.useState(function() { try { return localStorage.getItem('spelloop-el-voice') || 'pNInz6obpgDQGcFmaJgB'; } catch(e) { return 'pNInz6obpgDQGcFmaJgB'; } });
+  var [elKeyError, setElKeyError] = React.useState('');
+  var [elKeySaved, setElKeySaved] = React.useState(false);
+
+  var EL_VOICES = [
+    { id: 'pNInz6obpgDQGcFmaJgB', label: 'Adam' },
+    { id: 'EXAVITQu4vr4xnSDxMaL', label: 'Bella' },
+    { id: 'VR6AewLTigWG4xSOukaG', label: 'Arnold' },
+    { id: 'TxGEqnHWrfWFTfGW9XjX', label: 'Josh' },
+    { id: 'yoZ06aMxZJJ28mfd3POQ', label: 'Sam' },
+    { id: 'jBpfuIE2acCys8YRkVHT', label: 'Freya' },
+  ];
+
+  function saveElKey() {
+    try {
+      var trimmed = elKey.trim();
+      if (!trimmed) { clearElKey(); return; }
+      localStorage.setItem('spelloop-el-key', trimmed);
+      setElKeyError('');
+      setElKeySaved(true);
+      setTimeout(function() { setElKeySaved(false); }, 2000);
+    } catch(e) { setElKeyError('Could not save — storage error'); }
+  }
+
+  function clearElKey() {
+    try {
+      localStorage.removeItem('spelloop-el-key');
+      localStorage.removeItem('spelloop-el-voice');
+      var toRemove = [];
+      for (var i = 0; i < localStorage.length; i++) {
+        var k = localStorage.key(i);
+        if (k && k.startsWith('spelloop-audio-')) toRemove.push(k);
+      }
+      toRemove.forEach(function(k) { localStorage.removeItem(k); });
+      setElKey('');
+      setElVoice('pNInz6obpgDQGcFmaJgB');
+      setElKeyError('');
+      setElKeySaved(false);
+    } catch(e) {}
+  }
+
+  function handleVoiceChange(e) {
+    var id = e.target.value;
+    setElVoice(id);
+    try { localStorage.setItem('spelloop-el-voice', id); } catch(e2) {}
+  }
 
   function updateSetting(key, val) {
     setSettings && setSettings(function(prev) { return Object.assign({}, prev, { [key]: val }); });
@@ -516,9 +591,10 @@ function SettingsTab({ profile, setProfile, settings, setSettings }) {
   var themeLabel = { blue: 'Blue (default)', sunny: 'Sunny yellow', berry: 'Berry purple', mint: 'Mint green' }[s.theme] || 'Blue';
 
   var inputStyle = {
-    border: '1px solid #D4DAE5', borderRadius: 8, padding: '8px 12px',
-    fontSize: 14, fontFamily: 'inherit', fontWeight: 700, color: '#1F2A44',
+    border: '1px solid var(--alpha-md)', borderRadius: 8, padding: '8px 12px',
+    fontSize: 14, fontFamily: 'inherit', fontWeight: 700, color: 'var(--ink)',
     outline: 'none', width: '100%',
+    transition: 'border-color var(--dur-fast) ease',
   };
 
   return (
@@ -542,8 +618,8 @@ function SettingsTab({ profile, setProfile, settings, setSettings }) {
               style={inputStyle} placeholder="Age" type="number" min="3" max="12"/>
           </div>
         </div>
-        <button onClick={saveProfile} style={{
-          background: '#3F5FE2', color: 'white', border: 'none', borderRadius: 8,
+        <button className="btn-3d" onClick={saveProfile} style={{
+          background: 'var(--blue-ink)', color: 'white', border: 'none', borderRadius: 8,
           padding: '10px 20px', fontWeight: 800, fontSize: 13, cursor: 'pointer',
           fontFamily: 'inherit',
         }}>Save name &amp; age</button>
@@ -565,6 +641,56 @@ function SettingsTab({ profile, setProfile, settings, setSettings }) {
         <WebSettingRow label="Change parent PIN" value="••••" chev last
           onChange={function() { if(confirm('Reset your parent PIN? You will need to set a new one.')) { localStorage.removeItem('spelloop-pin'); alert('PIN removed. Reload the page to set a new one.'); } }}/>
       </div>
+
+      <div style={Object.assign({}, webCard, { marginTop: 14 })}>
+        <h3 style={{ margin: '0 0 14px', fontSize: 15, fontWeight: 900 }}>🔊 Voice settings</h3>
+
+        <div style={{ marginBottom: 14 }}>
+          <div style={{ fontSize: 12, fontWeight: 700, color: '#7C89A8', marginBottom: 4 }}>ElevenLabs API Key</div>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <input
+              type="password"
+              value={elKey}
+              onChange={function(e) { setElKey(e.target.value); setElKeyError(''); setElKeySaved(false); }}
+              onKeyDown={function(e) { if (e.key === 'Enter') saveElKey(); }}
+              placeholder="Paste your API key here"
+              style={inputStyle}
+            />
+            <button onClick={saveElKey} style={{
+              flexShrink: 0, padding: '8px 14px', borderRadius: 8, border: 'none',
+              background: elKeySaved ? 'var(--mint, #8EE3C3)' : 'var(--blue-ink, #3F5FE2)',
+              color: 'white', fontFamily: 'inherit', fontWeight: 800, fontSize: 13, cursor: 'pointer',
+              transition: 'background 200ms',
+            }}>{elKeySaved ? '✓ Saved' : 'Save'}</button>
+            {elKey && (
+              <button onClick={clearElKey} style={{
+                flexShrink: 0, padding: '8px 14px', borderRadius: 8, border: 'none',
+                background: '#FFE8DF', color: '#C0392B',
+                fontFamily: 'inherit', fontWeight: 800, fontSize: 13, cursor: 'pointer',
+              }}>Clear</button>
+            )}
+          </div>
+          {elKeyError && <div style={{ fontSize: 12, color: '#F07171', fontWeight: 700, marginTop: 4 }}>{elKeyError}</div>}
+        </div>
+
+        <div style={{ marginBottom: 14 }}>
+          <div style={{ fontSize: 12, fontWeight: 700, color: '#7C89A8', marginBottom: 4 }}>Voice</div>
+          <select
+            value={elVoice}
+            onChange={handleVoiceChange}
+            style={Object.assign({}, inputStyle, { width: 'auto', minWidth: 160 })}
+          >
+            {EL_VOICES.map(function(v) {
+              return React.createElement('option', { key: v.id, value: v.id }, v.label);
+            })}
+          </select>
+        </div>
+
+        <div style={{ fontSize: 12, color: '#7C89A8', fontWeight: 700, lineHeight: 1.5, background: '#F7F9FC', borderRadius: 8, padding: '10px 12px' }}>
+          ℹ️ Get a free key at <strong>elevenlabs.io</strong> (10,000 characters/month free).<br/>
+          Without a key, the app uses your device's built-in voice.
+        </div>
+      </div>
     </div>
   );
 }
@@ -573,7 +699,7 @@ function WebSettingRow({ label, value, chev, last, onChange }) {
   return (
     <div onClick={onChange} style={{
       display: 'flex', alignItems: 'center', padding: '14px 4px',
-      borderBottom: last ? 'none' : '1px solid #F1F3F6', cursor: chev ? 'pointer' : 'default',
+      borderBottom: last ? 'none' : '1px solid var(--alpha-sm)', cursor: chev ? 'pointer' : 'default',
     }}>
       <div style={{ flex: 1, fontSize: 14, fontWeight: 700 }}>{label}</div>
       <div style={{ fontSize: 13, color: '#7C89A8', fontWeight: 700 }}>{value}</div>
@@ -586,20 +712,20 @@ function WebToggleRow({ label, sub, value, onChange, last }) {
   return (
     <div style={{
       display: 'flex', alignItems: 'center', padding: '14px 4px',
-      borderBottom: last ? 'none' : '1px solid #F1F3F6',
+      borderBottom: last ? 'none' : '1px solid var(--alpha-sm)',
     }}>
       <div style={{ flex: 1 }}>
         <div style={{ fontSize: 14, fontWeight: 700 }}>{label}</div>
         {sub && <div style={{ fontSize: 12, color: '#7C89A8', fontWeight: 600 }}>{sub}</div>}
       </div>
-      <div onClick={() => onChange(!value)} style={{
-        width: 44, height: 26, borderRadius: 13, background: value ? '#3F5FE2' : '#D4DAE5',
-        position: 'relative', cursor: 'pointer', transition: 'background 150ms',
+      <div onClick={function() { onChange(!value); }} style={{
+        width: 44, height: 26, borderRadius: 13, background: value ? 'var(--blue-ink)' : 'var(--alpha-lg)',
+        position: 'relative', cursor: 'pointer', transition: 'background var(--dur-fast) ease',
       }}>
         <div style={{
-          position: 'absolute', top: 2, left: value ? 20 : 2,
+          position: 'absolute', top: 2, left: value ? 'calc(100% - 24px)' : '2px',
           width: 22, height: 22, borderRadius: '50%', background: 'white',
-          boxShadow: '0 1px 3px rgba(0,0,0,0.2)', transition: 'left 150ms',
+          boxShadow: '0 1px 4px var(--alpha-lg)', transition: 'left var(--dur-fast) var(--ease-toy)',
         }}/>
       </div>
     </div>
@@ -632,13 +758,13 @@ function Focus({ word, accuracy, note }) {
 }
 
 const webCard = {
-  background: 'white', borderRadius: 14, padding: 18,
-  boxShadow: '0 1px 3px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.04)',
+  background: 'var(--surface)', borderRadius: 14, padding: 18,
+  boxShadow: 'var(--shadow-soft)',
 };
 const btnGhost = {
-  background: 'white', border: '1px solid #E1E5EC', borderRadius: 8,
+  background: 'var(--surface)', border: '1px solid var(--alpha-md)', borderRadius: 8,
   padding: '8px 14px', fontFamily: 'inherit', fontSize: 13, fontWeight: 700,
-  cursor: 'pointer', color: '#1F2A44',
+  cursor: 'pointer', color: 'var(--ink)',
 };
 
 Object.assign(window, { WebParent });
