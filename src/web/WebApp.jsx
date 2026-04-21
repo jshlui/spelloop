@@ -364,7 +364,7 @@ function LandscapeShell({ title, onBack, onHelp, topExtra, showBack, children })
         }
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <div style={{ fontFamily: "'Fredoka One', cursive", fontSize: 26, color: '#1A3A1A' }}>{title}</div>
+          <div style={{ fontFamily: "'Bubblegum Sans', cursive", fontSize: 26, color: '#1A3A1A' }}>{title}</div>
           {topExtra}
         </div>
 
@@ -421,7 +421,7 @@ function WebHome({ profile, levels, onContinue, onPickMode, onTab }) {
 
       {/* Greeting strip — name + stats in one frosted pill */}
       <div style={{ textAlign: 'center', padding: '10px 0 0' }}>
-        <div style={{ fontFamily: "'Fredoka One', cursive", fontSize: 22, color: '#1A3A1A', textShadow: '0 2px 4px rgba(255,255,255,0.6)', marginBottom: 4 }}>
+        <div style={{ fontFamily: "'Bubblegum Sans', cursive", fontSize: 22, color: '#1A3A1A', textShadow: '0 2px 4px rgba(255,255,255,0.6)', marginBottom: 4 }}>
           {'Hi, ' + profile.name + '! 👋'}
         </div>
         <div style={{
@@ -467,7 +467,7 @@ function WebHome({ profile, levels, onContinue, onPickMode, onTab }) {
               onMouseUp={function(e) { e.currentTarget.style.transform = 'translateY(-4px)'; e.currentTarget.style.boxShadow = '0 6px 0 rgba(0,0,0,0.18), 0 10px 24px rgba(0,0,0,0.12)'; }}
             >
               <div style={{ fontSize: 36, lineHeight: 1 }}>{t.icon}</div>
-              <div style={{ fontFamily: "'Fredoka One', cursive", fontSize: 14, color: 'white', textShadow: '0 1px 3px rgba(0,0,0,0.3)' }}>{t.label}</div>
+              <div style={{ fontFamily: "'Bubblegum Sans', cursive", fontSize: 14, color: 'white', textShadow: '0 1px 3px rgba(0,0,0,0.3)' }}>{t.label}</div>
             </button>
           );
         })}
@@ -479,7 +479,7 @@ function WebHome({ profile, levels, onContinue, onPickMode, onTab }) {
         background: 'linear-gradient(145deg, #FFD700, #FFA000)',
         border: '3px solid var(--btn-back-border)',
         borderRadius: 999, padding: '12px 32px',
-        fontFamily: "'Fredoka One', cursive", fontSize: 18,
+        fontFamily: "'Bubblegum Sans', cursive", fontSize: 18,
         color: 'var(--btn-back-ink)', cursor: 'pointer',
         boxShadow: '0 5px 0 var(--btn-back-shadow), 0 8px 20px rgba(255,160,0,0.4)',
         display: 'flex', alignItems: 'center', gap: 8, whiteSpace: 'nowrap',
@@ -488,7 +488,7 @@ function WebHome({ profile, levels, onContinue, onPickMode, onTab }) {
         ▶ Keep going —
         <span style={{
           background: 'rgba(255,255,255,0.4)', borderRadius: 8, padding: '2px 10px',
-          fontFamily: "'Fredoka One', cursive", fontSize: 16,
+          fontFamily: "'Bubblegum Sans', cursive", fontSize: 16,
         }}>{currentWord}</span>
       </button>
 
@@ -778,7 +778,7 @@ function WebShop({ profile, setProfile, levels }) {
     <div style={{ padding: '32px 40px 48px', minHeight: '100%', background: 'linear-gradient(180deg, var(--yellow-soft) 0%, var(--bg) 320px)' }}>
       <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 28 }}>
         <div>
-          <h1 style={{ fontSize: 36, fontWeight: 400, fontFamily: "'Fredoka One', cursive", margin: '0 0 4px', letterSpacing: '0.01em' }}>🛍 Pet Shop</h1>
+          <h1 style={{ fontSize: 36, fontWeight: 400, fontFamily: "'Bubblegum Sans', cursive", margin: '0 0 4px', letterSpacing: '0.01em' }}>🛍 Pet Shop</h1>
           <p style={{ fontSize: 15, color: 'var(--ink-soft)', fontWeight: 700, margin: 0 }}>Collect pets, gear, and goodies!</p>
         </div>
         <div style={{ background: 'white', borderRadius: 18, padding: '14px 22px', display: 'flex', alignItems: 'center', gap: 12, boxShadow: 'var(--shadow-toy)' }}>
@@ -1044,7 +1044,7 @@ function WebCodeLab({ levels, onPlayLevel }) {
     <div style={{ padding: '32px 40px 48px', background: 'linear-gradient(180deg, var(--mint-soft) 0%, var(--bg) 360px)', minHeight: '100%' }}>
       <div style={{ marginBottom: 32 }}>
         <div style={{ fontSize: 13, color: 'var(--ink-mute)', fontWeight: 800, letterSpacing: 0.5, textTransform: 'uppercase', marginBottom: 4 }}>New game mode</div>
-        <h1 style={{ fontSize: 36, fontWeight: 400, fontFamily: "'Fredoka One', cursive", margin: '0 0 10px', letterSpacing: '0.01em' }}>🤖 The Code Lab</h1>
+        <h1 style={{ fontSize: 36, fontWeight: 400, fontFamily: "'Bubblegum Sans', cursive", margin: '0 0 10px', letterSpacing: '0.01em' }}>🤖 The Code Lab</h1>
         <p style={{ fontSize: 16, color: 'var(--ink-soft)', fontWeight: 700, margin: 0, maxWidth: 520 }}>
           Build a sequence of moves to guide the player to the star. No spelling — just logic and planning!
         </p>
@@ -1090,7 +1090,7 @@ function WebCodeLab({ levels, onPlayLevel }) {
       </div>
 
       <div style={{ maxWidth: 620 }}>
-        <h2 style={{ fontSize: 20, fontWeight: 400, fontFamily: "'Fredoka One', cursive", margin: '0 0 16px' }}>How it works</h2>
+        <h2 style={{ fontSize: 20, fontWeight: 400, fontFamily: "'Bubblegum Sans', cursive", margin: '0 0 16px' }}>How it works</h2>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 14 }}>
           {[
             { n: '1', title: 'Add moves', desc: 'Tap direction buttons to queue up your sequence.' },
@@ -1277,7 +1277,7 @@ function WebPet({ profile, setProfile, levels }) {
               <button onClick={saveName} style={{ background: 'var(--blue)', color: 'white', border: 'none', borderRadius: 8, padding: '6px 14px', fontFamily: 'inherit', fontWeight: 800, cursor: 'pointer' }}>Save</button>
             </div>
           ) : (
-            <h1 style={{ fontSize: 36, fontWeight: 400, fontFamily: "'Fredoka One', cursive", margin: '0 0 4px', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 10 }}
+            <h1 style={{ fontSize: 36, fontWeight: 400, fontFamily: "'Bubblegum Sans', cursive", margin: '0 0 4px', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 10 }}
               onClick={function() { setNameInput(petName); setEditingName(true); }}>
               {petName} <span style={{ fontSize: 18, color: 'var(--ink-mute)' }}>✏️</span>
             </h1>

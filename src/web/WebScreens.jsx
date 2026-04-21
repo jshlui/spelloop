@@ -46,7 +46,7 @@ function WebMap({ levels, onPlayLevel, onBack }) {
             onClick={function() { if (!isLocked) setActiveChapter(c.id); }}
             style={{
               padding: '6px 14px', borderRadius: 999, border: 'none', cursor: isLocked ? 'default' : 'pointer',
-              fontFamily: "'Fredoka One', cursive", fontSize: 13,
+              fontFamily: "'Bubblegum Sans', cursive", fontSize: 13,
               background: isActive ? '#1976D2' : allDone ? '#4CAF50' : isLocked ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.7)',
               color: isActive ? 'white' : allDone ? 'white' : isLocked ? 'rgba(255,255,255,0.5)' : '#1A3A1A',
               opacity: isLocked ? 0.6 : 1,
@@ -102,7 +102,7 @@ function WebMap({ levels, onPlayLevel, onBack }) {
         borderTop: '2px solid rgba(255,255,255,0.8)',
         padding: '10px 24px', display: 'flex', alignItems: 'center', gap: 16,
       }}>
-        <span style={{ fontFamily: "'Fredoka One', cursive", fontSize: 15, color: '#1A3A1A', whiteSpace: 'nowrap' }}>
+        <span style={{ fontFamily: "'Bubblegum Sans', cursive", fontSize: 15, color: '#1A3A1A', whiteSpace: 'nowrap' }}>
           {ch.emoji} {ch.name}
         </span>
         <div style={{ flex: 1, height: 12, background: 'rgba(0,0,0,0.1)', borderRadius: 999, overflow: 'hidden' }}>
@@ -138,7 +138,7 @@ function WebLevelNode({ level }) {
         <rect x="-52" y="-82" width="104" height="26" rx="13" fill="white" opacity="0.9"/>
       )}
       {isCurrent && (
-        <text x="0" y="-64" textAnchor="middle" fontSize="12" fontWeight="900" fill="#1976D2" fontFamily="Fredoka One, Nunito, system-ui">▶ YOU ARE HERE</text>
+        <text x="0" y="-64" textAnchor="middle" fontSize="12" fontWeight="900" fill="#1976D2" fontFamily="Bubblegum Sans, Nunito, system-ui">▶ YOU ARE HERE</text>
       )}
       <circle r="36" fill={nodeFill} stroke={nodeStroke} strokeWidth="4" opacity={isLocked ? 0.75 : 1}/>
       <text x="0" y="9" textAnchor="middle" fontSize={isLocked ? 22 : 24} fontWeight="900" fill="white" fontFamily="Nunito, system-ui">
@@ -216,7 +216,7 @@ function WebMe({ profile, setProfile, levels, onOpenParent }) {
             background: 'var(--surface)', borderRadius: 28, padding: 28,
             maxWidth: 480, width: '90vw', boxShadow: 'var(--shadow-pop)',
           }}>
-            <h2 style={{ margin: '0 0 20px', fontSize: 22, fontWeight: 400, fontFamily: "'Fredoka One', cursive" }}>Choose your avatar</h2>
+            <h2 style={{ margin: '0 0 20px', fontSize: 22, fontWeight: 400, fontFamily: "'Bubblegum Sans', cursive" }}>Choose your avatar</h2>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }}>
               {AVATARS.map(function(av) {
                 var selected = profile.avatar === av.id;
@@ -285,7 +285,7 @@ function WebMe({ profile, setProfile, levels, onOpenParent }) {
             </div>
           ) : (
             <h2 onClick={function() { setNameInput(profile.name); setEditingName(true); }}
-              style={{ fontSize: 26, fontWeight: 400, fontFamily: "'Fredoka One', cursive", margin: '14px 0 4px', cursor: 'pointer' }}>
+              style={{ fontSize: 26, fontWeight: 400, fontFamily: "'Bubblegum Sans', cursive", margin: '14px 0 4px', cursor: 'pointer' }}>
               {profile.name} <span style={{ fontSize: 16 }}>✏️</span>
             </h2>
           )}
@@ -302,7 +302,7 @@ function WebMe({ profile, setProfile, levels, onOpenParent }) {
           {/* XP */}
           <div className="card">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 8 }}>
-              <h3 style={{ fontSize: 18, fontWeight: 400, fontFamily: "'Fredoka One', cursive", margin: 0 }}>XP this week</h3>
+              <h3 style={{ fontSize: 18, fontWeight: 400, fontFamily: "'Bubblegum Sans', cursive", margin: 0 }}>XP this week</h3>
               <div style={{ fontSize: 16, fontWeight: 900, color: 'var(--blue-ink)' }}>{xpInLevel} / 500</div>
             </div>
             <div className="progress-track" style={{ height: 14 }}>
@@ -328,7 +328,7 @@ function WebMe({ profile, setProfile, levels, onOpenParent }) {
 
           {/* badges */}
           <div className="card">
-            <h3 style={{ fontSize: 18, fontWeight: 400, fontFamily: "'Fredoka One', cursive", margin: '0 0 14px' }}>Badges</h3>
+            <h3 style={{ fontSize: 18, fontWeight: 400, fontFamily: "'Bubblegum Sans', cursive", margin: '0 0 14px' }}>Badges</h3>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
               {badges.map(function(b) {
                 return (
