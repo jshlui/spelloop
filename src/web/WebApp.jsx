@@ -188,10 +188,26 @@ function WebApp({ profile, setProfile, levels, setLevels, settings, setSettings,
             onTab={function(t) { setTab(t); setRoute({ name: 'screen' }); }}/>
         )}
         {route.name === 'screen' && tab === 'map'  && <WebMap levels={levels} onPlayLevel={startLevel} onBack={function() { setTab('home'); }}/>}
-        {route.name === 'screen' && tab === 'me'   && <WebMe profile={profile} setProfile={setProfile} levels={levels} onOpenParent={onOpenParent}/>}
-        {route.name === 'screen' && tab === 'code' && <WebCodeLab levels={levels} onPlayLevel={startLevel}/>}
-        {route.name === 'screen' && tab === 'shop' && <WebShop profile={profile} setProfile={setProfile} levels={levels}/>}
-        {route.name === 'screen' && tab === 'pet'  && profile.starterPicked && <WebPet profile={profile} setProfile={setProfile} levels={levels}/>}
+        {route.name === 'screen' && tab === 'me'   && (
+          <LandscapeShell title="My Stuff" onBack={function() { setTab('home'); }}>
+            <ScreenPanel><WebMe profile={profile} setProfile={setProfile} levels={levels} onOpenParent={onOpenParent}/></ScreenPanel>
+          </LandscapeShell>
+        )}
+        {route.name === 'screen' && tab === 'code' && (
+          <LandscapeShell title="Code Lab" onBack={function() { setTab('home'); }}>
+            <ScreenPanel><WebCodeLab levels={levels} onPlayLevel={startLevel}/></ScreenPanel>
+          </LandscapeShell>
+        )}
+        {route.name === 'screen' && tab === 'shop' && (
+          <LandscapeShell title="Shop" onBack={function() { setTab('home'); }}>
+            <ScreenPanel><WebShop profile={profile} setProfile={setProfile} levels={levels}/></ScreenPanel>
+          </LandscapeShell>
+        )}
+        {route.name === 'screen' && tab === 'pet'  && profile.starterPicked && (
+          <LandscapeShell title="My Pet" onBack={function() { setTab('home'); }}>
+            <ScreenPanel><WebPet profile={profile} setProfile={setProfile} levels={levels}/></ScreenPanel>
+          </LandscapeShell>
+        )}
         {route.name === 'game'   && <WebGame mode={route.mode} word={route.word} onClose={closeGame} onDone={finishGame}/>}
         {route.name === 'reward' && (
           <WebReward word={route.word} stars={route.stars} coins={route.coins}
@@ -762,7 +778,7 @@ function WebShop({ profile, setProfile, levels }) {
     <div style={{ padding: '32px 40px 48px', minHeight: '100%', background: 'linear-gradient(180deg, var(--yellow-soft) 0%, var(--bg) 320px)' }}>
       <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 28 }}>
         <div>
-          <h1 style={{ fontSize: 40, fontWeight: 900, margin: '0 0 4px', letterSpacing: '-0.02em' }}>🛍 Pet Shop</h1>
+          <h1 style={{ fontSize: 36, fontWeight: 400, fontFamily: "'Fredoka One', cursive", margin: '0 0 4px', letterSpacing: '0.01em' }}>🛍 Pet Shop</h1>
           <p style={{ fontSize: 15, color: 'var(--ink-soft)', fontWeight: 700, margin: 0 }}>Collect pets, gear, and goodies!</p>
         </div>
         <div style={{ background: 'white', borderRadius: 18, padding: '14px 22px', display: 'flex', alignItems: 'center', gap: 12, boxShadow: 'var(--shadow-toy)' }}>
@@ -1028,7 +1044,7 @@ function WebCodeLab({ levels, onPlayLevel }) {
     <div style={{ padding: '32px 40px 48px', background: 'linear-gradient(180deg, var(--mint-soft) 0%, var(--bg) 360px)', minHeight: '100%' }}>
       <div style={{ marginBottom: 32 }}>
         <div style={{ fontSize: 13, color: 'var(--ink-mute)', fontWeight: 800, letterSpacing: 0.5, textTransform: 'uppercase', marginBottom: 4 }}>New game mode</div>
-        <h1 style={{ fontSize: 40, fontWeight: 900, margin: '0 0 10px', letterSpacing: '-0.02em' }}>🤖 The Code Lab</h1>
+        <h1 style={{ fontSize: 36, fontWeight: 400, fontFamily: "'Fredoka One', cursive", margin: '0 0 10px', letterSpacing: '0.01em' }}>🤖 The Code Lab</h1>
         <p style={{ fontSize: 16, color: 'var(--ink-soft)', fontWeight: 700, margin: 0, maxWidth: 520 }}>
           Build a sequence of moves to guide the player to the star. No spelling — just logic and planning!
         </p>
@@ -1074,7 +1090,7 @@ function WebCodeLab({ levels, onPlayLevel }) {
       </div>
 
       <div style={{ maxWidth: 620 }}>
-        <h2 style={{ fontSize: 20, fontWeight: 900, margin: '0 0 16px' }}>How it works</h2>
+        <h2 style={{ fontSize: 20, fontWeight: 400, fontFamily: "'Fredoka One', cursive", margin: '0 0 16px' }}>How it works</h2>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 14 }}>
           {[
             { n: '1', title: 'Add moves', desc: 'Tap direction buttons to queue up your sequence.' },
@@ -1261,7 +1277,7 @@ function WebPet({ profile, setProfile, levels }) {
               <button onClick={saveName} style={{ background: 'var(--blue)', color: 'white', border: 'none', borderRadius: 8, padding: '6px 14px', fontFamily: 'inherit', fontWeight: 800, cursor: 'pointer' }}>Save</button>
             </div>
           ) : (
-            <h1 style={{ fontSize: 40, fontWeight: 900, margin: '0 0 4px', letterSpacing: '-0.02em', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 10 }}
+            <h1 style={{ fontSize: 36, fontWeight: 400, fontFamily: "'Fredoka One', cursive", margin: '0 0 4px', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 10 }}
               onClick={function() { setNameInput(petName); setEditingName(true); }}>
               {petName} <span style={{ fontSize: 18, color: 'var(--ink-mute)' }}>✏️</span>
             </h1>

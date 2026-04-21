@@ -216,7 +216,7 @@ function WebMe({ profile, setProfile, levels, onOpenParent }) {
             background: 'var(--surface)', borderRadius: 28, padding: 28,
             maxWidth: 480, width: '90vw', boxShadow: 'var(--shadow-pop)',
           }}>
-            <h2 style={{ margin: '0 0 20px', fontSize: 22, fontWeight: 900 }}>Choose your avatar</h2>
+            <h2 style={{ margin: '0 0 20px', fontSize: 22, fontWeight: 400, fontFamily: "'Fredoka One', cursive" }}>Choose your avatar</h2>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }}>
               {AVATARS.map(function(av) {
                 var selected = profile.avatar === av.id;
@@ -285,7 +285,7 @@ function WebMe({ profile, setProfile, levels, onOpenParent }) {
             </div>
           ) : (
             <h2 onClick={function() { setNameInput(profile.name); setEditingName(true); }}
-              style={{ fontSize: 28, fontWeight: 900, margin: '14px 0 4px', letterSpacing: '-0.02em', cursor: 'pointer' }}>
+              style={{ fontSize: 26, fontWeight: 400, fontFamily: "'Fredoka One', cursive", margin: '14px 0 4px', cursor: 'pointer' }}>
               {profile.name} <span style={{ fontSize: 16 }}>✏️</span>
             </h2>
           )}
@@ -302,7 +302,7 @@ function WebMe({ profile, setProfile, levels, onOpenParent }) {
           {/* XP */}
           <div className="card">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 8 }}>
-              <h3 style={{ fontSize: 18, fontWeight: 900, margin: 0 }}>XP this week</h3>
+              <h3 style={{ fontSize: 18, fontWeight: 400, fontFamily: "'Fredoka One', cursive", margin: 0 }}>XP this week</h3>
               <div style={{ fontSize: 16, fontWeight: 900, color: 'var(--blue-ink)' }}>{xpInLevel} / 500</div>
             </div>
             <div className="progress-track" style={{ height: 14 }}>
@@ -328,7 +328,7 @@ function WebMe({ profile, setProfile, levels, onOpenParent }) {
 
           {/* badges */}
           <div className="card">
-            <h3 style={{ fontSize: 18, fontWeight: 900, margin: '0 0 14px' }}>Badges</h3>
+            <h3 style={{ fontSize: 18, fontWeight: 400, fontFamily: "'Fredoka One', cursive", margin: '0 0 14px' }}>Badges</h3>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
               {badges.map(function(b) {
                 return (
