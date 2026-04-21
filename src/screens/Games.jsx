@@ -6,7 +6,7 @@ function GameHeader({ mode, progress, onClose }) {
   return (
     <div style={{ padding: '60px 16px 12px', display: 'flex', alignItems: 'center', gap: 10 }}>
       <button onClick={onClose} aria-label="Close" style={{
-        width: 40, height: 40, borderRadius: '50%', border: 'none',
+        width: 44, height: 44, borderRadius: '50%', border: 'none',
         background: 'var(--surface)', cursor: 'pointer',
         boxShadow: 'var(--shadow-soft)', fontSize: 18, fontWeight: 900,
         display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -309,8 +309,8 @@ function KidKeyboard({ onPress, device }) {
       {rows.map((r, i) => (
         <div key={i} style={{ display: 'flex', gap: 5, justifyContent: 'center', paddingLeft: i === 1 ? 14 : i === 2 ? 30 : 0, paddingRight: i === 1 ? 14 : i === 2 ? 30 : 0 }}>
           {r.map(l => (
-            <button key={l} onClick={() => onPress(l)} style={{
-              flex: 1, maxWidth: 38, height: 52,
+            <button key={l} onClick={() => onPress(l)} aria-label={'Letter ' + l} style={{
+              flex: 1, minWidth: 44, height: 52,
               border: 'none', background: 'var(--surface)',
               color: 'var(--ink)', fontWeight: 900, fontSize: 20,
               borderRadius: 10, cursor: 'pointer', fontFamily: 'inherit',
@@ -510,8 +510,8 @@ function SequenceKeyboard({ onPress, target, flash }) {
             const bg = isFlash ? (flash.ok ? 'var(--success)' : 'var(--danger)') : 'var(--surface)';
             const col = isFlash ? 'white' : 'var(--ink)';
             return (
-              <button key={l} onClick={() => onPress(l)} style={{
-                flex: 1, maxWidth: 36, height: 48,
+              <button key={l} onClick={() => onPress(l)} aria-label={'Letter ' + l} style={{
+                flex: 1, minWidth: 44, height: 48,
                 border: 'none', background: bg,
                 color: col, fontWeight: 900, fontSize: 18,
                 borderRadius: 10, cursor: 'pointer', fontFamily: 'inherit',
@@ -533,9 +533,9 @@ function SequenceKeyboard({ onPress, target, flash }) {
 
 // ── 6. PRECISION click — tile teleports, click it while still ──
 var PRECISION_POSITIONS = [
-  { left: '20%', top: '30%' },
-  { left: '60%', top: '25%' },
-  { left: '42%', top: '60%' },
+  { tx: '20%', ty: '30%' },
+  { tx: '60%', ty: '25%' },
+  { tx: '42%', ty: '60%' },
 ];
 var TILE_COLORS = ['var(--blue)', 'var(--coral)', 'var(--mint)', 'var(--yellow)', 'var(--lilac)'];
 
@@ -601,15 +601,15 @@ function PrecisionGame({ word, onDone, onClose }) {
           onClick={handleClick}
           style={{
             position: 'absolute',
-            left: pos.left,
-            top: pos.top,
+            left: 0, top: 0,
+            transform: 'translate(' + pos.tx + ', ' + pos.ty + ')',
             width: 96, height: 96,
             background: color,
             borderRadius: 22,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             fontSize: 48, fontWeight: 900, color: '#fff',
             cursor: 'none',
-            transition: 'left 0.28s cubic-bezier(0.34,1.1,0.64,1), top 0.28s cubic-bezier(0.34,1.1,0.64,1)',
+            transition: 'transform 0.28s cubic-bezier(0.34,1.1,0.64,1)',
             opacity: transitioning ? 0.45 : 1,
             boxShadow: transitioning ? 'none' : '0 6px 20px rgba(0,0,0,0.18)',
             userSelect: 'none',
@@ -858,7 +858,7 @@ function EchoGame({ word, onDone, onClose }) {
           <div style={{ fontSize: 12, color: 'var(--ink-mute)', fontWeight: 800, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 20 }}>
             Listen, then spell!
           </div>
-          <button onClick={speak} style={{
+          <button onClick={speak} aria-label="Hear the word" style={{
             width: 100, height: 100, borderRadius: '50%',
             background: 'var(--lilac)', border: 'none', cursor: 'pointer',
             display: 'flex', alignItems: 'center', justifyContent: 'center',

@@ -221,23 +221,23 @@ function WebSidebar({ tab, onTab, profile, settings, levels, onOpenParent }) {
     { id: 'pet', label: activePetName, icon: function(c) { return <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M4.5 9.5a2.5 2.5 0 100-5 2.5 2.5 0 000 5zM19.5 9.5a2.5 2.5 0 100-5 2.5 2.5 0 000 5zM9 13.5a2.5 2.5 0 100-5 2.5 2.5 0 000 5zM15 13.5a2.5 2.5 0 100-5 2.5 2.5 0 000 5zM5 20c0-2.5 3-4 7-4s7 1.5 7 4" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>; } },
   ] : []);
   return (
-    <aside aria-label="Main navigation" style={{
+    <aside aria-label="Main navigation" className="web-sidebar" style={{
       width: 240, flexShrink: 0, background: 'var(--surface)',
       borderRight: '1px solid var(--alpha-md)',
       display: 'flex', flexDirection: 'column', padding: 18,
-      minHeight: '100vh',
+      minHeight: '100vh', transition: 'width 200ms ease, padding 200ms ease',
     }}>
       {/* brand */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '4px 8px 18px' }}>
+      <div className="sidebar-brand" style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '4px 8px 18px' }}>
         <div style={{
-          width: 36, height: 36, borderRadius: 10,
+          width: 36, height: 36, borderRadius: 10, flexShrink: 0,
           background: 'var(--blue)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           boxShadow: 'var(--shadow-soft)',
         }}>
           <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4v16l4-4h12V4H4z" fill="white"/><circle cx="9" cy="12" r="1.5" fill="rgba(255,255,255,0.5)"/><circle cx="13" cy="12" r="1.5" fill="rgba(255,255,255,0.5)"/></svg>
         </div>
-        <div>
+        <div className="sidebar-brand-text">
           <div style={{ fontWeight: 900, fontSize: 16, lineHeight: 1 }}>SpellLoop</div>
           <div style={{ fontSize: 11, color: 'var(--ink-mute)', fontWeight: 700 }}>Kids</div>
         </div>
@@ -247,19 +247,19 @@ function WebSidebar({ tab, onTab, profile, settings, levels, onOpenParent }) {
         {items.map(function(it) {
           var active = tab === it.id;
           return (
-            <button key={it.id} aria-current={active ? 'page' : undefined} onClick={function() { onTab(it.id); window.sfx && window.sfx.tap && window.sfx.tap(); }} style={{
+            <button key={it.id} aria-current={active ? 'page' : undefined} className="sidebar-nav-btn" onClick={function() { onTab(it.id); window.sfx && window.sfx.tap && window.sfx.tap(); }} style={{
               display: 'flex', alignItems: 'center', gap: 12,
               padding: '12px 14px', border: 'none', cursor: 'pointer',
               background: active ? 'var(--blue-soft)' : 'transparent',
               color: active ? 'var(--blue-ink)' : 'var(--ink-soft)',
               borderRadius: 12, fontFamily: 'inherit', fontWeight: 800, fontSize: 15, textAlign: 'left',
-              transition: 'background 120ms ease, color 120ms ease',
+              transition: 'background 120ms ease, color 120ms ease', width: '100%',
             }}
             onMouseEnter={function(e) { if (!active) e.currentTarget.style.background = 'var(--alpha-sm)'; }}
             onMouseLeave={function(e) { if (!active) e.currentTarget.style.background = 'transparent'; }}
             >
               {it.icon(active ? 'var(--blue-ink)' : 'var(--ink-soft)')}
-              <span>{it.label}</span>
+              <span className="sidebar-label">{it.label}</span>
             </button>
           );
         })}
@@ -268,7 +268,7 @@ function WebSidebar({ tab, onTab, profile, settings, levels, onOpenParent }) {
       <div style={{ flex: 1 }}/>
 
       {/* coins */}
-      <div style={{ background: 'var(--yellow-soft)', borderRadius: 12, padding: 12, display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+      <div className="sidebar-coins" style={{ background: 'var(--yellow-soft)', borderRadius: 12, padding: 12, display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
         <div style={{ fontSize: 24 }}>🪙</div>
         <div>
           <div style={{ fontWeight: 900, fontSize: 18, color: 'var(--yellow-ink)' }}>{profile.coins || 0}</div>
@@ -285,6 +285,7 @@ function WebSidebar({ tab, onTab, profile, settings, levels, onOpenParent }) {
         return (
           <button onClick={function() { onTab('pet'); window.sfx && window.sfx.tap && window.sfx.tap(); }}
             aria-label={'Go to ' + activePetName + ' pet tab'}
+            className="sidebar-pet"
             style={{ background: specBg, borderRadius: 12, padding: '10px 12px', display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8, border: 'none', cursor: 'pointer', width: '100%', fontFamily: 'inherit', textAlign: 'left' }}>
             <PetSprite speciesId={profile.activePetId} completedChapters={completedChapters} mood={pm} size={42} equipped={activePetData.equipped || {}} animate={true}/>
             <div style={{ flex: 1, minWidth: 0 }}>
@@ -299,7 +300,7 @@ function WebSidebar({ tab, onTab, profile, settings, levels, onOpenParent }) {
       })()}
 
       {/* mini profile */}
-      <div style={{ background: 'var(--bg)', borderRadius: 12, padding: 10, display: 'flex', alignItems: 'center', gap: 10, border: '1px solid var(--alpha-sm)' }}>
+      <div className="sidebar-profile" style={{ background: 'var(--bg)', borderRadius: 12, padding: 10, display: 'flex', alignItems: 'center', gap: 10, border: '1px solid var(--alpha-sm)' }}>
         <DressedAvatar id={profile.avatar} size={40} style={avatarStyle} equipped={profile.equipped || {}}/>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontWeight: 900, fontSize: 14 }}>{profile.name}</div>

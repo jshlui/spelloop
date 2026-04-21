@@ -126,7 +126,7 @@ function RewardScreen({ word, stars, coins, onNext, onHome }) {
         <div style={{
           fontSize: 48, fontWeight: 900, lineHeight: 1, marginBottom: 8,
           transform: animIn ? 'scale(1)' : 'scale(0.5)',
-          transition: 'transform 500ms cubic-bezier(.34,1.56,.64,1)',
+          transition: 'transform 500ms cubic-bezier(.34,1.1,.64,1)',
         }}>You did it!</div>
         <div style={{ fontSize: 20, color: 'var(--ink-soft)', fontWeight: 700, marginBottom: 28 }}>
           You spelled <span style={{ color: 'var(--blue-ink)', fontWeight: 900 }}>{word}</span>
@@ -136,7 +136,7 @@ function RewardScreen({ word, stars, coins, onNext, onHome }) {
           {[0, 1, 2].map(i => (
             <div key={i} style={{
               transform: animIn && i < stars ? 'scale(1) rotate(0)' : 'scale(0) rotate(-180deg)',
-              transition: `transform 500ms cubic-bezier(.34,1.56,.64,1) ${i * 180 + 200}ms`,
+              transition: `transform 500ms cubic-bezier(.34,1.1,.64,1) ${i * 180 + 200}ms`,
             }}>
               <Star filled={i < stars} size={60}/>
             </div>

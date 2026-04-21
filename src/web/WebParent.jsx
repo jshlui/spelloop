@@ -146,28 +146,29 @@ function WebParent({ profiles, activeId, profile, setProfile, levels, setLevels,
       position: 'fixed', inset: 0, background: 'var(--bg)', zIndex: 300,
       display: 'flex', fontFamily: "Nunito, system-ui, sans-serif",
     }}>
-      <aside aria-label="Parent area navigation" style={{
+      <aside aria-label="Parent area navigation" className="parent-sidebar" style={{
         width: 240, flexShrink: 0, background: 'var(--surface)',
         borderRight: '1px solid var(--alpha-sm)', padding: 18,
-        display: 'flex', flexDirection: 'column',
+        display: 'flex', flexDirection: 'column', transition: 'width 200ms ease, padding 200ms ease',
       }}>
         <button onClick={onClose} style={{
           background: 'var(--alpha-sm)', border: 'none', padding: '8px 12px',
           borderRadius: 8, fontWeight: 700, fontSize: 12, color: 'var(--ink)',
           cursor: 'pointer', fontFamily: 'inherit', display: 'inline-flex',
           alignItems: 'center', gap: 6, width: 'fit-content', marginBottom: 20,
-        }}>← Back to app</button>
+        }}><span className="parent-back-text">← Back to app</span><span style={{ display: 'none' }} className="parent-nav-label" aria-hidden="true">✕</span></button>
         <div style={{ fontSize: 11, color: 'var(--ink-mute)', fontWeight: 800, letterSpacing: 0.5, textTransform: 'uppercase', marginBottom: 4 }}>Parent area</div>
         <div style={{ fontSize: 16, fontWeight: 900, marginBottom: 20 }}>{profile.name}'s progress</div>
         <nav role="navigation" aria-label="Parent sections" style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
           {navItems.map(function(it) {
             return (
-              <button key={it.id} aria-current={tab === it.id ? 'page' : undefined} onClick={function() { setTab(it.id); }} style={{
+              <button key={it.id} aria-current={tab === it.id ? 'page' : undefined} onClick={function() { setTab(it.id); }} className="parent-nav-btn" style={{
                 background: tab === it.id ? 'var(--blue-soft)' : 'transparent',
                 color: tab === it.id ? 'var(--blue-ink)' : 'var(--ink-soft)', border: 'none',
                 padding: '10px 14px', borderRadius: 8, fontWeight: 700, fontSize: 13,
-                textAlign: 'left', cursor: 'pointer', fontFamily: 'inherit',
-              }}>{it.label}</button>
+                textAlign: 'left', cursor: 'pointer', fontFamily: 'inherit', width: '100%',
+                display: 'flex', alignItems: 'center', gap: 8,
+              }}><span className="parent-nav-label">{it.label}</span></button>
             );
           })}
         </nav>
@@ -239,14 +240,14 @@ function ProfilesTab({ profiles, activeId, onSwitch, onAdd, onDelete, onReset })
           <h3 style={{ margin: '0 0 16px', fontSize: 16, fontWeight: 900 }}>New profile</h3>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 120px', gap: 12, marginBottom: 16 }}>
             <div>
-              <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--ink-mute)', marginBottom: 4 }}>Name</div>
-              <input value={newName} onChange={function(e) { setNewName(e.target.value); }}
+              <label htmlFor="new-child-name" style={{ display: 'block', fontSize: 12, fontWeight: 700, color: 'var(--ink-mute)', marginBottom: 4 }}>Name</label>
+              <input id="new-child-name" value={newName} onChange={function(e) { setNewName(e.target.value); }}
                 onKeyDown={function(e) { if (e.key === 'Enter') handleAdd(); }}
                 style={Object.assign({}, inputStyle, { width: '100%' })} placeholder="Child's name" autoFocus/>
             </div>
             <div>
-              <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--ink-mute)', marginBottom: 4 }}>Age</div>
-              <input value={newAge} onChange={function(e) { setNewAge(e.target.value); }}
+              <label htmlFor="new-child-age" style={{ display: 'block', fontSize: 12, fontWeight: 700, color: 'var(--ink-mute)', marginBottom: 4 }}>Age</label>
+              <input id="new-child-age" value={newAge} onChange={function(e) { setNewAge(e.target.value); }}
                 style={Object.assign({}, inputStyle, { width: '100%' })} placeholder="Age" type="number" min="3" max="12"/>
             </div>
           </div>
@@ -345,6 +346,7 @@ function ProfilesTab({ profiles, activeId, onSwitch, onAdd, onDelete, onReset })
                 }}>↺ Reset</button>
                 {profiles.length > 1 && (
                   <button onClick={function() { setConfirmState({ id: p.id, action: 'delete', name: p.name }); }}
+                    aria-label={'Delete ' + p.name + "'s profile"}
                     style={Object.assign({}, btnGhost, { color: 'var(--danger-text)', borderColor: 'var(--alpha-md)' })}>✕</button>
                 )}
               </div>
@@ -605,14 +607,14 @@ function SettingsTab({ profile, setProfile, settings, setSettings }) {
         <h3 style={{ margin: '0 0 14px', fontSize: 15, fontWeight: 900 }}>Child profile</h3>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 120px', gap: 12, marginBottom: 12 }}>
           <div>
-            <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--ink-mute)', marginBottom: 4 }}>Name</div>
-            <input value={nameVal} onChange={function(e) { setNameVal(e.target.value); }}
+            <label htmlFor="settings-child-name" style={{ display: 'block', fontSize: 12, fontWeight: 700, color: 'var(--ink-mute)', marginBottom: 4 }}>Name</label>
+            <input id="settings-child-name" value={nameVal} onChange={function(e) { setNameVal(e.target.value); }}
               onKeyDown={function(e) { if (e.key === 'Enter') saveProfile(); }}
               style={inputStyle} placeholder="Child's name"/>
           </div>
           <div>
-            <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--ink-mute)', marginBottom: 4 }}>Age</div>
-            <input value={ageVal} onChange={function(e) { setAgeVal(e.target.value); }}
+            <label htmlFor="settings-child-age" style={{ display: 'block', fontSize: 12, fontWeight: 700, color: 'var(--ink-mute)', marginBottom: 4 }}>Age</label>
+            <input id="settings-child-age" value={ageVal} onChange={function(e) { setAgeVal(e.target.value); }}
               onKeyDown={function(e) { if (e.key === 'Enter') saveProfile(); }}
               style={inputStyle} placeholder="Age" type="number" min="3" max="12"/>
           </div>
@@ -645,9 +647,10 @@ function SettingsTab({ profile, setProfile, settings, setSettings }) {
         <h3 style={{ margin: '0 0 14px', fontSize: 15, fontWeight: 900 }}>🔊 Voice settings</h3>
 
         <div style={{ marginBottom: 14 }}>
-          <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--ink-mute)', marginBottom: 4 }}>ElevenLabs API Key</div>
+          <label htmlFor="settings-el-key" style={{ display: 'block', fontSize: 12, fontWeight: 700, color: 'var(--ink-mute)', marginBottom: 4 }}>ElevenLabs API Key</label>
           <div style={{ display: 'flex', gap: 8 }}>
             <input
+              id="settings-el-key"
               type="password"
               value={elKey}
               onChange={function(e) { setElKey(e.target.value); setElKeyError(''); setElKeySaved(false); }}
@@ -673,8 +676,9 @@ function SettingsTab({ profile, setProfile, settings, setSettings }) {
         </div>
 
         <div style={{ marginBottom: 14 }}>
-          <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--ink-mute)', marginBottom: 4 }}>Voice</div>
+          <label htmlFor="settings-el-voice" style={{ display: 'block', fontSize: 12, fontWeight: 700, color: 'var(--ink-mute)', marginBottom: 4 }}>Voice</label>
           <select
+            id="settings-el-voice"
             value={elVoice}
             onChange={handleVoiceChange}
             style={Object.assign({}, inputStyle, { width: 'auto', minWidth: 160 })}
@@ -696,14 +700,15 @@ function SettingsTab({ profile, setProfile, settings, setSettings }) {
 
 function WebSettingRow({ label, value, chev, last, onChange }) {
   return (
-    <div onClick={onChange} style={{
-      display: 'flex', alignItems: 'center', padding: '14px 4px',
+    <button onClick={onChange} style={{
+      display: 'flex', alignItems: 'center', padding: '14px 4px', width: '100%',
       borderBottom: last ? 'none' : '1px solid var(--alpha-sm)', cursor: chev ? 'pointer' : 'default',
+      background: 'none', border: 'none', fontFamily: 'inherit', textAlign: 'left',
     }}>
       <div style={{ flex: 1, fontSize: 14, fontWeight: 700 }}>{label}</div>
       <div style={{ fontSize: 13, color: 'var(--ink-mute)', fontWeight: 700 }}>{value}</div>
       {chev && <svg width="8" height="14" viewBox="0 0 8 14" style={{ marginLeft: 10 }}><path d="M1 1l6 6-6 6" stroke="var(--ink-mute)" strokeWidth="2" fill="none" strokeLinecap="round"/></svg>}
-    </div>
+    </button>
   );
 }
 
@@ -717,16 +722,29 @@ function WebToggleRow({ label, sub, value, onChange, last }) {
         <div style={{ fontSize: 14, fontWeight: 700 }}>{label}</div>
         {sub && <div style={{ fontSize: 12, color: 'var(--ink-mute)', fontWeight: 600 }}>{sub}</div>}
       </div>
-      <div onClick={function() { onChange(!value); }} style={{
-        width: 44, height: 26, borderRadius: 13, background: value ? 'var(--blue-ink)' : 'var(--alpha-lg)',
-        position: 'relative', cursor: 'pointer', transition: 'background var(--dur-fast) ease',
-      }}>
+      <button
+        role="switch"
+        aria-checked={value}
+        aria-label={label}
+        onClick={function() { onChange(!value); }}
+        style={{
+          width: 44, height: 44, borderRadius: 22, background: 'none', border: 'none',
+          cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+          padding: 0,
+        }}
+      >
         <div style={{
-          position: 'absolute', top: 2, left: value ? 'calc(100% - 24px)' : '2px',
-          width: 22, height: 22, borderRadius: '50%', background: 'white',
-          boxShadow: '0 1px 4px var(--alpha-lg)', transition: 'left var(--dur-fast) var(--ease-toy)',
-        }}/>
-      </div>
+          width: 44, height: 26, borderRadius: 13, background: value ? 'var(--blue-ink)' : 'var(--alpha-lg)',
+          position: 'relative', transition: 'background var(--dur-fast) ease',
+          pointerEvents: 'none',
+        }}>
+          <div style={{
+            position: 'absolute', top: 2, left: value ? 'calc(100% - 24px)' : '2px',
+            width: 22, height: 22, borderRadius: '50%', background: 'white',
+            boxShadow: '0 1px 4px var(--alpha-lg)', transition: 'left var(--dur-fast) var(--ease-toy)',
+          }}/>
+        </div>
+      </button>
     </div>
   );
 }

@@ -403,6 +403,40 @@ html, body {
   .tile { width: 88px; height: 100px; font-size: 52px; }
 }
 
+/* == Sidebar collapse == */
+@media (max-width: 700px) {
+  .web-sidebar {
+    width: 56px !important;
+    padding: 12px 8px !important;
+  }
+  .web-sidebar .sidebar-label,
+  .web-sidebar .sidebar-coins,
+  .web-sidebar .sidebar-pet,
+  .web-sidebar .sidebar-profile {
+    display: none !important;
+  }
+  .web-sidebar .sidebar-brand-text { display: none !important; }
+  .web-sidebar .sidebar-nav-btn {
+    padding: 12px 0 !important;
+    justify-content: center !important;
+  }
+  .web-sidebar .sidebar-brand {
+    justify-content: center !important;
+    padding: 4px 0 18px !important;
+  }
+  .parent-sidebar {
+    width: 52px !important;
+    padding: 12px 6px !important;
+  }
+  .parent-sidebar .parent-nav-label,
+  .parent-sidebar .parent-back-text { display: none !important; }
+  .parent-sidebar .parent-nav-btn {
+    padding: 10px 0 !important;
+    justify-content: center !important;
+    font-size: 20px !important;
+  }
+}
+
 /* == Reduced motion == */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {

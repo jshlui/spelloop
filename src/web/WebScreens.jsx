@@ -163,6 +163,7 @@ function WebMe({ profile, setProfile, levels, onOpenParent }) {
   var [avatarOpen, setAvatarOpen] = React.useState(false);
   var [editingName, setEditingName] = React.useState(false);
   var [nameInput, setNameInput] = React.useState(profile.name);
+  var [nameError, setNameError] = React.useState('');
 
   var ctx = React.useContext(window.GameContext) || {};
   var accuracy = ctx.totalClicks > 0 ? Math.round(ctx.accuracy * 100) + '%' : '—';
@@ -189,7 +190,9 @@ function WebMe({ profile, setProfile, levels, onOpenParent }) {
 
   function saveName() {
     var n = nameInput.trim();
-    if (n) setProfile(function(p) { return Object.assign({}, p, { name: n }); });
+    if (!n) { setNameError("Name can't be empty"); return; }
+    setNameError('');
+    setProfile(function(p) { return Object.assign({}, p, { name: n }); });
     setEditingName(false);
   }
 
@@ -259,16 +262,19 @@ function WebMe({ profile, setProfile, levels, onOpenParent }) {
           {editingName ? (
             <div style={{ margin: '14px 0 4px' }}>
               <input autoFocus value={nameInput}
-                onChange={function(e) { setNameInput(e.target.value); }}
-                onKeyDown={function(e) { if (e.key === 'Enter') saveName(); if (e.key === 'Escape') setEditingName(false); }}
+                onChange={function(e) { setNameInput(e.target.value); setNameError(''); }}
+                onKeyDown={function(e) { if (e.key === 'Enter') saveName(); if (e.key === 'Escape') { setEditingName(false); setNameError(''); } }}
                 onBlur={saveName}
+                aria-label="Your name"
+                aria-describedby={nameError ? 'name-error' : undefined}
                 style={{
                   fontSize: 24, fontWeight: 900, fontFamily: 'inherit',
-                  border: 'none', borderBottom: '2px solid var(--blue)',
+                  border: 'none', borderBottom: nameError ? '2px solid var(--danger)' : '2px solid var(--blue)',
                   background: 'transparent', textAlign: 'center',
                   width: '100%', outline: 'none', color: 'var(--ink)',
                 }}
               />
+              {nameError && <div id="name-error" role="alert" style={{ fontSize: 12, color: 'var(--danger)', fontWeight: 700, marginTop: 4 }}>{nameError}</div>}
             </div>
           ) : (
             <h2 onClick={function() { setNameInput(profile.name); setEditingName(true); }}
@@ -296,10 +302,20 @@ function WebMe({ profile, setProfile, levels, onOpenParent }) {
               <div className="progress-fill" style={{ width: xpPct + '%' }}/>
             </div>
             <div style={{ display: 'flex', gap: 10, marginTop: 14 }}>
-              <WebStat icon="🔥" value={profile.streak} label="day streak" bg="var(--coral-soft)"/>
-              <WebStat icon="⭐" value={profile.totalStars} label="stars" bg="var(--yellow-soft)"/>
-              <WebStat icon="📚" value={profile.words} label="words" bg="var(--mint-soft)"/>
-              <WebStat icon="🎯" value={accuracy} label="accuracy" bg="var(--blue-soft)"/>
+              {[
+                { icon: '🔥', value: profile.streak,     label: 'day streak', bg: 'var(--coral-soft)' },
+                { icon: '⭐', value: profile.totalStars,  label: 'stars',      bg: 'var(--yellow-soft)' },
+                { icon: '📚', value: profile.words,       label: 'words',      bg: 'var(--mint-soft)' },
+                { icon: '🎯', value: accuracy,            label: 'accuracy',   bg: 'var(--blue-soft)' },
+              ].map(function(s) {
+                return (
+                  <div key={s.label} style={{ flex: 1, background: s.bg, borderRadius: 12, padding: '10px 8px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
+                    <div style={{ fontSize: 20 }}>{s.icon}</div>
+                    <div style={{ fontWeight: 900, fontSize: 18, lineHeight: 1 }}>{s.value}</div>
+                    <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--ink-mute)', textAlign: 'center' }}>{s.label}</div>
+                  </div>
+                );
+              })}
             </div>
           </div>
 
