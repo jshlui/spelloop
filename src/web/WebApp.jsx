@@ -222,44 +222,46 @@ function WebSidebar({ tab, onTab, profile, settings, levels, onOpenParent }) {
   ] : []);
   return (
     <aside aria-label="Main navigation" className="web-sidebar" style={{
-      width: 240, flexShrink: 0, background: 'var(--surface)',
-      borderRight: '1px solid var(--alpha-md)',
-      display: 'flex', flexDirection: 'column', padding: 18,
-      minHeight: '100vh', transition: 'width 200ms ease, padding 200ms ease',
+      width: 72, flexShrink: 0,
+      background: 'rgba(255,255,255,0.92)',
+      backdropFilter: 'blur(8px)',
+      borderRight: '2px solid rgba(0,0,0,0.06)',
+      display: 'flex', flexDirection: 'column', alignItems: 'center',
+      padding: '16px 0', gap: 4,
+      minHeight: '100vh',
+      zIndex: 10,
     }}>
-      {/* brand */}
-      <div className="sidebar-brand" style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '4px 8px 18px' }}>
+      {/* brand icon */}
+      <div className="sidebar-brand" style={{ marginBottom: 12 }}>
         <div style={{
-          width: 36, height: 36, borderRadius: 10, flexShrink: 0,
-          background: 'var(--blue)',
+          width: 44, height: 44, borderRadius: 14,
+          background: 'linear-gradient(135deg, #4A90D9, #357ABD)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          boxShadow: 'var(--shadow-soft)',
-        }}>
-          <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4v16l4-4h12V4H4z" fill="white"/><circle cx="9" cy="12" r="1.5" fill="rgba(255,255,255,0.5)"/><circle cx="13" cy="12" r="1.5" fill="rgba(255,255,255,0.5)"/></svg>
-        </div>
-        <div className="sidebar-brand-text">
-          <div style={{ fontWeight: 900, fontSize: 16, lineHeight: 1 }}>SpellLoop</div>
-          <div style={{ fontSize: 11, color: 'var(--ink-mute)', fontWeight: 700 }}>Kids</div>
-        </div>
+          fontSize: 22,
+          boxShadow: '0 4px 12px rgba(74,144,217,0.4)',
+        }}>📝</div>
       </div>
 
-      <nav role="navigation" aria-label="App sections" style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+      <nav role="navigation" aria-label="App sections" style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
         {items.map(function(it) {
           var active = tab === it.id;
+          var tileColors = { home: '#FF7043', map: '#42A5F5', me: '#AB47BC', code: '#26A69A', shop: '#FFA726', pet: '#EC407A' };
+          var activeBg = tileColors[it.id] ? tileColors[it.id] + '22' : 'var(--blue-soft)';
+          var activeColor = tileColors[it.id] || 'var(--blue-ink)';
           return (
-            <button key={it.id} aria-current={active ? 'page' : undefined} className="sidebar-nav-btn" onClick={function() { onTab(it.id); window.sfx && window.sfx.tap && window.sfx.tap(); }} style={{
-              display: 'flex', alignItems: 'center', gap: 12,
-              padding: '12px 14px', border: 'none', cursor: 'pointer',
-              background: active ? 'var(--blue-soft)' : 'transparent',
-              color: active ? 'var(--blue-ink)' : 'var(--ink-soft)',
-              borderRadius: 12, fontFamily: 'inherit', fontWeight: 800, fontSize: 15, textAlign: 'left',
-              transition: 'background 120ms ease, color 120ms ease', width: '100%',
-            }}
-            onMouseEnter={function(e) { if (!active) e.currentTarget.style.background = 'var(--alpha-sm)'; }}
-            onMouseLeave={function(e) { if (!active) e.currentTarget.style.background = 'transparent'; }}
-            >
-              {it.icon(active ? 'var(--blue-ink)' : 'var(--ink-soft)')}
-              <span className="sidebar-label">{it.label}</span>
+            <button key={it.id} aria-current={active ? 'page' : undefined}
+              className="sidebar-nav-btn"
+              onClick={function() { onTab(it.id); window.sfx && window.sfx.tap && window.sfx.tap(); }}
+              style={{
+                width: 52, height: 52, borderRadius: 16,
+                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                gap: 2, border: 'none', cursor: 'pointer',
+                background: active ? activeBg : 'transparent',
+                fontFamily: 'inherit',
+                transition: 'background 120ms ease',
+              }}>
+              {it.icon(active ? activeColor : 'var(--ink-soft)')}
+              <span className="sidebar-label" style={{ fontSize: 9, fontWeight: 800, color: active ? activeColor : 'var(--ink-mute)', fontFamily: "'Fredoka One', cursive" }}>{it.label}</span>
             </button>
           );
         })}
@@ -267,57 +269,14 @@ function WebSidebar({ tab, onTab, profile, settings, levels, onOpenParent }) {
 
       <div style={{ flex: 1 }}/>
 
-      {/* coins */}
-      <div className="sidebar-coins" style={{ background: 'var(--yellow-soft)', borderRadius: 12, padding: 12, display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
-        <div style={{ fontSize: 24 }}>🪙</div>
-        <div>
-          <div style={{ fontWeight: 900, fontSize: 18, color: 'var(--yellow-ink)' }}>{profile.coins || 0}</div>
-          <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--yellow-ink)', opacity: 0.7 }}>coins to spend</div>
-        </div>
-      </div>
-
-      {/* mini pet widget */}
-      {profile.starterPicked && typeof PetSprite !== 'undefined' && activePetData && (function() {
-        var pm = activePetData.mood != null ? activePetData.mood : 80;
-        var mc = PET_MOOD_COLORS ? PET_MOOD_COLORS[getPetMoodLabel(pm)] : { bar: 'var(--mint)', text: 'var(--mint-ink)', label: '😄 Happy' };
-        var completedChapters = typeof getCompletedChapters !== 'undefined' ? getCompletedChapters(levels) : [];
-        var specBg = activePetSpec ? activePetSpec.bg : 'var(--lilac-soft, #F3EEFF)';
-        return (
-          <button onClick={function() { onTab('pet'); window.sfx && window.sfx.tap && window.sfx.tap(); }}
-            aria-label={'Go to ' + activePetName + ' pet tab'}
-            className="sidebar-pet"
-            style={{ background: specBg, borderRadius: 12, padding: '10px 12px', display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8, border: 'none', cursor: 'pointer', width: '100%', fontFamily: 'inherit', textAlign: 'left' }}>
-            <PetSprite speciesId={profile.activePetId} completedChapters={completedChapters} mood={pm} size={42} equipped={activePetData.equipped || {}} animate={true}/>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontWeight: 900, fontSize: 13, color: 'var(--ink)' }}>{activePetName}</div>
-              <div style={{ fontSize: 11, fontWeight: 700, color: mc.text, marginBottom: 3 }}>{mc.label}</div>
-              <div style={{ height: 5, background: 'var(--alpha-sm)', borderRadius: 3, overflow: 'hidden' }}>
-                <div style={{ height: '100%', width: pm + '%', background: mc.bar, borderRadius: 3, transition: 'width 0.5s ease' }}/>
-              </div>
-            </div>
-          </button>
-        );
-      })()}
-
-      {/* mini profile */}
-      <div className="sidebar-profile" style={{ background: 'var(--bg)', borderRadius: 12, padding: 10, display: 'flex', alignItems: 'center', gap: 10, border: '1px solid var(--alpha-sm)' }}>
-        <DressedAvatar id={profile.avatar} size={40} style={avatarStyle} equipped={profile.equipped || {}}/>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontWeight: 900, fontSize: 14 }}>{profile.name}</div>
-          <div style={{ fontSize: 11, color: 'var(--ink-mute)', fontWeight: 700 }}>Level {profile.level} · Age {profile.age}</div>
-        </div>
-        <button onClick={onOpenParent} aria-label="Open parent area" style={{
-          width: 44, height: 44, border: 'none', borderRadius: 10,
-          background: 'var(--surface)', cursor: 'pointer',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          boxShadow: 'var(--shadow-soft)',
-          transition: 'transform var(--dur-fast) var(--ease-toy), box-shadow var(--dur-fast) var(--ease-toy)',
-        }}
-        onMouseEnter={function(e) { e.currentTarget.style.transform = 'scale(1.1)'; e.currentTarget.style.boxShadow = 'var(--shadow-pop)'; }}
-        onMouseLeave={function(e) { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.boxShadow = 'var(--shadow-soft)'; }}
-        >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="3" stroke="var(--ink-soft)" strokeWidth="2"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2" stroke="var(--ink-soft)" strokeWidth="2" strokeLinecap="round"/></svg>
-        </button>
+      {/* coins (icon-only pill) */}
+      <div className="sidebar-coins" style={{
+        width: 52, height: 44, background: 'var(--yellow-soft)', borderRadius: 14,
+        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+        gap: 1, marginBottom: 8,
+      }}>
+        <div style={{ fontSize: 18 }}>🪙</div>
+        <div style={{ fontSize: 10, fontWeight: 900, color: 'var(--yellow-ink)' }}>{profile.coins || 0}</div>
       </div>
     </aside>
   );
