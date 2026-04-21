@@ -185,7 +185,7 @@ function WebApp({ profile, setProfile, levels, setLevels, settings, setSettings,
           <WebHome profile={profile} levels={levels}
             onContinue={function() { startLevel(currentLevel); }}
             onPickMode={startMode}
-            onOpenParent={onOpenParent}/>
+            onTab={function(t) { setTab(t); setRoute({ name: 'screen' }); }}/>
         )}
         {route.name === 'screen' && tab === 'map'  && <WebMap levels={levels} onPlayLevel={startLevel}/>}
         {route.name === 'screen' && tab === 'me'   && <WebMe profile={profile} setProfile={setProfile} levels={levels} onOpenParent={onOpenParent}/>}
@@ -386,111 +386,101 @@ function ScreenPanel({ children }) {
   );
 }
 
-function WebHome({ profile, levels, onContinue, onPickMode, onOpenParent }) {
-  var modes = ['click', 'drag', 'type', 'missing', 'keyboard', 'scramble', 'speed'];
+function WebHome({ profile, levels, onContinue, onPickMode, onTab }) {
   var currentLevel = levels && levels.find(function(l) { return l.current; });
-  var doneCount = levels ? levels.filter(function(l) { return l.done; }).length : 0;
-  var modeName = currentLevel ? (MODE_META[currentLevel.mode] || MODE_META.click).label : 'Spell it';
   var currentWord = currentLevel ? currentLevel.word : '...';
-  var levelNum = currentLevel ? currentLevel.id : 1;
+
+  var tiles = [
+    { id: 'home', label: 'Play',     icon: '🎮', grad: 'var(--tile-play)' },
+    { id: 'map',  label: 'Journey',  icon: '🗺️', grad: 'var(--tile-journey)' },
+    { id: 'me',   label: 'My Stuff', icon: '⭐', grad: 'var(--tile-me)' },
+    { id: 'code', label: 'Code Lab', icon: '💻', grad: 'var(--tile-code)' },
+    { id: 'shop', label: 'Shop',     icon: '🛍️', grad: 'var(--tile-shop)' },
+    { id: 'pet',  label: 'My Pet',   icon: '🐾', grad: 'var(--tile-pet)' },
+  ];
 
   return (
-    <div style={{ padding: '32px 40px 48px', background: 'linear-gradient(180deg, #FFF6EA 0%, var(--bg) 400px)', minHeight: '100%' }}>
-      <div style={{ marginBottom: 24 }}>
-        <div style={{ fontSize: 13, color: 'var(--ink-mute)', fontWeight: 800, letterSpacing: 0.5, textTransform: 'uppercase', marginBottom: 2 }}>
-          {new Date().toLocaleDateString('en', { weekday: 'long' })} · {new Date().toLocaleDateString('en', { month: 'long', day: 'numeric' })}
-        </div>
-        <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
-          <h1 style={{ fontSize: 40, fontWeight: 900, margin: 0, letterSpacing: '-0.02em' }}>Hi, {profile.name}! 👋</h1>
-          <div style={{ display: 'flex', gap: 20, alignItems: 'center', background: 'var(--surface)', borderRadius: 14, padding: '10px 18px', boxShadow: 'var(--shadow-soft)' }}>
-            <span style={{ fontSize: 14, fontWeight: 800, color: 'var(--coral-ink)' }}>🔥 {profile.streak} <span style={{ color: 'var(--ink-mute)', fontWeight: 700 }}>streak</span></span>
-            <span style={{ width: 1, height: 20, background: 'var(--alpha-md)', display: 'block' }}/>
-            <span style={{ fontSize: 14, fontWeight: 800, color: 'var(--yellow-ink)' }}>⭐ {profile.totalStars} <span style={{ color: 'var(--ink-mute)', fontWeight: 700 }}>stars</span></span>
-            <span style={{ width: 1, height: 20, background: 'var(--alpha-md)', display: 'block' }}/>
-            <span style={{ fontSize: 14, fontWeight: 800, color: 'var(--mint-ink)' }}>📚 {profile.words} <span style={{ color: 'var(--ink-mute)', fontWeight: 700 }}>words</span></span>
-          </div>
+    <LandscapeShell title={'Hi, ' + profile.name + '! 👋'} onBack={function() {}}>
+
+      {/* Greeting + stats */}
+      <div style={{ textAlign: 'center', padding: '10px 0 0' }}>
+        <div style={{
+          display: 'inline-flex', gap: 12, alignItems: 'center',
+          background: 'rgba(255,255,255,0.85)', backdropFilter: 'blur(4px)',
+          borderRadius: 999, padding: '6px 16px',
+          border: '2px solid rgba(255,255,255,0.9)',
+          boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+        }}>
+          <span style={{ fontSize: 13, fontWeight: 800, color: '#333' }}>🔥 {profile.streak} streak</span>
+          <span style={{ width: 1, height: 16, background: '#ddd', display: 'block' }}/>
+          <span style={{ fontSize: 13, fontWeight: 800, color: '#333' }}>⭐ {profile.totalStars} stars</span>
+          <span style={{ width: 1, height: 16, background: '#ddd', display: 'block' }}/>
+          <span style={{ fontSize: 13, fontWeight: 800, color: '#333' }}>📚 {profile.words} words</span>
         </div>
       </div>
 
-      {/* hero continue card */}
+      {/* 6-tile nav grid */}
       <div style={{
-        background: 'var(--blue)', color: 'white',
-        borderRadius: 24, padding: '28px 32px',
-        boxShadow: 'var(--shadow-pop)', position: 'relative',
-        overflow: 'hidden', marginBottom: 28,
-        display: 'grid', gridTemplateColumns: '1fr auto', gap: 24, alignItems: 'center',
+        display: 'grid', gridTemplateColumns: 'repeat(3, 110px)',
+        gap: 14,
+        position: 'absolute',
+        top: '50%', left: '50%',
+        transform: 'translate(-50%, -52%)',
+        zIndex: 20,
       }}>
-        <svg width="280" height="280" viewBox="0 0 280 280" aria-hidden="true" style={{ position: 'absolute', right: -20, top: -80, opacity: 0.22 }}>
-          <circle cx="190" cy="100" r="60" fill="var(--yellow)"/>
-          <circle cx="90" cy="200" r="40" fill="var(--pink)"/>
-          <rect x="170" y="180" width="50" height="50" rx="12" fill="var(--mint)"/>
-        </svg>
-        <div style={{ position: 'relative', zIndex: 1 }}>
-          <div style={{ fontSize: 12, fontWeight: 900, letterSpacing: 'var(--ls-label)', textTransform: 'uppercase', opacity: 0.9 }}>
-            Continue · Chapter 1 · Level {levelNum}
-          </div>
-          <div className="game-mode-label" style={{ fontSize: 44, fontWeight: 900, lineHeight: 1.05, margin: '6px 0' }}>{modeName}</div>
-          <div style={{ fontSize: 18, opacity: 0.95, fontWeight: 700, marginBottom: 18 }}>
-            Today's word is <span style={{ background: 'rgba(255,255,255,0.18)', padding: '2px 10px', borderRadius: 8, fontWeight: 900 }}>{currentWord}</span>
-          </div>
-          <button className="btn-3d" onClick={onContinue} style={{
-            background: 'white', color: 'var(--blue-ink)', border: 'none',
-            padding: '16px 28px', borderRadius: 999, fontSize: 17, fontWeight: 900,
-            cursor: 'pointer', fontFamily: 'inherit',
-          }}>▶ Continue learning</button>
-        </div>
-        <div style={{ position: 'relative', zIndex: 1, textAlign: 'center', padding: 20 }}>
-          <div className="word-display" aria-label={'Word: ' + currentWord} style={{
-            width: 160, height: 160, borderRadius: 40,
-            background: 'rgba(255,255,255,0.18)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: currentWord.length > 4 ? 'var(--fs-2xl)' : 'var(--fs-hero)', fontWeight: 900,
-            letterSpacing: '0.04em',
-          }}>{currentWord}</div>
-        </div>
+        {tiles.map(function(t) {
+          return (
+            <button key={t.id}
+              onClick={function() { onTab(t.id); window.sfx && window.sfx.tap && window.sfx.tap(); }}
+              style={{
+                width: 110, height: 100, borderRadius: 24,
+                background: t.grad,
+                border: '3px solid rgba(255,255,255,0.6)',
+                boxShadow: '0 6px 0 rgba(0,0,0,0.18), 0 10px 24px rgba(0,0,0,0.12)',
+                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                gap: 6, cursor: 'pointer', fontFamily: 'inherit',
+                transition: 'transform 0.12s ease, box-shadow 0.12s ease',
+              }}
+              onMouseEnter={function(e) { e.currentTarget.style.transform = 'translateY(-4px)'; }}
+              onMouseLeave={function(e) { e.currentTarget.style.transform = 'translateY(0)'; }}
+              onMouseDown={function(e) { e.currentTarget.style.transform = 'translateY(3px)'; e.currentTarget.style.boxShadow = '0 3px 0 rgba(0,0,0,0.18)'; }}
+              onMouseUp={function(e) { e.currentTarget.style.transform = 'translateY(-4px)'; e.currentTarget.style.boxShadow = '0 6px 0 rgba(0,0,0,0.18), 0 10px 24px rgba(0,0,0,0.12)'; }}
+            >
+              <div style={{ fontSize: 36, lineHeight: 1 }}>{t.icon}</div>
+              <div style={{ fontFamily: "'Fredoka One', cursive", fontSize: 14, color: 'white', textShadow: '0 1px 3px rgba(0,0,0,0.3)' }}>{t.label}</div>
+            </button>
+          );
+        })}
       </div>
 
-      {/* practice modes */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 12 }}>
-        <h2 style={{ fontSize: 22, fontWeight: 900, margin: 0 }}>Practice a mode</h2>
-        <span style={{ fontSize: 13, color: 'var(--ink-mute)', fontWeight: 700 }}>Quick play · one word</span>
+      {/* Continue button */}
+      <button onClick={onContinue} style={{
+        position: 'absolute', bottom: 80, left: '50%', transform: 'translateX(-50%)',
+        background: 'linear-gradient(145deg, #FFD700, #FFA000)',
+        border: '3px solid var(--btn-back-border)',
+        borderRadius: 999, padding: '12px 32px',
+        fontFamily: "'Fredoka One', cursive", fontSize: 18,
+        color: 'var(--btn-back-ink)', cursor: 'pointer',
+        boxShadow: '0 5px 0 var(--btn-back-shadow), 0 8px 20px rgba(255,160,0,0.4)',
+        display: 'flex', alignItems: 'center', gap: 8, whiteSpace: 'nowrap',
+        zIndex: 20,
+      }}>
+        ▶ Keep going —
+        <span style={{
+          background: 'rgba(255,255,255,0.4)', borderRadius: 8, padding: '2px 10px',
+          fontFamily: "'Fredoka One', cursive", fontSize: 16,
+        }}>{currentWord}</span>
+      </button>
+
+      {/* Mascots — Panda left, Cat right */}
+      <div style={{ position: 'absolute', bottom: 0, left: 12, zIndex: 15, filter: 'drop-shadow(2px 4px 6px rgba(0,0,0,0.2))' }}>
+        <AvatarPanda size={110} bgColor="transparent"/>
       </div>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))', gap: 12, marginBottom: 28 }}>
-        {modes.map(function(m) { return <WebModeCard key={m} mode={m} onClick={function() { onPickMode(m); }}/>; })}
+      <div style={{ position: 'absolute', bottom: 0, right: 12, zIndex: 15, filter: 'drop-shadow(2px 4px 6px rgba(0,0,0,0.2))', transform: 'scaleX(-1)' }}>
+        <AvatarCat size={110} bgColor="transparent"/>
       </div>
 
-      {/* recent words + daily goal */}
-      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 16 }}>
-        <div className="card">
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12 }}>
-            <h3 style={{ fontSize: 16, fontWeight: 900, margin: 0 }}>Recent words</h3>
-          </div>
-          <div style={{ display: 'flex', gap: 10, overflow: 'auto' }}>
-            {(levels || []).filter(function(l) { return l.done && l.mode !== 'coding'; }).slice(-7).reverse().map(function(l) {
-              return (
-                <div key={l.id} style={{ background: 'var(--mint-soft)', borderRadius: 12, padding: '12px 14px', minWidth: 90, textAlign: 'center', border: '2px solid var(--mint)' }}>
-                  <div style={{ fontSize: 20, fontWeight: 900, letterSpacing: '0.05em' }}>{l.word}</div>
-                  <div style={{ marginTop: 4 }}><StarRow filled={l.stars} size={10} gap={1}/></div>
-                </div>
-              );
-            })}
-            {doneCount === 0 && <div style={{ fontSize: 14, color: 'var(--ink-mute)', fontWeight: 700, padding: '12px 0' }}>Complete levels to see your words here!</div>}
-          </div>
-        </div>
-        <div className="card" style={{ background: 'var(--yellow-soft)' }}>
-          <h3 style={{ fontSize: 16, fontWeight: 900, margin: '0 0 10px' }}>Progress</h3>
-          <div style={{ fontSize: 36, fontWeight: 900, letterSpacing: '-0.02em' }}>
-            {doneCount}<span style={{ fontSize: 16, color: 'var(--ink-soft)' }}>/{(levels || []).length} levels</span>
-          </div>
-          <div className="progress-track" style={{ marginTop: 8 }}>
-            <div className="progress-fill" style={{ width: `${levels && levels.length ? (doneCount / levels.length * 100) : 0}%`, background: 'var(--yellow)' }}/>
-          </div>
-          <div style={{ fontSize: 12, color: 'var(--ink-soft)', fontWeight: 700, marginTop: 8 }}>
-            {doneCount === levels.length ? 'Chapter 1 complete! 🎉' : `${(levels || []).length - doneCount} levels remaining`}
-          </div>
-        </div>
-      </div>
-    </div>
+    </LandscapeShell>
   );
 }
 
