@@ -169,64 +169,131 @@ var PET_SPECIES = [
     shinyKey: null, shinyTarget: 3, shinyLabel: 'All Code Lab levels done',
     tagline: 'A logic-loving alien from beyond the stars.',
     unlockLevelId: null, unlockCodeLab: true },
+  // ── Rare ───────────────────────────────────────────────────────────
+  { id: 'blaze', name: 'Blaze', type: 'Wild', typeIcon: '⚡',
+    isStarter: false, cost: 300, starterCost: null,
+    color: '#FACC15', bg: '#FEF9C3',
+    shinyKey: 'bossWins', shinyTarget: 5, shinyLabel: 'Beat 5 boss levels',
+    tagline: 'Fast as lightning, twice as fun.',
+    unlockLevelId: 32 },
+  { id: 'frost', name: 'Frost', type: 'Cool', typeIcon: '❄️',
+    isStarter: false, cost: 350, starterCost: null,
+    color: '#7DD3FC', bg: '#E0F2FE',
+    shinyKey: 'streakDays', shinyTarget: 14, shinyLabel: '14-day streak',
+    tagline: 'Calm under pressure. Cool in every crisis.',
+    unlockLevelId: 40 },
+  { id: 'luna', name: 'Luna', type: 'Mystery', typeIcon: '🌙',
+    isStarter: false, cost: 400, starterCost: null,
+    color: '#C084FC', bg: '#F3E8FF',
+    shinyKey: 'nightPlays', shinyTarget: 10, shinyLabel: 'Play after dark 10 times',
+    tagline: 'A dreamy spirit who comes alive at night.',
+    unlockLevelId: 56 },
+  { id: 'rex', name: 'Rex', type: 'Fierce', typeIcon: '🦖',
+    isStarter: false, cost: 500, starterCost: null,
+    color: '#86EFAC', bg: '#DCFCE7',
+    shinyKey: 'scramblePlays', shinyTarget: 25, shinyLabel: '25 Scramble plays',
+    tagline: 'Tiny arms. Enormous attitude.',
+    unlockLevelId: 48 },
 ];
 window.PET_SPECIES = PET_SPECIES;
 
 var PET_OUTFIT_ITEMS = [
-  { id: 'pet-hat',    slot: 'hat',    name: 'Tiny Top Hat',  emoji: '🎩', price: 40 },
-  { id: 'pet-crown',  slot: 'hat',    name: 'Mini Crown',    emoji: '👑', price: 60 },
-  { id: 'pet-flower', slot: 'hat',    name: 'Flower Wreath', emoji: '🌸', price: 45 },
-  { id: 'pet-shades', slot: 'shades', name: 'Cool Shades',   emoji: '🕶', price: 35 },
-  { id: 'pet-bow',    slot: 'bow',    name: 'Bow Tie',       emoji: '🎀', price: 25 },
-  { id: 'pet-cape',   slot: 'cape',   name: 'Hero Cape',     emoji: '🦸', price: 55 },
+  { id: 'pet-hat',      slot: 'hat',    name: 'Tiny Top Hat',    emoji: '🎩', price: 40 },
+  { id: 'pet-crown',    slot: 'hat',    name: 'Mini Crown',      emoji: '👑', price: 60 },
+  { id: 'pet-flower',   slot: 'hat',    name: 'Flower Wreath',   emoji: '🌸', price: 45 },
+  { id: 'pet-beanie',   slot: 'hat',    name: 'Cozy Beanie',     emoji: '🧢', price: 30 },
+  { id: 'pet-cowboy',   slot: 'hat',    name: 'Cowboy Hat',      emoji: '🤠', price: 50 },
+  { id: 'pet-witch',    slot: 'hat',    name: 'Witch Hat',       emoji: '🧙', price: 55 },
+  { id: 'pet-shades',   slot: 'shades', name: 'Cool Shades',     emoji: '🕶', price: 35 },
+  { id: 'pet-monocle',  slot: 'shades', name: 'Fancy Monocle',   emoji: '🧐', price: 40 },
+  { id: 'pet-goggles',  slot: 'shades', name: 'Swim Goggles',    emoji: '🥽', price: 30 },
+  { id: 'pet-bow',      slot: 'bow',    name: 'Bow Tie',         emoji: '🎀', price: 25 },
+  { id: 'pet-scarf',    slot: 'bow',    name: 'Cozy Scarf',      emoji: '🧣', price: 28 },
+  { id: 'pet-tie',      slot: 'bow',    name: 'Smart Tie',       emoji: '👔', price: 32 },
+  { id: 'pet-cape',     slot: 'cape',   name: 'Hero Cape',       emoji: '🦸', price: 55 },
+  { id: 'pet-wings',    slot: 'cape',   name: 'Fairy Wings',     emoji: '🧚', price: 65 },
+  { id: 'pet-backpack', slot: 'cape',   name: 'Mini Backpack',   emoji: '🎒', price: 48 },
 ];
 window.PET_OUTFIT_ITEMS = PET_OUTFIT_ITEMS;
 window.SHOP_ITEMS = PET_OUTFIT_ITEMS;
 
 var PET_ROOMS = [
-  { id: 'room-beach',      name: 'Beach Cove',       emoji: '🌴', price: 80,  bg: 'linear-gradient(135deg, #87CEEB, #F0E68C)' },
-  { id: 'room-space',      name: 'Outer Space',       emoji: '🚀', price: 90,  bg: 'linear-gradient(135deg, #0D0D2B, #2D1B69)' },
-  { id: 'room-forest',     name: 'Enchanted Forest',  emoji: '🌲', price: 75,  bg: 'linear-gradient(135deg, #228B22, #90EE90)' },
-  { id: 'room-candy',      name: 'Candy Land',        emoji: '🍭', price: 85,  bg: 'linear-gradient(135deg, #FF69B4, #FFD1DC)' },
-  { id: 'room-castle',     name: 'Royal Castle',      emoji: '🏰', price: 100, bg: 'linear-gradient(135deg, #B8860B, #DAA520)' },
-  { id: 'room-underwater', name: 'Ocean Deep',        emoji: '🐠', price: 95,  bg: 'linear-gradient(135deg, #006994, #40E0D0)' },
+  { id: 'room-beach',      name: 'Beach Cove',        emoji: '🌴', price: 80,  bg: 'linear-gradient(135deg, #87CEEB, #F0E68C)' },
+  { id: 'room-space',      name: 'Outer Space',        emoji: '🚀', price: 90,  bg: 'linear-gradient(135deg, #0D0D2B, #2D1B69)' },
+  { id: 'room-forest',     name: 'Enchanted Forest',   emoji: '🌲', price: 75,  bg: 'linear-gradient(135deg, #228B22, #90EE90)' },
+  { id: 'room-candy',      name: 'Candy Land',         emoji: '🍭', price: 85,  bg: 'linear-gradient(135deg, #FF69B4, #FFD1DC)' },
+  { id: 'room-castle',     name: 'Royal Castle',       emoji: '🏰', price: 100, bg: 'linear-gradient(135deg, #B8860B, #DAA520)' },
+  { id: 'room-underwater', name: 'Ocean Deep',         emoji: '🐠', price: 95,  bg: 'linear-gradient(135deg, #006994, #40E0D0)' },
+  { id: 'room-volcano',    name: 'Volcano Peak',       emoji: '🌋', price: 110, bg: 'linear-gradient(135deg, #7F1D1D, #F97316)' },
+  { id: 'room-arctic',     name: 'Arctic Tundra',      emoji: '❄️', price: 105, bg: 'linear-gradient(135deg, #BAE6FD, #E0F2FE)' },
+  { id: 'room-jungle',     name: 'Dino Jungle',        emoji: '🦕', price: 95,  bg: 'linear-gradient(135deg, #14532D, #4ADE80)' },
+  { id: 'room-cloud',      name: 'Cloud Kingdom',      emoji: '☁️', price: 90,  bg: 'linear-gradient(135deg, #BFDBFE, #F0F9FF)' },
+  { id: 'room-haunted',    name: 'Haunted Mansion',    emoji: '👻', price: 115, bg: 'linear-gradient(135deg, #1C1917, #44403C)' },
+  { id: 'room-rainbow',    name: 'Rainbow Valley',     emoji: '🌈', price: 120, bg: 'linear-gradient(135deg, #FDE68A, #C084FC)' },
 ];
 window.PET_ROOMS = PET_ROOMS;
 
 var PET_TOYS = [
-  { id: 'toy-ball',    name: 'Bouncy Ball',    emoji: '🎾', price: 30 },
-  { id: 'toy-chest',   name: 'Treasure Chest', emoji: '📦', price: 45 },
-  { id: 'toy-rainbow', name: 'Rainbow Arc',    emoji: '🌈', price: 50 },
-  { id: 'toy-star',    name: 'Glowing Star',   emoji: '⭐', price: 35 },
-  { id: 'toy-drum',    name: 'Tiny Drum',      emoji: '🥁', price: 40 },
-  { id: 'toy-book',    name: 'Spell Book',     emoji: '📖', price: 40 },
+  { id: 'toy-ball',     name: 'Bouncy Ball',    emoji: '🎾', price: 30 },
+  { id: 'toy-chest',    name: 'Treasure Chest', emoji: '📦', price: 45 },
+  { id: 'toy-rainbow',  name: 'Rainbow Arc',    emoji: '🌈', price: 50 },
+  { id: 'toy-star',     name: 'Glowing Star',   emoji: '⭐', price: 35 },
+  { id: 'toy-drum',     name: 'Tiny Drum',      emoji: '🥁', price: 40 },
+  { id: 'toy-book',     name: 'Spell Book',     emoji: '📖', price: 40 },
+  { id: 'toy-rocket',   name: 'Toy Rocket',     emoji: '🚀', price: 55 },
+  { id: 'toy-wand',     name: 'Magic Wand',     emoji: '🪄', price: 48 },
+  { id: 'toy-kite',     name: 'Colourful Kite', emoji: '🪁', price: 35 },
+  { id: 'toy-robot',    name: 'Mini Robot',     emoji: '🤖', price: 60 },
+  { id: 'toy-bubble',   name: 'Bubble Wand',    emoji: '🫧', price: 30 },
+  { id: 'toy-pinwheel', name: 'Pinwheel',       emoji: '🌀', price: 25 },
+  { id: 'toy-telescope',name: 'Telescope',      emoji: '🔭', price: 65 },
+  { id: 'toy-dinosaur', name: 'Dino Figure',    emoji: '🦕', price: 45 },
 ];
 window.PET_TOYS = PET_TOYS;
 
 var PET_TREATS = [
-  { id: 'treat-berry',  name: 'Magic Berry',   emoji: '🫐', price: 12, moodBoost: 30, coinBonus: 0, feedBonus: 0 },
-  { id: 'treat-cake',   name: 'Birthday Cake', emoji: '🎂', price: 20, moodBoost: 50, coinBonus: 0, feedBonus: 0, sparkle: true },
-  { id: 'treat-cookie', name: 'Star Cookie',   emoji: '🍪', price: 15, moodBoost: 30, coinBonus: 5, feedBonus: 0 },
-  { id: 'treat-candy',  name: 'Rainbow Candy', emoji: '🍬', price: 18, moodBoost: 40, coinBonus: 0, feedBonus: 0 },
-  { id: 'treat-apple',  name: 'Golden Apple',  emoji: '🍎', price: 25, moodBoost: 50, coinBonus: 0, feedBonus: 1 },
+  { id: 'treat-berry',    name: 'Magic Berry',     emoji: '🫐', price: 12, moodBoost: 30, coinBonus: 0,  feedBonus: 0 },
+  { id: 'treat-cake',     name: 'Birthday Cake',   emoji: '🎂', price: 20, moodBoost: 50, coinBonus: 0,  feedBonus: 0, sparkle: true },
+  { id: 'treat-cookie',   name: 'Star Cookie',     emoji: '🍪', price: 15, moodBoost: 30, coinBonus: 5,  feedBonus: 0 },
+  { id: 'treat-candy',    name: 'Rainbow Candy',   emoji: '🍬', price: 18, moodBoost: 40, coinBonus: 0,  feedBonus: 0 },
+  { id: 'treat-apple',    name: 'Golden Apple',    emoji: '🍎', price: 25, moodBoost: 50, coinBonus: 0,  feedBonus: 1 },
+  { id: 'treat-honey',    name: 'Honey Pot',       emoji: '🍯', price: 22, moodBoost: 45, coinBonus: 0,  feedBonus: 0 },
+  { id: 'treat-cupcake',  name: 'Sparkle Cupcake', emoji: '🧁', price: 16, moodBoost: 35, coinBonus: 0,  feedBonus: 0, sparkle: true },
+  { id: 'treat-donut',    name: 'Rainbow Donut',   emoji: '🍩', price: 14, moodBoost: 30, coinBonus: 0,  feedBonus: 0 },
+  { id: 'treat-lollipop', name: 'Giant Lollipop',  emoji: '🍭', price: 18, moodBoost: 40, coinBonus: 0,  feedBonus: 0 },
+  { id: 'treat-popcorn',  name: 'Magic Popcorn',   emoji: '🍿', price: 10, moodBoost: 20, coinBonus: 8,  feedBonus: 0 },
+  { id: 'treat-mango',    name: 'Tropical Mango',  emoji: '🥭', price: 20, moodBoost: 45, coinBonus: 0,  feedBonus: 1 },
+  { id: 'treat-star',     name: 'Shooting Star',   emoji: '🌟', price: 30, moodBoost: 60, coinBonus: 10, feedBonus: 0, sparkle: true },
 ];
 window.PET_TREATS = PET_TREATS;
 
 var AVATAR_ITEMS = [
-  { id: 'av-hat-party',    name: 'Party Hat',     emoji: '🎉', price: 30, slot: 'head' },
-  { id: 'av-hat-wizard',   name: 'Wizard Hat',    emoji: '🧙', price: 50, slot: 'head' },
-  { id: 'av-hat-crown',    name: 'Gold Crown',    emoji: '👑', price: 70, slot: 'head' },
-  { id: 'av-badge-star',   name: 'Star Badge',    emoji: '⭐', price: 25, slot: 'badge' },
-  { id: 'av-badge-fire',   name: 'Fire Badge',    emoji: '🔥', price: 35, slot: 'badge' },
-  { id: 'av-badge-rainbow',name: 'Rainbow Badge', emoji: '🌈', price: 45, slot: 'badge' },
+  { id: 'av-hat-party',    name: 'Party Hat',      emoji: '🎉', price: 30,  slot: 'head' },
+  { id: 'av-hat-wizard',   name: 'Wizard Hat',     emoji: '🧙', price: 50,  slot: 'head' },
+  { id: 'av-hat-crown',    name: 'Gold Crown',     emoji: '👑', price: 70,  slot: 'head' },
+  { id: 'av-hat-cowboy',   name: 'Cowboy Hat',     emoji: '🤠', price: 45,  slot: 'head' },
+  { id: 'av-hat-ninja',    name: 'Ninja Mask',     emoji: '🥷', price: 55,  slot: 'head' },
+  { id: 'av-hat-viking',   name: 'Viking Helmet',  emoji: '⚔️', price: 65,  slot: 'head' },
+  { id: 'av-hat-astro',    name: 'Astronaut Helm', emoji: '👨‍🚀', price: 80,  slot: 'head' },
+  { id: 'av-badge-star',   name: 'Star Badge',     emoji: '⭐', price: 25,  slot: 'badge' },
+  { id: 'av-badge-fire',   name: 'Fire Badge',     emoji: '🔥', price: 35,  slot: 'badge' },
+  { id: 'av-badge-rainbow',name: 'Rainbow Badge',  emoji: '🌈', price: 45,  slot: 'badge' },
+  { id: 'av-badge-bolt',   name: 'Lightning Bolt', emoji: '⚡', price: 40,  slot: 'badge' },
+  { id: 'av-badge-dino',   name: 'Dino Badge',     emoji: '🦖', price: 50,  slot: 'badge' },
+  { id: 'av-badge-gem',    name: 'Gem Badge',      emoji: '💎', price: 60,  slot: 'badge' },
+  { id: 'av-badge-rocket', name: 'Rocket Badge',   emoji: '🚀', price: 55,  slot: 'badge' },
 ];
 window.AVATAR_ITEMS = AVATAR_ITEMS;
 
 var POWER_UPS = [
-  { id: 'pu-hint',   name: 'Hint Token',    emoji: '💡', price: 15, desc: 'Highlights the next correct letter during a level' },
-  { id: 'pu-shield', name: 'Streak Shield', emoji: '🛡️', price: 40, desc: 'Protects your streak if you miss a day' },
-  { id: 'pu-x2',     name: 'Coin Booster',  emoji: '✨', price: 35, desc: '2× coins on your next completed level' },
-  { id: 'pu-star',   name: 'Star Booster',  emoji: '🌟', price: 50, desc: 'Guarantees at least 2 stars on your next level' },
+  { id: 'pu-hint',    name: 'Hint Token',     emoji: '💡', price: 15, desc: 'Highlights the next correct letter during a level' },
+  { id: 'pu-shield',  name: 'Streak Shield',  emoji: '🛡️', price: 40, desc: 'Protects your streak if you miss a day' },
+  { id: 'pu-x2',      name: 'Coin Booster',   emoji: '✨', price: 35, desc: '2× coins on your next completed level' },
+  { id: 'pu-star',    name: 'Star Booster',   emoji: '🌟', price: 50, desc: 'Guarantees at least 2 stars on your next level' },
+  { id: 'pu-skip',    name: 'Level Skip',     emoji: '⏭️', price: 60, desc: 'Skip a level and keep your progress' },
+  { id: 'pu-time',    name: 'Time Freeze',    emoji: '⏸️', price: 45, desc: 'Pauses the timer on Speed mode levels' },
+  { id: 'pu-magnet',  name: 'Coin Magnet',    emoji: '🧲', price: 55, desc: 'Doubles coins for the next 3 levels' },
+  { id: 'pu-rainbow', name: 'Rainbow Run',    emoji: '🌈', price: 70, desc: 'Every letter tile glows — makes any mode easier' },
 ];
 window.POWER_UPS = POWER_UPS;
 
@@ -277,3 +344,19 @@ window.MODE_META['coding'] = {
 };
 
 Object.assign(window, { WORDS_EASY, WORDS_MED, WORDS_HARD, WORDS_XLHARD, getWordsForDifficulty, LEVELS, CHAPTER_META, MODE_META, PRECISION_TASKS, PET_SPECIES, PET_OUTFIT_ITEMS, PET_ROOMS, PET_TOYS, PET_TREATS, AVATAR_ITEMS, POWER_UPS });
+
+function getDailyChallenge(dateStr) {
+  // Simple numeric hash of dateStr for a deterministic daily pick
+  var hash = 0;
+  for (var i = 0; i < dateStr.length; i++) {
+    hash = (hash * 31 + dateStr.charCodeAt(i)) & 0xFFFFFF;
+  }
+  // Pick from non-boss, non-coding levels only
+  var pool = window.LEVELS
+    ? window.LEVELS.filter(function(l) { return l.mode !== 'boss' && l.mode !== 'coding'; })
+    : [];
+  if (!pool.length) return null;
+  var picked = pool[hash % pool.length];
+  return { word: picked.word, mode: picked.mode };
+}
+window.getDailyChallenge = getDailyChallenge;

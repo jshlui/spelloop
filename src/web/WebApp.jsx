@@ -3,6 +3,9 @@
 function WebApp({ profile, setProfile, levels, setLevels, settings, setSettings, onOpenParent }) {
   var [tab, setTab] = React.useState(function() { return localStorage.getItem('sl_web_tab') || 'home'; });
   var [route, setRoute] = React.useState({ name: 'screen' });
+  var [dailyState, setDailyState] = React.useState(function() {
+    try { return JSON.parse(localStorage.getItem('spelloop-daily-' + (profile.id || 'p0')) || 'null') || {}; } catch(e) { return {}; }
+  });
 
   React.useEffect(function() { localStorage.setItem('sl_web_tab', tab); }, [tab]);
 
@@ -81,6 +84,10 @@ function WebApp({ profile, setProfile, levels, setLevels, settings, setSettings,
     var pool = getWordsForDifficulty(settings.difficulty || 'med');
     var w = pool[Math.floor(Math.random() * pool.length)].word;
     setRoute({ name: 'game', mode: mode, word: w });
+  }
+
+  function handleStartDaily(daily) {
+    setRoute({ name: 'game', mode: daily.mode, word: daily.word });
   }
 
   function finishGame(stars, accuracy) {
@@ -172,6 +179,24 @@ function WebApp({ profile, setProfile, levels, setLevels, settings, setSettings,
     if (stars === 3 && capturedRoute.mode === 'boss') {
       window.Juice?.emit('chapterBoss');
     }
+
+    // Check if this completed the daily challenge
+    var today = new Date().toISOString().slice(0, 10);
+    var daily = typeof getDailyChallenge !== 'undefined' ? getDailyChallenge(today) : null;
+    if (daily && capturedRoute.word === daily.word && capturedRoute.mode === daily.mode) {
+      var prevDaily = dailyState || {};
+      var prevStreak = prevDaily.lastDate === new Date(Date.now() - 86400000).toISOString().slice(0, 10)
+        ? (prevDaily.challengeStreak || 0)
+        : 0;
+      var newDailyState = { lastDate: today, todayDone: true, challengeStreak: prevStreak + 1 };
+      setDailyState(newDailyState);
+      localStorage.setItem('spelloop-daily-' + (profile.id || 'p0'), JSON.stringify(newDailyState));
+      // Bonus 25 coins already handled by coinsEarned — add 25 more
+      setProfile(function(prev) {
+        return Object.assign({}, prev, { coins: (prev.coins || 0) + 25 });
+      });
+    }
+
     setRoute({ name: 'reward', word: capturedRoute.word, stars: stars, mode: capturedRoute.mode, coins: coinsEarned, isNewRecord: isNewRecord });
   }
 
@@ -191,7 +216,9 @@ function WebApp({ profile, setProfile, levels, setLevels, settings, setSettings,
           <WebHome profile={profile} levels={levels}
             onContinue={function() { startLevel(currentLevel); }}
             onPickMode={startMode}
-            onTab={function(t) { setTab(t); setRoute({ name: 'screen' }); }}/>
+            onTab={function(t) { setTab(t); setRoute({ name: 'screen' }); }}
+            dailyState={dailyState}
+            onStartDaily={handleStartDaily}/>
         )}
         {route.name === 'screen' && tab === 'map'  && <WebMap levels={levels} onPlayLevel={startLevel} onBack={function() { setTab('home'); }}/>}
         {route.name === 'screen' && tab === 'me'   && (
@@ -519,7 +546,7 @@ var HOME_TILE_ICONS = {
   },
 };
 
-function WebHome({ profile, levels, onContinue, onPickMode, onTab }) {
+function WebHome({ profile, levels, onContinue, onPickMode, onTab, dailyState, onStartDaily }) {
   var currentLevel = levels && levels.find(function(l) { return l.current; });
   var currentWord = currentLevel ? currentLevel.word : '...';
 
@@ -620,6 +647,37 @@ function WebHome({ profile, levels, onContinue, onPickMode, onTab }) {
           <span style={{ width: 1, background: 'rgba(69,26,3,0.3)', alignSelf: 'stretch' }}/>
           <span className="home-continue-word">{currentWord}</span>
         </button>
+
+        {/* Daily Challenge */}
+        {(function() {
+          var today = new Date().toISOString().slice(0, 10);
+          var daily = typeof getDailyChallenge !== 'undefined' ? getDailyChallenge(today) : null;
+          if (!daily) return null;
+          var done = dailyState && dailyState.lastDate === today && dailyState.todayDone;
+          var streak = (dailyState && dailyState.challengeStreak) || 0;
+          return (
+            <div style={{
+              marginTop: 12,
+              background: done ? 'var(--emerald)' : 'var(--gold)',
+              borderRadius: 'var(--r-xl)',
+              padding: '14px 20px',
+              boxShadow: done ? '0 4px 0 var(--emerald-dark)' : 'var(--shadow-gold)',
+              display: 'flex', alignItems: 'center', gap: 12,
+              cursor: done ? 'default' : 'pointer',
+              animation: done ? 'none' : 'juicePop 400ms cubic-bezier(0.34,1.1,0.64,1)',
+            }} onClick={done ? undefined : function() { onStartDaily && onStartDaily(daily); }}>
+              <div style={{ fontSize: 28 }}>{done ? '✅' : '⚡'}</div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontFamily: "'Fredoka','Nunito',sans-serif", fontWeight: 900, fontSize: 15, color: done ? 'white' : '#451A03' }}>
+                  {done ? 'Daily done!' : "Today's Challenge"}
+                </div>
+                <div style={{ fontSize: 12, fontWeight: 700, color: done ? 'rgba(255,255,255,0.8)' : 'rgba(69,26,3,0.7)', marginTop: 2 }}>
+                  {done ? (streak >= 7 ? '🌟 7-day streak!' : streak + ' day streak') : daily.word + ' · ' + daily.mode + ' mode · +25 coins'}
+                </div>
+              </div>
+            </div>
+          );
+        })()}
 
       </div>
 
