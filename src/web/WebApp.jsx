@@ -176,10 +176,6 @@ function WebApp({ profile, setProfile, levels, setLevels, settings, setSettings,
       });
     });
 
-    if (stars === 3 && capturedRoute.mode === 'boss') {
-      window.Juice?.emit('chapterBoss');
-    }
-
     // Check if this completed the daily challenge
     var today = new Date().toISOString().slice(0, 10);
     var daily = typeof getDailyChallenge !== 'undefined' ? getDailyChallenge(today) : null;
@@ -197,7 +193,16 @@ function WebApp({ profile, setProfile, levels, setLevels, settings, setSettings,
       });
     }
 
-    setRoute({ name: 'reward', word: capturedRoute.word, stars: stars, mode: capturedRoute.mode, coins: coinsEarned, isNewRecord: isNewRecord });
+    if (capturedRoute.mode === 'boss') {
+      window.Juice?.emit('chapterBoss');
+      // Find which chapter this boss belongs to
+      var bossLevel = (window.LEVELS || []).find(function(l) { return l.id === completedId; });
+      var bossChapter = bossLevel ? bossLevel.chapter : 1;
+      // Show postcard first, then reward
+      setRoute({ name: 'chapterComplete', chapter: bossChapter, pending: { name: 'reward', word: capturedRoute.word, stars: stars, mode: capturedRoute.mode, coins: coinsEarned, isNewRecord: isNewRecord } });
+    } else {
+      setRoute({ name: 'reward', word: capturedRoute.word, stars: stars, mode: capturedRoute.mode, coins: coinsEarned, isNewRecord: isNewRecord });
+    }
   }
 
   function closeGame() { setRoute({ name: 'screen' }); }
@@ -242,6 +247,12 @@ function WebApp({ profile, setProfile, levels, setLevels, settings, setSettings,
           </LandscapeShell>
         )}
         {route.name === 'game'   && <WebGame mode={route.mode} word={route.word} onClose={closeGame} onDone={finishGame}/>}
+        {route.name === 'chapterComplete' && typeof ChapterComplete !== 'undefined' && (
+          <ChapterComplete
+            chapter={route.chapter}
+            onNext={function() { setRoute(route.pending); }}
+          />
+        )}
         {route.name === 'reward' && (
           <WebReward word={route.word} stars={route.stars} coins={route.coins} isNewRecord={route.isNewRecord}
             onNext={function() { setRoute({ name: 'screen' }); setTab('map'); }}
