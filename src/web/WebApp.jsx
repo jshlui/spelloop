@@ -323,12 +323,20 @@ function LandscapeShell({ title, onBack, onHelp, topExtra, showBack, children })
           </div>
         );
       })}
+      {/* Birds */}
+      <svg style={{ position: 'absolute', top: 60, left: 0, width: '100%', height: 80, zIndex: 0, pointerEvents: 'none' }} viewBox="0 0 1000 80" preserveAspectRatio="none">
+        <path d="M 180 30 Q 186 24 192 30 Q 198 24 204 30" stroke="rgba(30,80,120,0.35)" strokeWidth="2.5" fill="none" strokeLinecap="round"/>
+        <path d="M 340 50 Q 345 44 350 50 Q 355 44 360 50" stroke="rgba(30,80,120,0.28)" strokeWidth="2" fill="none" strokeLinecap="round"/>
+        <path d="M 720 22 Q 727 15 734 22 Q 741 15 748 22" stroke="rgba(30,80,120,0.32)" strokeWidth="2.5" fill="none" strokeLinecap="round"/>
+      </svg>
       {/* Rolling hills */}
       {[
-        { w: 300, h: 140, left: -20, bg: '#3E9624' },
-        { w: 240, h: 110, left: 170, bg: '#348A1C' },
-        { w: 310, h: 150, right: -20, bg: '#4CAF2E' },
-        { w: 160, h: 80,  right: 170, bg: '#2D7A16' },
+        { w: 480, h: 170, left: -60,  bg: '#5DBB63' },
+        { w: 340, h: 130, left: 240,  bg: '#4CAF50' },
+        { w: 280, h: 105, left: 420,  bg: '#6EC96E' },
+        { w: 320, h: 125, right: 260, bg: '#4CAF50' },
+        { w: 420, h: 155, right: -40, bg: '#5DBB63' },
+        { w: 210, h: 82,  right: 340, bg: '#43A047' },
       ].map(function(h, i) {
         return (
           <div key={i} style={{
@@ -343,43 +351,45 @@ function LandscapeShell({ title, onBack, onHelp, topExtra, showBack, children })
         );
       })}
 
-      {/* Top chrome */}
-      <div style={{ position: 'relative', zIndex: 20,
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: '12px 18px',
-        background: 'rgba(255,255,255,0.75)',
-        backdropFilter: 'blur(8px)',
-        borderBottom: '2px solid rgba(255,255,255,0.8)',
-      }}>
-        {showBackBtn
-          ? <button onClick={onBack} aria-label="Go back" style={{
-              width: 40, height: 40, borderRadius: '50%',
-              background: 'var(--btn-back-bg)', border: '3px solid var(--btn-back-border)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: 18, fontWeight: 900, color: 'var(--btn-back-ink)',
-              boxShadow: '0 3px 0 var(--btn-back-shadow)',
-              cursor: 'pointer', fontFamily: 'inherit',
-            }}>←</button>
-          : <div style={{ width: 40 }}/>
-        }
+      {/* Top chrome — hidden on home (showBack=false, no topExtra) */}
+      {(showBackBtn || topExtra) && (
+        <div style={{ position: 'relative', zIndex: 20,
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          padding: '12px 18px',
+          background: 'rgba(255,255,255,0.75)',
+          backdropFilter: 'blur(8px)',
+          borderBottom: '2px solid rgba(255,255,255,0.8)',
+        }}>
+          {showBackBtn
+            ? <button onClick={onBack} aria-label="Go back" style={{
+                width: 40, height: 40, borderRadius: '50%',
+                background: 'var(--btn-back-bg)', border: '3px solid var(--btn-back-border)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: 18, fontWeight: 900, color: 'var(--btn-back-ink)',
+                boxShadow: '0 3px 0 var(--btn-back-shadow)',
+                cursor: 'pointer', fontFamily: 'inherit',
+              }}>←</button>
+            : <div style={{ width: 40 }}/>
+          }
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <div style={{ fontFamily: "'Bubblegum Sans', cursive", fontSize: 26, color: '#1A3A1A' }}>{title}</div>
-          {topExtra}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <div style={{ fontFamily: "'Bubblegum Sans', cursive", fontSize: 26, color: '#1A3A1A' }}>{title}</div>
+            {topExtra}
+          </div>
+
+          <button onClick={onHelp || function() {}} aria-label="Help" style={{
+            width: 40, height: 40, borderRadius: '50%',
+            background: 'var(--btn-help-bg)', border: '3px solid var(--btn-help-border)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: 18, fontWeight: 900, color: 'white',
+            boxShadow: '0 3px 0 var(--btn-help-shadow)',
+            cursor: 'pointer', fontFamily: 'inherit',
+          }}>?</button>
         </div>
-
-        <button onClick={onHelp || function() {}} aria-label="Help" style={{
-          width: 40, height: 40, borderRadius: '50%',
-          background: 'var(--btn-help-bg)', border: '3px solid var(--btn-help-border)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontSize: 18, fontWeight: 900, color: 'white',
-          boxShadow: '0 3px 0 var(--btn-help-shadow)',
-          cursor: 'pointer', fontFamily: 'inherit',
-        }}>?</button>
-      </div>
+      )}
 
       {/* Content layer over landscape */}
-      <div style={{ position: 'relative', zIndex: 10, minHeight: 'calc(100vh - 68px)' }}>
+      <div style={{ position: 'relative', zIndex: 10, minHeight: '100vh' }}>
         {children}
       </div>
     </div>
@@ -419,85 +429,91 @@ function WebHome({ profile, levels, onContinue, onPickMode, onTab }) {
   return (
     <LandscapeShell title="Home Base" showBack={false}>
 
-      {/* Greeting strip — name + stats in one frosted pill */}
-      <div style={{ textAlign: 'center', padding: '10px 0 0' }}>
-        <div style={{ fontFamily: "'Bubblegum Sans', cursive", fontSize: 22, color: '#1A3A1A', textShadow: '0 2px 4px rgba(255,255,255,0.6)', marginBottom: 4 }}>
-          {'Hi, ' + profile.name + '! 👋'}
-        </div>
-        <div style={{
-          display: 'inline-flex', gap: 12, alignItems: 'center',
-          background: 'rgba(255,255,255,0.85)', backdropFilter: 'blur(4px)',
-          borderRadius: 999, padding: '6px 16px',
-          border: '2px solid rgba(255,255,255,0.9)',
-          boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-        }}>
-          <span style={{ fontSize: 13, fontWeight: 800, color: '#333' }}>🔥 {profile.streak} streak</span>
-          <span style={{ width: 1, height: 16, background: '#ddd', display: 'block' }}/>
-          <span style={{ fontSize: 13, fontWeight: 800, color: '#333' }}>⭐ {profile.totalStars} stars</span>
-          <span style={{ width: 1, height: 16, background: '#ddd', display: 'block' }}/>
-          <span style={{ fontSize: 13, fontWeight: 800, color: '#333' }}>📚 {profile.words} words</span>
-        </div>
-      </div>
-
-      {/* 6-tile nav grid */}
+      {/* Full-height flex column — greeting → tiles → continue */}
       <div style={{
-        display: 'grid', gridTemplateColumns: 'repeat(3, 110px)',
-        gap: 14,
-        position: 'absolute',
-        top: '50%', left: '50%',
-        transform: 'translate(-50%, -52%)',
-        zIndex: 20,
+        display: 'flex', flexDirection: 'column', alignItems: 'center',
+        justifyContent: 'center',
+        minHeight: '100vh',
+        paddingBottom: 180, paddingTop: 20,
+        gap: 20,
       }}>
-        {tiles.map(function(t) {
-          return (
-            <button key={t.id}
-              onClick={function() { onTab(t.id); window.sfx && window.sfx.tap && window.sfx.tap(); }}
-              style={{
-                width: 110, height: 100, borderRadius: 24,
-                background: t.grad,
-                border: '3px solid rgba(255,255,255,0.6)',
-                boxShadow: '0 6px 0 rgba(0,0,0,0.18), 0 10px 24px rgba(0,0,0,0.12)',
-                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-                gap: 6, cursor: 'pointer', fontFamily: 'inherit',
-                transition: 'transform 0.12s ease, box-shadow 0.12s ease',
-              }}
-              onMouseEnter={function(e) { e.currentTarget.style.transform = 'translateY(-4px)'; }}
-              onMouseLeave={function(e) { e.currentTarget.style.transform = 'translateY(0)'; }}
-              onMouseDown={function(e) { e.currentTarget.style.transform = 'translateY(3px)'; e.currentTarget.style.boxShadow = '0 3px 0 rgba(0,0,0,0.18)'; }}
-              onMouseUp={function(e) { e.currentTarget.style.transform = 'translateY(-4px)'; e.currentTarget.style.boxShadow = '0 6px 0 rgba(0,0,0,0.18), 0 10px 24px rgba(0,0,0,0.12)'; }}
-            >
-              <div style={{ fontSize: 36, lineHeight: 1 }}>{t.icon}</div>
-              <div style={{ fontFamily: "'Bubblegum Sans', cursive", fontSize: 14, color: 'white', textShadow: '0 1px 3px rgba(0,0,0,0.3)' }}>{t.label}</div>
-            </button>
-          );
-        })}
+
+        {/* Greeting strip */}
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ fontFamily: "'Bubblegum Sans', cursive", fontSize: 28, color: '#1A3A1A', textShadow: '0 2px 6px rgba(255,255,255,0.7)', marginBottom: 6 }}>
+            {'Hi, ' + profile.name + '! 👋'}
+          </div>
+          <div style={{
+            display: 'inline-flex', gap: 12, alignItems: 'center',
+            background: 'rgba(255,255,255,0.85)', backdropFilter: 'blur(4px)',
+            borderRadius: 999, padding: '6px 20px',
+            border: '2px solid rgba(255,255,255,0.9)',
+            boxShadow: '0 4px 16px rgba(0,0,0,0.12)',
+          }}>
+            <span style={{ fontSize: 13, fontWeight: 800, color: '#333' }}>🔥 {profile.streak} streak</span>
+            <span style={{ width: 1, height: 16, background: '#ddd', display: 'block' }}/>
+            <span style={{ fontSize: 13, fontWeight: 800, color: '#333' }}>⭐ {profile.totalStars} stars</span>
+            <span style={{ width: 1, height: 16, background: '#ddd', display: 'block' }}/>
+            <span style={{ fontSize: 13, fontWeight: 800, color: '#333' }}>📚 {profile.words} words</span>
+          </div>
+        </div>
+
+        {/* 6-tile nav grid */}
+        <div style={{
+          display: 'grid', gridTemplateColumns: 'repeat(3, 130px)',
+          gap: 16, zIndex: 20,
+        }}>
+          {tiles.map(function(t) {
+            return (
+              <button key={t.id}
+                onClick={function() { onTab(t.id); window.sfx && window.sfx.tap && window.sfx.tap(); }}
+                style={{
+                  width: 130, height: 115, borderRadius: 28,
+                  background: t.grad,
+                  border: '3px solid rgba(255,255,255,0.6)',
+                  boxShadow: '0 6px 0 rgba(0,0,0,0.18), 0 10px 28px rgba(0,0,0,0.14)',
+                  display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                  gap: 8, cursor: 'pointer', fontFamily: 'inherit',
+                  transition: 'transform 0.12s ease, box-shadow 0.12s ease',
+                }}
+                onMouseEnter={function(e) { e.currentTarget.style.transform = 'translateY(-5px) scale(1.03)'; }}
+                onMouseLeave={function(e) { e.currentTarget.style.transform = 'translateY(0) scale(1)'; }}
+                onMouseDown={function(e) { e.currentTarget.style.transform = 'translateY(3px) scale(0.97)'; e.currentTarget.style.boxShadow = '0 2px 0 rgba(0,0,0,0.18)'; }}
+                onMouseUp={function(e) { e.currentTarget.style.transform = 'translateY(-5px) scale(1.03)'; e.currentTarget.style.boxShadow = '0 6px 0 rgba(0,0,0,0.18), 0 10px 28px rgba(0,0,0,0.14)'; }}
+              >
+                <div style={{ fontSize: 40, lineHeight: 1 }}>{t.icon}</div>
+                <div style={{ fontFamily: "'Bubblegum Sans', cursive", fontSize: 15, color: 'white', textShadow: '0 1px 4px rgba(0,0,0,0.35)' }}>{t.label}</div>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Continue button */}
+        <button onClick={onContinue} style={{
+          background: 'linear-gradient(145deg, #FFD700, #FFA000)',
+          border: '3px solid #E8B800',
+          borderRadius: 999, padding: '13px 36px',
+          fontFamily: "'Bubblegum Sans', cursive", fontSize: 19,
+          color: '#5A3A00', cursor: 'pointer',
+          boxShadow: '0 5px 0 #C9A000, 0 8px 24px rgba(255,160,0,0.4)',
+          display: 'flex', alignItems: 'center', gap: 10, whiteSpace: 'nowrap',
+          zIndex: 20,
+        }}>
+          ▶ Keep going —
+          <span style={{
+            background: 'rgba(255,255,255,0.45)', borderRadius: 10, padding: '2px 12px',
+            fontFamily: "'Bubblegum Sans', cursive", fontSize: 17, color: '#3A2000',
+          }}>{currentWord}</span>
+        </button>
+
       </div>
 
-      {/* Continue button */}
-      <button onClick={onContinue} style={{
-        position: 'absolute', bottom: 80, left: '50%', transform: 'translateX(-50%)',
-        background: 'linear-gradient(145deg, #FFD700, #FFA000)',
-        border: '3px solid var(--btn-back-border)',
-        borderRadius: 999, padding: '12px 32px',
-        fontFamily: "'Bubblegum Sans', cursive", fontSize: 18,
-        color: 'var(--btn-back-ink)', cursor: 'pointer',
-        boxShadow: '0 5px 0 var(--btn-back-shadow), 0 8px 20px rgba(255,160,0,0.4)',
-        display: 'flex', alignItems: 'center', gap: 8, whiteSpace: 'nowrap',
-        zIndex: 20,
-      }}>
-        ▶ Keep going —
-        <span style={{
-          background: 'rgba(255,255,255,0.4)', borderRadius: 8, padding: '2px 10px',
-          fontFamily: "'Bubblegum Sans', cursive", fontSize: 16,
-        }}>{currentWord}</span>
-      </button>
-
-      {/* Mascots — Panda left, Cat right */}
-      <div style={{ position: 'absolute', bottom: 0, left: 12, zIndex: 15, filter: 'drop-shadow(2px 4px 6px rgba(0,0,0,0.2))' }}>
-        <AvatarPanda size={110} bgColor="transparent"/>
+      {/* Mascots — Panda left, Cat right, peeking above hills */}
+      <div style={{ position: 'absolute', bottom: 24, left: 16, zIndex: 15, filter: 'drop-shadow(2px 6px 8px rgba(0,0,0,0.25))' }}>
+        <AvatarPanda size={160} bgColor="transparent"/>
       </div>
-      <div style={{ position: 'absolute', bottom: 0, right: 12, zIndex: 15, filter: 'drop-shadow(2px 4px 6px rgba(0,0,0,0.2))', transform: 'scaleX(-1)' }}>
-        <AvatarCat size={110} bgColor="transparent"/>
+      <div style={{ position: 'absolute', bottom: 24, right: 16, zIndex: 15, filter: 'drop-shadow(2px 6px 8px rgba(0,0,0,0.25))', transform: 'scaleX(-1)' }}>
+        <AvatarCat size={160} bgColor="transparent"/>
       </div>
 
     </LandscapeShell>
