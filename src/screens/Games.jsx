@@ -1,7 +1,7 @@
 // Game modes — all 5. Each exposes a component (word, onDone(stars)).
 
 // ── Shared: header with speak, progress, close ─────────
-function GameHeader({ mode, progress, onClose }) {
+function GameHeader({ mode, progress, onClose, word }) {
   const m = MODE_META[mode];
   return (
     <div style={{ padding: '60px 16px 12px', display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -17,6 +17,18 @@ function GameHeader({ mode, progress, onClose }) {
         </div>
       </div>
       <ModeBadge mode={mode}/>
+      {word && (
+        <button
+          onClick={() => { window.sfx?.speak(word); window.Juice?.emit('petHappy'); }}
+          aria-label="Hear the word again"
+          style={{
+            width: 44, height: 44, borderRadius: '50%', border: 'none',
+            background: 'var(--surface)', cursor: 'pointer',
+            boxShadow: 'var(--shadow-soft)', fontSize: 18,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}
+        >🔊</button>
+      )}
     </div>
   );
 }
@@ -83,7 +95,7 @@ function ClickGame({ word, onDone, onClose }) {
       <div role="status" aria-live="polite" aria-atomic="true" style={{ position: 'absolute', width: 1, height: 1, overflow: 'hidden', clip: 'rect(0,0,0,0)' }}>
         {feedback ? (feedback.correct ? 'Correct!' : 'Try again') : ''}
       </div>
-      <GameHeader mode="click" progress={idx / word.length} onClose={onClose}/>
+      <GameHeader mode="click" progress={idx / word.length} onClose={onClose} word={word}/>
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'space-between', padding: '20px 16px 32px' }}>
         <div style={{ textAlign: 'center' }}>
           <div style={{ fontSize: 12, color: 'var(--ink-mute)', fontWeight: 800, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 8 }}>Tap the next letter</div>
@@ -187,7 +199,7 @@ function DragGame({ word, onDone, onClose }) {
 
   return (
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: 'var(--bg)' }}>
-      <GameHeader mode="drag" progress={progress} onClose={onClose}/>
+      <GameHeader mode="drag" progress={progress} onClose={onClose} word={word}/>
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'space-between', padding: '20px 16px 32px' }}>
         <div style={{ textAlign: 'center' }}>
           <div style={{ fontSize: 12, color: 'var(--ink-mute)', fontWeight: 800, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 8 }}>Drop letters in order</div>
@@ -281,7 +293,7 @@ function TypeGame({ word, onDone, onClose, device }) {
 
   return (
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: 'var(--bg)' }}>
-      <GameHeader mode="type" progress={progress} onClose={onClose}/>
+      <GameHeader mode="type" progress={progress} onClose={onClose} word={word}/>
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '16px 16px 12px', gap: 20 }}>
         <div style={{ textAlign: 'center' }}>
           <div style={{ fontSize: 12, color: 'var(--ink-mute)', fontWeight: 800, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 8 }}>Type the word</div>
@@ -400,7 +412,7 @@ function MissingGame({ word, onDone, onClose }) {
 
   return (
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: 'var(--bg)' }}>
-      <GameHeader mode="missing" progress={picked === target ? 1 : 0.5} onClose={onClose}/>
+      <GameHeader mode="missing" progress={picked === target ? 1 : 0.5} onClose={onClose} word={word}/>
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'space-between', padding: '20px 16px 32px' }}>
         <div style={{ textAlign: 'center' }}>
           <div style={{ fontSize: 12, color: 'var(--ink-mute)', fontWeight: 800, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 8 }}>Which letter is missing?</div>
@@ -481,7 +493,7 @@ function KeyboardGame({ word, onDone, onClose }) {
 
   return (
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: 'var(--bg)' }}>
-      <GameHeader mode="keyboard" progress={idx / word.length} onClose={onClose}/>
+      <GameHeader mode="keyboard" progress={idx / word.length} onClose={onClose} word={word}/>
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '16px 16px 12px', gap: 16 }}>
         <div style={{ textAlign: 'center' }}>
           <div style={{ fontSize: 12, color: 'var(--ink-mute)', fontWeight: 800, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 8 }}>Find this letter on the keyboard</div>
@@ -609,7 +621,7 @@ function PrecisionGame({ word, onDone, onClose }) {
 
   return (
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: 'var(--bg)' }}>
-      <GameHeader mode="precision" progress={letterIdx / word.length} onClose={onClose}/>
+      <GameHeader mode="precision" progress={letterIdx / word.length} onClose={onClose} word={word}/>
       <div style={{ position: 'relative', flex: 1, overflow: 'hidden' }}>
         <div style={{
           position: 'absolute', top: '8%', left: 0, right: 0, textAlign: 'center',
@@ -688,7 +700,7 @@ function ScrambleGame({ word, onDone, onClose }) {
   const colors = ['blue','pink','coral','mint','lilac'];
   return (
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: 'var(--bg)' }}>
-      <GameHeader mode="scramble" progress={progress} onClose={onClose}/>
+      <GameHeader mode="scramble" progress={progress} onClose={onClose} word={word}/>
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'space-between', padding: '20px 16px 32px' }}>
         <div style={{ textAlign: 'center' }}>
           <div style={{ fontSize: 12, color: 'var(--ink-mute)', fontWeight: 800, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 8 }}>Tap letters in the right order</div>
@@ -786,7 +798,7 @@ function SpeedGame({ word, onDone, onClose }) {
 
   return (
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: 'var(--bg)' }}>
-      <GameHeader mode="speed" progress={progress} onClose={onClose}/>
+      <GameHeader mode="speed" progress={progress} onClose={onClose} word={word}/>
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '16px 16px 12px', gap: 14 }}>
         <div style={{ width: '100%', height: 12, borderRadius: 6, background: 'var(--alpha-md)', overflow: 'hidden' }}>
           <div style={{ height: '100%', width: (pct * 100) + '%', background: timerColor, borderRadius: 6, transition: 'width 1s linear, background 0.3s' }}/>
@@ -882,7 +894,7 @@ function EchoGame({ word, onDone, onClose }) {
 
   return (
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: 'var(--bg)' }}>
-      <GameHeader mode="echo" progress={typed.length / word.length} onClose={onClose}/>
+      <GameHeader mode="echo" progress={typed.length / word.length} onClose={onClose} word={null}/>
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'space-between', padding: '24px 16px 32px' }}>
         <div style={{ textAlign: 'center' }}>
           <div style={{ fontSize: 12, color: 'var(--ink-mute)', fontWeight: 800, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 20 }}>
@@ -1009,7 +1021,7 @@ function FlashGame({ word, onDone, onClose }) {
 
   return (
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: 'var(--bg)' }}>
-      <GameHeader mode="flash" progress={typed.length / word.length} onClose={onClose}/>
+      <GameHeader mode="flash" progress={typed.length / word.length} onClose={onClose} word={word}/>
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'space-between', padding: '24px 16px 32px' }}>
 
         <div style={{ textAlign: 'center' }}>
@@ -1165,7 +1177,7 @@ function CodingGame({ word, onDone, onClose }) {
 
   return (
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: 'var(--bg)' }}>
-      <GameHeader mode="coding" progress={progress} onClose={onClose}/>
+      <GameHeader mode="coding" progress={progress} onClose={onClose} word={word}/>
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'space-between', padding: '10px 16px 20px', overflowY: 'auto' }}>
 
         <div style={{ fontSize: 12, color: 'var(--ink-mute)', fontWeight: 800, letterSpacing: 1, textTransform: 'uppercase' }}>
