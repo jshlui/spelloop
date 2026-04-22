@@ -117,5 +117,14 @@
         o.start(); o.stop(a.currentTime + 0.07);
       } catch(e) {}
     },
+    speak(word, rate) {
+      if (!window.speechSynthesis) return;
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(word);
+      utterance.rate = rate || 0.8;
+      utterance.pitch = 1.05;
+      utterance.lang = 'en-AU';
+      window.speechSynthesis.speak(utterance);
+    },
   };
 })();
