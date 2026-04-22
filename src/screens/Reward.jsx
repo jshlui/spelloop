@@ -92,7 +92,38 @@ var CONFETTI_BG = React.createElement('svg', {
   return React.createElement('rect', { key: i, x: x, y: y, width: 8, height: 14, rx: 2, fill: cs[i % cs.length], transform: 'rotate(' + rot + ' ' + x + ' ' + y + ')' });
 }));
 
-function RewardScreen({ word, stars, coins, onNext, onHome }) {
+function NewRecordBanner() {
+  const [visible, setVisible] = React.useState(true);
+  React.useEffect(() => {
+    const t = setTimeout(() => setVisible(false), 2200);
+    return () => clearTimeout(t);
+  }, []);
+  if (!visible) return null;
+  return (
+    <div style={{
+      position: 'fixed', top: '28%', left: '50%', transform: 'translateX(-50%)',
+      zIndex: 9999, pointerEvents: 'none',
+      animation: 'juiceBounce 400ms cubic-bezier(0.34,1.1,0.64,1) forwards',
+    }}>
+      <div style={{
+        background: 'linear-gradient(135deg, #F59E0B 0%, #FBBF24 100%)',
+        color: '#451A03',
+        fontFamily: "'Fredoka','Nunito',sans-serif",
+        fontWeight: 900,
+        fontSize: 28,
+        padding: '14px 32px',
+        borderRadius: 999,
+        boxShadow: '0 8px 0 rgba(180,100,0,0.35), 0 16px 48px rgba(245,158,11,0.45)',
+        whiteSpace: 'nowrap',
+        letterSpacing: 0.5,
+      }}>
+        ⭐ New Record!
+      </div>
+    </div>
+  );
+}
+
+function RewardScreen({ word, stars, coins, isNewRecord, onNext, onHome }) {
   coins = coins != null ? coins : (stars === 3 ? 15 : stars === 2 ? 10 : 5);
   const [animIn, setAnimIn] = React.useState(false);
   const [showConfetti, setShowConfetti] = React.useState(false);
@@ -116,6 +147,7 @@ function RewardScreen({ word, stars, coins, onNext, onHome }) {
       display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
       padding: '60px 24px 40px', zIndex: 200, overflow: 'hidden',
     }}>
+      {isNewRecord && <NewRecordBanner />}
       {showConfetti && <Confetti />}
       {CONFETTI_BG}
 

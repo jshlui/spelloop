@@ -96,6 +96,9 @@ function WebApp({ profile, setProfile, levels, setLevels, settings, setSettings,
     if (usedStar) stars = 2;
     var coinsEarned = usedX2 ? baseCoins * 2 : baseCoins;
 
+    var prevBest = completedId ? (levels.find(function(l) { return l.id === completedId; }) || {}).stars || 0 : 0;
+    var isNewRecord = !!completedId && stars > prevBest;
+
     var nextLevels = levels;
     if (completedId) {
       setLevels(function(prev) {
@@ -169,7 +172,7 @@ function WebApp({ profile, setProfile, levels, setLevels, settings, setSettings,
     if (stars === 3 && capturedRoute.mode === 'boss') {
       window.Juice?.emit('chapterBoss');
     }
-    setRoute({ name: 'reward', word: capturedRoute.word, stars: stars, mode: capturedRoute.mode, coins: coinsEarned });
+    setRoute({ name: 'reward', word: capturedRoute.word, stars: stars, mode: capturedRoute.mode, coins: coinsEarned, isNewRecord: isNewRecord });
   }
 
   function closeGame() { setRoute({ name: 'screen' }); }
@@ -213,7 +216,7 @@ function WebApp({ profile, setProfile, levels, setLevels, settings, setSettings,
         )}
         {route.name === 'game'   && <WebGame mode={route.mode} word={route.word} onClose={closeGame} onDone={finishGame}/>}
         {route.name === 'reward' && (
-          <WebReward word={route.word} stars={route.stars} coins={route.coins}
+          <WebReward word={route.word} stars={route.stars} coins={route.coins} isNewRecord={route.isNewRecord}
             onNext={function() { setRoute({ name: 'screen' }); setTab('map'); }}
             onHome={function() { setRoute({ name: 'screen' }); setTab('home'); }}/>
         )}
