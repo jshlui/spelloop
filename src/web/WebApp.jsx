@@ -166,6 +166,9 @@ function WebApp({ profile, setProfile, levels, setLevels, settings, setSettings,
       });
     });
 
+    if (stars === 3 && capturedRoute.mode === 'boss') {
+      window.Juice?.emit('chapterBoss');
+    }
     setRoute({ name: 'reward', word: capturedRoute.word, stars: stars, mode: capturedRoute.mode, coins: coinsEarned });
   }
 
@@ -236,45 +239,50 @@ function WebSidebar({ tab, onTab, profile, settings, levels, onOpenParent }) {
   ];
   return (
     <aside aria-label="Main navigation" className="web-sidebar" style={{
-      width: 72, flexShrink: 0,
-      background: 'rgba(255,255,255,0.92)',
-      backdropFilter: 'blur(8px)',
-      borderRight: '2px solid rgba(0,0,0,0.06)',
+      width: 80, flexShrink: 0,
+      background: 'var(--brand-dark)',
       display: 'flex', flexDirection: 'column', alignItems: 'center',
       padding: '16px 0', gap: 4,
       minHeight: '100vh',
       zIndex: 10,
     }}>
       {/* brand icon */}
-      <div className="sidebar-brand" style={{ marginBottom: 12 }}>
+      <div className="sidebar-brand" style={{ marginBottom: 14 }}>
         <div style={{
           width: 44, height: 44, borderRadius: 14,
-          background: 'linear-gradient(135deg, #4A90D9, #357ABD)',
+          background: 'var(--gold)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           fontSize: 22,
-          boxShadow: '0 4px 12px rgba(74,144,217,0.4)',
+          boxShadow: '0 4px 12px rgba(245,158,11,0.50)',
         }}>📝</div>
       </div>
 
       <nav role="navigation" aria-label="App sections" style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
         {items.map(function(it) {
           var active = tab === it.id;
-          var tileColors = { home: '#FF7043', map: '#42A5F5', me: '#AB47BC', code: '#26A69A', shop: '#FFA726', pet: '#EC407A' };
-          var activeBg = tileColors[it.id] ? tileColors[it.id] + '22' : 'var(--blue-soft)';
-          var activeColor = tileColors[it.id] || 'var(--blue-ink)';
           return (
             <button key={it.id} aria-current={active ? 'page' : undefined}
               className="sidebar-nav-btn"
               onClick={function() { onTab(it.id); window.sfx && window.sfx.tap && window.sfx.tap(); }}
               style={{
-                width: 52, height: 52, borderRadius: 16,
+                width: 60, height: 60, borderRadius: 16,
                 display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-                gap: 2, border: 'none', cursor: 'pointer',
-                background: active ? activeBg : 'transparent',
+                gap: 3, border: 'none', cursor: 'pointer',
+                background: active ? 'rgba(255,255,255,0.20)' : 'transparent',
                 fontFamily: 'inherit',
-                transition: 'background 120ms ease',
-              }}>
-              {it.icon(active ? activeColor : 'var(--ink-soft)')}
+                transition: 'background 140ms ease',
+                boxShadow: active ? 'inset 0 0 0 2px rgba(255,255,255,0.35)' : 'none',
+              }}
+              onMouseEnter={function(e) { if (!active) e.currentTarget.style.background = 'rgba(255,255,255,0.12)'; }}
+              onMouseLeave={function(e) { if (!active) e.currentTarget.style.background = 'transparent'; }}>
+              {it.icon(active ? 'white' : 'rgba(255,255,255,0.75)')}
+              <div style={{
+                fontSize: 10,
+                fontFamily: "'Fredoka', 'Nunito', sans-serif",
+                fontWeight: active ? 700 : 600,
+                color: active ? 'white' : 'rgba(255,255,255,0.75)',
+                lineHeight: 1,
+              }}>{it.label}</div>
             </button>
           );
         })}
@@ -282,14 +290,44 @@ function WebSidebar({ tab, onTab, profile, settings, levels, onOpenParent }) {
 
       <div style={{ flex: 1 }}/>
 
-      {/* coins (icon-only pill) */}
-      <div className="sidebar-coins" style={{
-        width: 52, height: 40, background: 'var(--yellow-soft)', borderRadius: 999,
+      {/* Parent button */}
+      <button
+        onClick={onOpenParent}
+        title="Parent area"
+        style={{
+          width: 60, height: 60, borderRadius: 16,
+          display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+          gap: 3, border: 'none', cursor: 'pointer',
+          background: 'transparent',
+          fontFamily: 'inherit',
+          transition: 'background 140ms ease',
+          marginBottom: 4,
+        }}
+        onMouseEnter={function(e) { e.currentTarget.style.background = 'rgba(255,255,255,0.12)'; }}
+        onMouseLeave={function(e) { e.currentTarget.style.background = 'transparent'; }}>
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+          <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" stroke="rgba(255,255,255,0.75)" strokeWidth="2.2" strokeLinecap="round"/>
+          <circle cx="9" cy="7" r="4" stroke="rgba(255,255,255,0.75)" strokeWidth="2.2"/>
+          <path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75" stroke="rgba(255,255,255,0.75)" strokeWidth="2.2" strokeLinecap="round"/>
+        </svg>
+        <div style={{
+          fontSize: 10,
+          fontFamily: "'Fredoka', 'Nunito', sans-serif",
+          fontWeight: 600,
+          color: 'rgba(255,255,255,0.75)',
+          lineHeight: 1,
+        }}>Parent</div>
+      </button>
+
+      {/* coins pill */}
+      <div id="juice-coin" className="sidebar-coins" style={{
+        width: 52, height: 42, background: 'var(--gold)', borderRadius: 999,
         display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
         gap: 1, marginBottom: 8,
+        boxShadow: '0 3px 0 var(--gold-dark)',
       }}>
-        <div style={{ fontSize: 18 }}>🪙</div>
-        <div style={{ fontSize: 10, fontWeight: 900, color: 'var(--yellow-ink)' }}>{profile.coins || 0}</div>
+        <div className="juice-coin-icon" style={{ fontSize: 16 }}>🪙</div>
+        <div style={{ fontSize: 10, fontWeight: 900, color: '#451A03' }}>{profile.coins || 0}</div>
       </div>
     </aside>
   );
@@ -299,7 +337,7 @@ function LandscapeShell({ title, onBack, onHelp, topExtra, showBack, children })
   var showBackBtn = showBack !== false;
   return (
     <div style={{ position: 'relative', minHeight: '100vh', overflow: 'hidden',
-      background: 'linear-gradient(180deg, var(--sky-top) 0%, var(--sky-bottom) 42%, var(--grass-top) 42%, var(--grass-mid) 65%, var(--grass-deep) 100%)',
+      background: 'linear-gradient(180deg, var(--sky-top) 0%, var(--sky-mid) 25%, var(--sky-bottom) 38%, var(--grass-top) 38%, var(--grass-mid) 60%, var(--grass-deep) 100%)',
       fontFamily: "'Nunito', system-ui, sans-serif",
     }}>
       {/* Sun */}
@@ -325,18 +363,18 @@ function LandscapeShell({ title, onBack, onHelp, topExtra, showBack, children })
       })}
       {/* Birds */}
       <svg style={{ position: 'absolute', top: 60, left: 0, width: '100%', height: 80, zIndex: 0, pointerEvents: 'none' }} viewBox="0 0 1000 80" preserveAspectRatio="none">
-        <path d="M 180 30 Q 186 24 192 30 Q 198 24 204 30" stroke="rgba(30,80,120,0.35)" strokeWidth="2.5" fill="none" strokeLinecap="round"/>
-        <path d="M 340 50 Q 345 44 350 50 Q 355 44 360 50" stroke="rgba(30,80,120,0.28)" strokeWidth="2" fill="none" strokeLinecap="round"/>
-        <path d="M 720 22 Q 727 15 734 22 Q 741 15 748 22" stroke="rgba(30,80,120,0.32)" strokeWidth="2.5" fill="none" strokeLinecap="round"/>
+        <path d="M 180 30 Q 186 24 192 30 Q 198 24 204 30" stroke="rgba(255,255,255,0.48)" strokeWidth="2.5" fill="none" strokeLinecap="round"/>
+        <path d="M 340 50 Q 345 44 350 50 Q 355 44 360 50" stroke="rgba(255,255,255,0.40)" strokeWidth="2" fill="none" strokeLinecap="round"/>
+        <path d="M 720 22 Q 727 15 734 22 Q 741 15 748 22" stroke="rgba(255,255,255,0.45)" strokeWidth="2.5" fill="none" strokeLinecap="round"/>
       </svg>
       {/* Rolling hills */}
       {[
-        { w: 480, h: 170, left: -60,  bg: '#5DBB63' },
-        { w: 340, h: 130, left: 240,  bg: '#4CAF50' },
-        { w: 280, h: 105, left: 420,  bg: '#6EC96E' },
-        { w: 320, h: 125, right: 260, bg: '#4CAF50' },
-        { w: 420, h: 155, right: -40, bg: '#5DBB63' },
-        { w: 210, h: 82,  right: 340, bg: '#43A047' },
+        { w: 480, h: 170, left: -60,  bg: '#15803D' },
+        { w: 340, h: 130, left: 240,  bg: '#16A34A' },
+        { w: 280, h: 105, left: 420,  bg: '#22C55E' },
+        { w: 320, h: 125, right: 260, bg: '#16A34A' },
+        { w: 420, h: 155, right: -40, bg: '#15803D' },
+        { w: 210, h: 82,  right: 340, bg: '#14532D' },
       ].map(function(h, i) {
         return (
           <div key={i} style={{
@@ -373,7 +411,7 @@ function LandscapeShell({ title, onBack, onHelp, topExtra, showBack, children })
           }
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <div style={{ fontFamily: "'Bubblegum Sans', cursive", fontSize: 26, color: '#1A3A1A' }}>{title}</div>
+            <div style={{ fontFamily: "'Fredoka', 'Nunito', sans-serif", fontSize: 26, fontWeight: 700, color: '#0F172A' }}>{title}</div>
             {topExtra}
           </div>
 
@@ -413,107 +451,173 @@ function ScreenPanel({ children }) {
   );
 }
 
+// SVG icons for home nav tiles — consistent, cross-platform
+var HOME_TILE_ICONS = {
+  home: function() {
+    return (
+      <svg width="52" height="52" viewBox="0 0 52 52" fill="none">
+        <circle cx="26" cy="26" r="26" fill="rgba(255,255,255,0.18)"/>
+        <path d="M26 12 L40 24 L40 40 L32 40 L32 30 L20 30 L20 40 L12 40 L12 24 Z" fill="white" stroke="rgba(255,255,255,0.4)" strokeWidth="1.5" strokeLinejoin="round"/>
+        <path d="M18 24 L26 17 L34 24" stroke="rgba(255,255,255,0.5)" strokeWidth="1.5" fill="none" strokeLinecap="round"/>
+      </svg>
+    );
+  },
+  map: function() {
+    return (
+      <svg width="52" height="52" viewBox="0 0 52 52" fill="none">
+        <circle cx="26" cy="26" r="26" fill="rgba(255,255,255,0.18)"/>
+        <path d="M10 16 L20 12 L32 16 L42 12 V38 L32 42 L20 38 L10 42 Z" fill="rgba(255,255,255,0.25)" stroke="white" strokeWidth="2" strokeLinejoin="round"/>
+        <path d="M20 12 V38 M32 16 V42" stroke="white" strokeWidth="1.5" strokeLinecap="round"/>
+        <circle cx="26" cy="27" r="4" fill="white"/>
+      </svg>
+    );
+  },
+  me: function() {
+    return (
+      <svg width="52" height="52" viewBox="0 0 52 52" fill="none">
+        <circle cx="26" cy="26" r="26" fill="rgba(255,255,255,0.18)"/>
+        <path d="M26 13 L28.5 20.5 L36.5 20.5 L30 25.5 L32.5 33 L26 28 L19.5 33 L22 25.5 L15.5 20.5 L23.5 20.5 Z" fill="white"/>
+      </svg>
+    );
+  },
+  code: function() {
+    return (
+      <svg width="52" height="52" viewBox="0 0 52 52" fill="none">
+        <circle cx="26" cy="26" r="26" fill="rgba(255,255,255,0.18)"/>
+        <rect x="12" y="16" width="28" height="20" rx="3" fill="rgba(255,255,255,0.25)" stroke="white" strokeWidth="2"/>
+        <path d="M18 24 L15 27 L18 30" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
+        <path d="M34 24 L37 27 L34 30" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
+        <path d="M28 22 L24 32" stroke="white" strokeWidth="2" strokeLinecap="round"/>
+        <rect x="16" y="36" width="20" height="3" rx="1.5" fill="white"/>
+      </svg>
+    );
+  },
+  shop: function() {
+    return (
+      <svg width="52" height="52" viewBox="0 0 52 52" fill="none">
+        <circle cx="26" cy="26" r="26" fill="rgba(255,255,255,0.18)"/>
+        <path d="M14 20 L38 20 L35 38 H17 Z" fill="rgba(255,255,255,0.25)" stroke="white" strokeWidth="2" strokeLinejoin="round"/>
+        <path d="M14 20 L16 14 H36 L38 20" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+        <path d="M21 20 C21 23.3 23.7 26 26 26 C28.3 26 31 23.3 31 20" stroke="white" strokeWidth="2" strokeLinecap="round" fill="none"/>
+      </svg>
+    );
+  },
+  pet: function() {
+    return (
+      <svg width="52" height="52" viewBox="0 0 52 52" fill="none">
+        <circle cx="26" cy="26" r="26" fill="rgba(255,255,255,0.18)"/>
+        <ellipse cx="26" cy="30" rx="10" ry="8" fill="rgba(255,255,255,0.25)" stroke="white" strokeWidth="2"/>
+        <circle cx="19" cy="20" r="4" fill="white"/>
+        <circle cx="33" cy="20" r="4" fill="white"/>
+        <circle cx="14" cy="28" r="3" fill="white"/>
+        <circle cx="38" cy="28" r="3" fill="white"/>
+      </svg>
+    );
+  },
+};
+
 function WebHome({ profile, levels, onContinue, onPickMode, onTab }) {
   var currentLevel = levels && levels.find(function(l) { return l.current; });
   var currentWord = currentLevel ? currentLevel.word : '...';
 
   var tiles = [
-    { id: 'home', label: 'Play',     icon: '🎮', grad: 'var(--tile-play)' },
-    { id: 'map',  label: 'Journey',  icon: '🗺️', grad: 'var(--tile-journey)' },
-    { id: 'me',   label: 'My Stuff', icon: '⭐', grad: 'var(--tile-me)' },
-    { id: 'code', label: 'Code Lab', icon: '💻', grad: 'var(--tile-code)' },
-    { id: 'shop', label: 'Shop',     icon: '🛍️', grad: 'var(--tile-shop)' },
-    { id: 'pet',  label: 'My Pet',   icon: '🐾', grad: 'var(--tile-pet)' },
+    { id: 'home', label: 'Play',     grad: 'var(--tile-play)',    featured: true },
+    { id: 'map',  label: 'Journey',  grad: 'var(--tile-journey)', featured: false },
+    { id: 'me',   label: 'My Stuff', grad: 'var(--tile-me)',      featured: false },
+    { id: 'code', label: 'Code Lab', grad: 'var(--tile-code)',    featured: false },
+    { id: 'shop', label: 'Shop',     grad: 'var(--tile-shop)',    featured: false },
+    { id: 'pet',  label: 'My Pet',   grad: 'var(--tile-pet)',     featured: false },
   ];
 
   return (
     <LandscapeShell title="Home Base" showBack={false}>
 
-      {/* Full-height flex column — greeting → tiles → continue */}
+      {/* Full-height centered layout */}
       <div style={{
-        display: 'flex', flexDirection: 'column', alignItems: 'center',
-        justifyContent: 'center',
         minHeight: '100vh',
-        paddingBottom: 180, paddingTop: 20,
-        gap: 20,
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 28,
+        padding: '24px 0 40px',
+        position: 'relative',
+        zIndex: 20,
       }}>
 
-        {/* Greeting strip */}
+        {/* Greeting */}
         <div style={{ textAlign: 'center' }}>
-          <div style={{ fontFamily: "'Bubblegum Sans', cursive", fontSize: 28, color: '#1A3A1A', textShadow: '0 2px 6px rgba(255,255,255,0.7)', marginBottom: 6 }}>
+          <div style={{
+            fontFamily: "'Grandstander', 'Nunito', sans-serif",
+            fontWeight: 900,
+            fontSize: 'clamp(42px, 5.5vw, 72px)',
+            color: 'white',
+            textShadow: '0 4px 16px rgba(15,23,42,0.35), 0 1px 0 rgba(15,23,42,0.2)',
+            letterSpacing: '-0.01em',
+            lineHeight: 1.1,
+            marginBottom: 14,
+          }}>
             {'Hi, ' + profile.name + '! 👋'}
           </div>
-          <div style={{
-            display: 'inline-flex', gap: 12, alignItems: 'center',
-            background: 'rgba(255,255,255,0.85)', backdropFilter: 'blur(4px)',
-            borderRadius: 999, padding: '6px 20px',
-            border: '2px solid rgba(255,255,255,0.9)',
-            boxShadow: '0 4px 16px rgba(0,0,0,0.12)',
-          }}>
-            <span style={{ fontSize: 13, fontWeight: 800, color: '#333' }}>🔥 {profile.streak} streak</span>
-            <span style={{ width: 1, height: 16, background: '#ddd', display: 'block' }}/>
-            <span style={{ fontSize: 13, fontWeight: 800, color: '#333' }}>⭐ {profile.totalStars} stars</span>
-            <span style={{ width: 1, height: 16, background: '#ddd', display: 'block' }}/>
-            <span style={{ fontSize: 13, fontWeight: 800, color: '#333' }}>📚 {profile.words} words</span>
+
+          {/* Stat badges — solid brand colors, no glassmorphism */}
+          <div style={{ display: 'inline-flex', gap: 10, alignItems: 'center' }}>
+            <div id="juice-streak" className="home-stat-badge home-stat-streak" aria-label={profile.streak + ' day streak'}>
+              <span style={{ fontSize: 16 }}>🔥</span>
+              <span>{profile.streak} streak</span>
+            </div>
+            <div className="home-stat-badge home-stat-stars" aria-label={profile.totalStars + ' total stars'}>
+              <span style={{ fontSize: 16 }}>⭐</span>
+              <span>{profile.totalStars} stars</span>
+            </div>
+            <div className="home-stat-badge home-stat-words" aria-label={profile.words + ' words learned'}>
+              <span style={{ fontSize: 16 }}>📚</span>
+              <span>{profile.words} words</span>
+            </div>
           </div>
         </div>
 
-        {/* 6-tile nav grid */}
-        <div style={{
-          display: 'grid', gridTemplateColumns: 'repeat(3, 130px)',
-          gap: 16, zIndex: 20,
-        }}>
-          {tiles.map(function(t) {
-            return (
-              <button key={t.id}
-                onClick={function() { onTab(t.id); window.sfx && window.sfx.tap && window.sfx.tap(); }}
-                style={{
-                  width: 130, height: 115, borderRadius: 28,
-                  background: t.grad,
-                  border: '3px solid rgba(255,255,255,0.6)',
-                  boxShadow: '0 6px 0 rgba(0,0,0,0.18), 0 10px 28px rgba(0,0,0,0.14)',
-                  display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-                  gap: 8, cursor: 'pointer', fontFamily: 'inherit',
-                  transition: 'transform 0.12s ease, box-shadow 0.12s ease',
-                }}
-                onMouseEnter={function(e) { e.currentTarget.style.transform = 'translateY(-5px) scale(1.03)'; }}
-                onMouseLeave={function(e) { e.currentTarget.style.transform = 'translateY(0) scale(1)'; }}
-                onMouseDown={function(e) { e.currentTarget.style.transform = 'translateY(3px) scale(0.97)'; e.currentTarget.style.boxShadow = '0 2px 0 rgba(0,0,0,0.18)'; }}
-                onMouseUp={function(e) { e.currentTarget.style.transform = 'translateY(-5px) scale(1.03)'; e.currentTarget.style.boxShadow = '0 6px 0 rgba(0,0,0,0.18), 0 10px 28px rgba(0,0,0,0.14)'; }}
-              >
-                <div style={{ fontSize: 40, lineHeight: 1 }}>{t.icon}</div>
-                <div style={{ fontFamily: "'Bubblegum Sans', cursive", fontSize: 15, color: 'white', textShadow: '0 1px 4px rgba(0,0,0,0.35)' }}>{t.label}</div>
-              </button>
-            );
-          })}
+        {/* Nav layout — big Play + 2 rows of 2 */}
+        <div className="home-nav-layout">
+          {/* Featured Play tile */}
+          <button
+            className="home-nav-tile home-nav-tile--featured"
+            aria-label="Play"
+            style={{ background: tiles[0].grad }}
+            onClick={function() { onTab('home'); window.sfx && window.sfx.tap && window.sfx.tap(); }}
+          >
+            <div className="home-nav-tile__icon home-nav-tile__icon--lg">
+              {HOME_TILE_ICONS.home()}
+            </div>
+            <div className="home-nav-tile__label home-nav-tile__label--lg">Play</div>
+          </button>
+
+          {/* Right column — 2 rows of 2 */}
+          <div className="home-nav-secondary">
+            {tiles.slice(1).map(function(t, i) {
+              return (
+                <button
+                  key={t.id}
+                  className="home-nav-tile"
+                  aria-label={t.label}
+                  style={{ background: t.grad, animationDelay: (0.06 + i * 0.05) + 's' }}
+                  onClick={function() { onTab(t.id); window.sfx && window.sfx.tap && window.sfx.tap(); }}
+                >
+                  <div className="home-nav-tile__icon">{HOME_TILE_ICONS[t.id]()}</div>
+                  <div className="home-nav-tile__label">{t.label}</div>
+                </button>
+              );
+            })}
+          </div>
         </div>
 
-        {/* Continue button */}
-        <button onClick={onContinue} style={{
-          background: 'linear-gradient(145deg, #FFD700, #FFA000)',
-          border: '3px solid #E8B800',
-          borderRadius: 999, padding: '13px 36px',
-          fontFamily: "'Bubblegum Sans', cursive", fontSize: 19,
-          color: '#5A3A00', cursor: 'pointer',
-          boxShadow: '0 5px 0 #C9A000, 0 8px 24px rgba(255,160,0,0.4)',
-          display: 'flex', alignItems: 'center', gap: 10, whiteSpace: 'nowrap',
-          zIndex: 20,
-        }}>
-          ▶ Keep going —
-          <span style={{
-            background: 'rgba(255,255,255,0.45)', borderRadius: 10, padding: '2px 12px',
-            fontFamily: "'Bubblegum Sans', cursive", fontSize: 17, color: '#3A2000',
-          }}>{currentWord}</span>
+        {/* Continue CTA */}
+        <button className="home-continue-btn" onClick={onContinue}>
+          <span style={{ opacity: 0.85 }}>▶ Keep going</span>
+          <span style={{ width: 1, background: 'rgba(69,26,3,0.3)', alignSelf: 'stretch' }}/>
+          <span className="home-continue-word">{currentWord}</span>
         </button>
 
-      </div>
-
-      {/* Mascots — Panda left, Cat right, peeking above hills */}
-      <div style={{ position: 'absolute', bottom: 24, left: 16, zIndex: 15, filter: 'drop-shadow(2px 6px 8px rgba(0,0,0,0.25))' }}>
-        <AvatarPanda size={160} bgColor="transparent"/>
-      </div>
-      <div style={{ position: 'absolute', bottom: 24, right: 16, zIndex: 15, filter: 'drop-shadow(2px 6px 8px rgba(0,0,0,0.25))', transform: 'scaleX(-1)' }}>
-        <AvatarCat size={160} bgColor="transparent"/>
       </div>
 
     </LandscapeShell>
@@ -761,10 +865,11 @@ function WebShop({ profile, setProfile, levels }) {
               aria-label={(canAfford ? 'Buy ' : 'Cannot afford ') + item.name + ' for ' + item.price + ' coins'}
               style={{
                 width: '100%', padding: '7px 0', borderRadius: 10, border: 'none',
-                background: canAfford ? 'var(--yellow)' : 'var(--alpha-sm)',
-                color: canAfford ? 'var(--yellow-ink)' : 'var(--ink-mute)',
-                fontFamily: 'inherit', fontWeight: 800, fontSize: 12,
+                background: canAfford ? 'var(--gold)' : 'var(--alpha-sm)',
+                color: canAfford ? '#451A03' : 'var(--ink-mute)',
+                fontFamily: "'Fredoka', 'Nunito', sans-serif", fontWeight: 600, fontSize: 12,
                 cursor: canAfford ? 'pointer' : 'default',
+                boxShadow: canAfford ? '0 2px 0 var(--gold-dark)' : 'none',
               }}>{canAfford ? '🛒 Buy' : 'Need ' + (item.price - coins) + ' more'}</button>
           </>
         ) : onAction ? (
@@ -780,7 +885,7 @@ function WebShop({ profile, setProfile, levels }) {
               transition: 'background 150ms',
             }}>{actionLabel}</button>
         ) : (
-          <div role="status" style={{ fontSize: 11, fontWeight: 800, color: 'var(--mint-ink)', background: 'var(--mint-soft)', borderRadius: 8, padding: '4px 10px' }}>✓ Owned</div>
+          <div role="status" style={{ fontSize: 11, fontWeight: 800, color: 'white', background: 'var(--emerald)', borderRadius: 8, padding: '4px 10px' }}>✓ Owned</div>
         )}
       </div>
     );
@@ -791,37 +896,35 @@ function WebShop({ profile, setProfile, levels }) {
   }
 
   return (
-    <div style={{ padding: '32px 40px 48px', minHeight: '100%', background: 'linear-gradient(180deg, var(--yellow-soft) 0%, var(--bg) 320px)' }}>
-      <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 28 }}>
-        <div>
-          <h1 style={{ fontSize: 36, fontWeight: 400, fontFamily: "'Bubblegum Sans', cursive", margin: '0 0 4px', letterSpacing: '0.01em' }}>🛍 Pet Shop</h1>
-          <p style={{ fontSize: 15, color: 'var(--ink-soft)', fontWeight: 700, margin: 0 }}>Collect pets, gear, and goodies!</p>
+    <div style={{ minHeight: '100%' }}>
+      {/* Coin badge + tab row */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20, gap: 16 }}>
+        <div style={{ display: 'flex', gap: 8, overflowX: 'auto', flexShrink: 1 }}>
+          {shopTabs.map(function(t) {
+            var active = shopTab === t.id;
+            return (
+              <button key={t.id} onClick={function() { setShopTab(t.id); window.sfx?.tap(); }} style={{
+                flexShrink: 0, padding: '8px 18px', borderRadius: 999, border: 'none',
+                background: active ? 'var(--brand)' : 'var(--brand-light)',
+                color: active ? 'white' : 'var(--brand)',
+                fontFamily: "'Fredoka', 'Nunito', sans-serif", fontWeight: 600, fontSize: 14, cursor: 'pointer',
+                transition: 'background 150ms, color 150ms',
+                boxShadow: active ? '0 3px 0 var(--brand-dark)' : 'none',
+              }}>{t.label}</button>
+            );
+          })}
         </div>
-        <div style={{ background: 'white', borderRadius: 18, padding: '14px 22px', display: 'flex', alignItems: 'center', gap: 12, boxShadow: 'var(--shadow-toy)' }}>
-          <span style={{ fontSize: 32 }}>🪙</span>
-          <div>
-            <div style={{ fontSize: 30, fontWeight: 900, color: 'var(--yellow-ink)', lineHeight: 1 }}>{coins}</div>
-            <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--ink-mute)', textTransform: 'uppercase', letterSpacing: 0.5 }}>coins</div>
-          </div>
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0,
+          background: 'var(--gold)', borderRadius: 999, padding: '8px 18px',
+          boxShadow: '0 3px 0 var(--gold-dark)',
+        }}>
+          <span style={{ fontSize: 18 }}>🪙</span>
+          <span style={{ fontSize: 20, fontWeight: 900, color: '#451A03', fontFamily: "'Fredoka', sans-serif" }}>{coins}</span>
         </div>
       </div>
 
-      {/* Scrollable pill tabs */}
-      <div style={{ display: 'flex', gap: 8, marginBottom: 28, overflowX: 'auto', paddingBottom: 4 }}>
-        {shopTabs.map(function(t) {
-          var active = shopTab === t.id;
-          return (
-            <button key={t.id} onClick={function() { setShopTab(t.id); window.sfx?.tap(); }} style={{
-              flexShrink: 0, padding: '10px 20px', borderRadius: 999, border: 'none',
-              background: active ? 'var(--blue)' : 'var(--surface)',
-              color: active ? 'white' : 'var(--ink-soft)',
-              fontFamily: 'inherit', fontWeight: 800, fontSize: 14, cursor: 'pointer',
-              boxShadow: active ? 'var(--shadow-toy)' : 'var(--shadow-soft)',
-              transition: 'background 150ms, color 150ms',
-            }}>{t.label}</button>
-          );
-        })}
-      </div>
+      <div>
 
       {/* Species */}
       {shopTab === 'species' && (
@@ -879,8 +982,8 @@ function WebShop({ profile, setProfile, levels }) {
                   ) : (
                     <button onClick={function() { setActive(species.id); }} style={{
                       width: '100%', padding: '9px 0', borderRadius: 10, border: 'none',
-                      background: 'var(--mint-soft)', color: 'var(--mint-ink)',
-                      fontFamily: 'inherit', fontWeight: 800, fontSize: 13, cursor: 'pointer',
+                      background: 'var(--emerald-soft)', color: 'var(--emerald-dark)',
+                      fontFamily: "'Fredoka', 'Nunito', sans-serif", fontWeight: 600, fontSize: 13, cursor: 'pointer',
                     }}>Switch to {species.name}</button>
                   )
                 ) : (
@@ -888,10 +991,11 @@ function WebShop({ profile, setProfile, levels }) {
                     <div style={{ fontSize: 14, fontWeight: 900, color: 'var(--yellow-ink)', marginBottom: 8 }}>🪙 {price}</div>
                     <button onClick={function() { buySpecies(species); }} disabled={!canAfford} style={{
                       width: '100%', padding: '9px 0', borderRadius: 10, border: 'none',
-                      background: canAfford ? 'var(--yellow)' : 'var(--alpha-sm)',
-                      color: canAfford ? 'var(--yellow-ink)' : 'var(--ink-mute)',
-                      fontFamily: 'inherit', fontWeight: 800, fontSize: 13,
+                      background: canAfford ? 'var(--gold)' : 'var(--alpha-sm)',
+                      color: canAfford ? '#451A03' : 'var(--ink-mute)',
+                      fontFamily: "'Fredoka', 'Nunito', sans-serif", fontWeight: 600, fontSize: 13,
                       cursor: canAfford ? 'pointer' : 'default',
+                      boxShadow: canAfford ? '0 3px 0 var(--gold-dark)' : 'none',
                     }}>{canAfford ? '🛒 Adopt' : 'Need ' + (price - coins) + ' more 🪙'}</button>
                   </>
                 )}
@@ -1043,6 +1147,7 @@ function WebShop({ profile, setProfile, levels }) {
           </CompactGrid>
         </div>
       )}
+      </div>
     </div>
   );
 }
@@ -1057,14 +1162,14 @@ function WebCodeLab({ levels, onPlayLevel }) {
   var codingLevels = (levels || []).filter(function(l) { return l.mode === 'coding'; });
 
   return (
-    <div style={{ padding: '32px 40px 48px', background: 'linear-gradient(180deg, var(--mint-soft) 0%, var(--bg) 360px)', minHeight: '100%' }}>
-      <div style={{ marginBottom: 32 }}>
-        <div style={{ fontSize: 13, color: 'var(--ink-mute)', fontWeight: 800, letterSpacing: 0.5, textTransform: 'uppercase', marginBottom: 4 }}>New game mode</div>
-        <h1 style={{ fontSize: 36, fontWeight: 400, fontFamily: "'Bubblegum Sans', cursive", margin: '0 0 10px', letterSpacing: '0.01em' }}>🤖 The Code Lab</h1>
-        <p style={{ fontSize: 16, color: 'var(--ink-soft)', fontWeight: 700, margin: 0, maxWidth: 520 }}>
+    <div style={{ minHeight: '100%' }}>
+      <div style={{ marginBottom: 24 }}>
+        <div style={{ fontSize: 12, color: 'var(--ink-mute)', fontWeight: 800, letterSpacing: 0.5, textTransform: 'uppercase', marginBottom: 4 }}>New game mode</div>
+        <p style={{ fontSize: 14, color: 'var(--ink-soft)', fontWeight: 600, margin: 0, maxWidth: 520 }}>
           Build a sequence of moves to guide the player to the star. No spelling — just logic and planning!
         </p>
       </div>
+      <div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 20, maxWidth: 760, marginBottom: 40 }}>
         {codingLevels.map(function(lv) {
@@ -1096,7 +1201,7 @@ function WebCodeLab({ levels, onPlayLevel }) {
                   <span style={{ fontSize: 12, color: 'var(--mint-ink)', fontWeight: 800 }}>Complete!</span>
                 </div>
               ) : !locked ? (
-                <div style={{ background: 'var(--mint-soft)', color: 'var(--mint-ink)', borderRadius: 8, padding: '6px 14px', fontSize: 13, fontWeight: 800, display: 'inline-block' }}>▶ Play</div>
+                <div style={{ background: 'var(--gold)', color: '#451A03', borderRadius: 8, padding: '6px 14px', fontSize: 13, fontWeight: 700, fontFamily: "'Fredoka', sans-serif", display: 'inline-block', boxShadow: '0 2px 0 var(--gold-dark)' }}>▶ Play</div>
               ) : (
                 <div style={{ fontSize: 12, color: 'var(--ink-mute)', fontWeight: 700 }}>Finish previous level to unlock</div>
               )}
@@ -1106,7 +1211,7 @@ function WebCodeLab({ levels, onPlayLevel }) {
       </div>
 
       <div style={{ maxWidth: 620 }}>
-        <h2 style={{ fontSize: 20, fontWeight: 400, fontFamily: "'Bubblegum Sans', cursive", margin: '0 0 16px' }}>How it works</h2>
+        <h2 style={{ fontSize: 20, fontWeight: 700, fontFamily: "'Fredoka', 'Nunito', sans-serif", margin: '0 0 16px' }}>How it works</h2>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 14 }}>
           {[
             { n: '1', title: 'Add moves', desc: 'Tap direction buttons to queue up your sequence.' },
@@ -1115,13 +1220,14 @@ function WebCodeLab({ levels, onPlayLevel }) {
           ].map(function(s) {
             return (
               <div key={s.n} style={{ background: 'var(--surface)', borderRadius: 14, padding: 16 }}>
-                <div style={{ width: 30, height: 30, borderRadius: '50%', background: 'var(--mint)', color: 'var(--mint-ink)', fontWeight: 900, fontSize: 15, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 10 }}>{s.n}</div>
+                <div style={{ width: 30, height: 30, borderRadius: '50%', background: 'var(--brand)', color: 'white', fontWeight: 900, fontSize: 15, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 10 }}>{s.n}</div>
                 <div style={{ fontWeight: 800, fontSize: 14, marginBottom: 4 }}>{s.title}</div>
                 <div style={{ fontSize: 13, color: 'var(--ink-mute)', fontWeight: 700 }}>{s.desc}</div>
               </div>
             );
           })}
         </div>
+      </div>
       </div>
     </div>
   );
@@ -1152,6 +1258,7 @@ function WebPet({ profile, setProfile, levels }) {
   function feed() {
     if (coins < 5 || petMood >= 100 || !activePetId) return;
     window.sfx?.complete();
+    window.Juice?.emit('petHappy');
     setProfile(function(prev) {
       var newFeedCount = (prev.feedCount || 0) + 1;
       var pd = Object.assign({}, prev.petData || {});
@@ -1214,6 +1321,7 @@ function WebPet({ profile, setProfile, levels }) {
     var count = (profile.treats || {})[item.id] || 0;
     if (count < 1 || !activePetId) return;
     window.sfx?.complete();
+    window.Juice?.emit('petHappy');
     setProfile(function(prev) {
       var t = Object.assign({}, prev.treats || {});
       t[item.id] = Math.max(0, (t[item.id] || 0) - 1);
@@ -1246,7 +1354,7 @@ function WebPet({ profile, setProfile, levels }) {
   }
 
   return (
-    <div style={{ padding: '32px 40px 48px', minHeight: '100%', background: 'linear-gradient(180deg, ' + specBg + ' 0%, var(--bg) 360px)' }}>
+    <div style={{ padding: '32px 40px 48px', minHeight: '100%', background: 'var(--bg)' }}>
 
       {/* Collection row */}
       {ownedSpecies.length > 1 && (
@@ -1293,7 +1401,7 @@ function WebPet({ profile, setProfile, levels }) {
               <button onClick={saveName} style={{ background: 'var(--blue)', color: 'white', border: 'none', borderRadius: 8, padding: '6px 14px', fontFamily: 'inherit', fontWeight: 800, cursor: 'pointer' }}>Save</button>
             </div>
           ) : (
-            <h1 style={{ fontSize: 36, fontWeight: 400, fontFamily: "'Bubblegum Sans', cursive", margin: '0 0 4px', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 10 }}
+            <h1 style={{ fontSize: 34, fontWeight: 700, fontFamily: "'Fredoka', 'Nunito', sans-serif", margin: '0 0 4px', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 10 }}
               onClick={function() { setNameInput(petName); setEditingName(true); }}>
               {petName} <span style={{ fontSize: 18, color: 'var(--ink-mute)' }}>✏️</span>
             </h1>
@@ -1306,12 +1414,14 @@ function WebPet({ profile, setProfile, levels }) {
           <div style={{
             display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
             marginBottom: 24, borderRadius: 20, padding: '20px 0 12px',
-            background: petRoomBg || 'linear-gradient(135deg, var(--surface-alt, #F7F2FF), var(--bg))',
+            background: petRoomBg || 'linear-gradient(135deg, var(--brand-dark) 0%, var(--violet) 100%)',
             transition: 'background 0.5s ease',
           }}>
             {typeof PetSprite !== 'undefined' && activePetId && (
-              <PetSprite speciesId={activePetId} completedChapters={completedChapters}
-                mood={petMood} size={160} equipped={petEquipped} animate={true}/>
+              <div id="juice-pet" style={{ filter: 'drop-shadow(0 0 24px rgba(37,99,235,0.5))' }}>
+                <PetSprite speciesId={activePetId} completedChapters={completedChapters}
+                  mood={petMood} size={160} equipped={petEquipped} animate={true}/>
+              </div>
             )}
             {equippedToys.length > 0 && (
               <div style={{ display: 'flex', gap: 10, marginTop: 12 }}>
