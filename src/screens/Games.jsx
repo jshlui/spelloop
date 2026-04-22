@@ -25,6 +25,7 @@ function GameHeader({ mode, progress, onClose }) {
 function ClickGame({ word, onDone, onClose }) {
   const { distractorCount, recordClick, recordTaskComplete } = React.useContext(window.GameContext);
   const taskStartRef = React.useRef(Date.now());
+  const streakRef = React.useRef(0);
   const [idx, setIdx] = React.useState(0);
   const [feedback, setFeedback] = React.useState(null); // {letter, correct}
   const [wrongCount, setWrongCount] = React.useState(0);
@@ -49,11 +50,15 @@ function ClickGame({ word, onDone, onClose }) {
     if (letter === target) {
       recordClick(true, 'click', Date.now() - taskStartRef.current);
       window.sfx?.playCorrect();
+      streakRef.current += 1;
+      window.Juice?.emit('correct');
+      window.Juice?.emit('streak', streakRef.current);
       setFeedback({ letter, correct: true });
       setTimeout(() => {
         if (idx + 1 >= word.length) {
           recordTaskComplete('click', Date.now() - taskStartRef.current);
           taskStartRef.current = Date.now();
+          window.Juice?.emit('wordComplete');
           setBurst(true);
           window.sfx?.complete();
           setTimeout(() => onDone(wrongCount === 0 ? 3 : wrongCount <= 2 ? 2 : 1), 1000);
@@ -65,6 +70,8 @@ function ClickGame({ word, onDone, onClose }) {
     } else {
       recordClick(false, 'click', Date.now() - taskStartRef.current);
       window.sfx?.playWrong();
+      window.Juice?.emit('wrong');
+      streakRef.current = 0;
       setWrongCount(w => w + 1);
       setFeedback({ letter, correct: false });
       setTimeout(() => setFeedback(null), 400);
@@ -138,10 +145,12 @@ function DragGame({ word, onDone, onClose }) {
     if (filledCount === word.length) {
       const attempt = slots.map(s => s.letter).join('');
       if (attempt === word) {
+        window.Juice?.emit('wordComplete');
         setBurst(true); window.sfx?.complete();
         setTimeout(() => onDone(wrongCount === 0 ? 3 : wrongCount <= 2 ? 2 : 1), 1000);
       } else {
         window.sfx?.playWrong();
+        window.Juice?.emit('wrong');
         setWrongCount(w => w + 1);
         // clear ALL tiles so player starts fresh — avoids stranded-tile deadlock
         setTimeout(() => {
@@ -161,7 +170,7 @@ function DragGame({ word, onDone, onClose }) {
     const newTiles = tiles.map(x => x.key === tileKey ? { ...x, placed: true } : x);
     const newSlots = [...slots]; newSlots[slotIdx] = { letter: t.letter, key: tileKey };
     setTiles(newTiles); setSlots(newSlots);
-    if (t.letter === word[slotIdx]) window.sfx?.tap();
+    if (t.letter === word[slotIdx]) { window.sfx?.tap(); window.Juice?.emit('correct'); }
   }
 
   function unplace(slotIdx) {
@@ -244,7 +253,9 @@ function TypeGame({ word, onDone, onClose, device }) {
     if (letter === expected) {
       const nt = typed + letter;
       setTyped(nt);
+      window.Juice?.emit('correct');
       if (nt === word) {
+        window.Juice?.emit('wordComplete');
         window.sfx?.complete(); setBurst(true);
         setTimeout(() => onDone(wrongCount === 0 ? 3 : wrongCount <= 2 ? 2 : 1), 1000);
       } else {
@@ -252,6 +263,7 @@ function TypeGame({ word, onDone, onClose, device }) {
       }
     } else {
       window.sfx?.playWrong();
+      window.Juice?.emit('wrong');
       setWrongCount(w => w + 1);
       setShake(true);
       setTimeout(() => setShake(false), 300);
@@ -361,12 +373,15 @@ function MissingGame({ word, onDone, onClose }) {
     if (c === target) {
       recordClick(true, 'missing', Date.now() - taskStartRef.current);
       window.sfx?.playCorrect();
+      window.Juice?.emit('correct');
+      window.Juice?.emit('wordComplete');
       setBurst(true); window.sfx?.complete();
       recordTaskComplete('missing', Date.now() - taskStartRef.current);
       setTimeout(() => onDone(wrongCount === 0 ? 3 : wrongCount <= 2 ? 2 : 1), 1000);
     } else {
       recordClick(false, 'missing', Date.now() - taskStartRef.current);
       window.sfx?.playWrong();
+      window.Juice?.emit('wrong');
       setWrongCount(w => w + 1);
       setTimeout(() => setPicked(null), 400);
     }
@@ -434,11 +449,13 @@ function KeyboardGame({ word, onDone, onClose }) {
   function press(l) {
     window.sfx?.type();
     if (l === target) {
+      window.Juice?.emit('correct');
       setFlash({ l, ok: true });
       window.sfx?.playCorrect();
       setTimeout(() => {
         setFlash(null);
         if (idx + 1 >= word.length) {
+          window.Juice?.emit('wordComplete');
           setBurst(true); window.sfx?.complete();
           setTimeout(() => onDone(wrongCount === 0 ? 3 : wrongCount <= 2 ? 2 : 1), 1000);
         } else {
@@ -448,6 +465,7 @@ function KeyboardGame({ word, onDone, onClose }) {
     } else {
       setFlash({ l, ok: false });
       window.sfx?.playWrong();
+      window.Juice?.emit('wrong');
       setWrongCount(w => w + 1);
       setTimeout(() => setFlash(null), 250);
     }
@@ -570,13 +588,16 @@ function PrecisionGame({ word, onDone, onClose }) {
       setWrongCount(function(w) { return w + 1; });
       recordClick(false, 'precision', 0);
       window.sfx && window.sfx.playWrong && window.sfx.playWrong();
+      window.Juice?.emit('wrong');
       return;
     }
     recordClick(true, 'precision', Date.now() - taskStartRef.current);
     window.sfx && window.sfx.playCorrect && window.sfx.playCorrect();
+    window.Juice?.emit('correct');
     if (letterIdx + 1 >= word.length) {
       recordTaskComplete('precision', Date.now() - taskStartRef.current);
       window.sfx && window.sfx.playComplete && window.sfx.playComplete();
+      window.Juice?.emit('wordComplete');
       setBurst(true);
       var stars = wrongCount === 0 ? 3 : wrongCount <= 2 ? 2 : 1;
       setTimeout(function() { onDone(stars); }, 1000);
@@ -646,15 +667,18 @@ function ScrambleGame({ word, onDone, onClose }) {
     const expected = word[typed.length];
     if (tile.letter === expected) {
       window.sfx?.playCorrect();
+      window.Juice?.emit('correct');
       const nt = typed + tile.letter;
       setTiles(function(prev) { return prev.map(function(t) { return t.key === key ? Object.assign({}, t, { used: true }) : t; }); });
       setTyped(nt);
       if (nt === word) {
+        window.Juice?.emit('wordComplete');
         setBurst(true); window.sfx?.complete();
         setTimeout(function() { onDone(wrongCount === 0 ? 3 : wrongCount <= 2 ? 2 : 1); }, 1000);
       }
     } else {
       window.sfx?.playWrong();
+      window.Juice?.emit('wrong');
       setWrongCount(function(w) { return w + 1; });
       setWrongKey(key);
       setTimeout(function() { setWrongKey(null); }, 350);
@@ -730,15 +754,18 @@ function SpeedGame({ word, onDone, onClose }) {
     const expected = word[typed.length];
     if (letter === expected) {
       window.sfx?.playCorrect();
+      window.Juice?.emit('correct');
       const nt = typed + letter;
       setTyped(nt);
       if (nt === word) {
+        window.Juice?.emit('wordComplete');
         setDone(true); setBurst(true); window.sfx?.complete();
         const stars = timeLeft >= 10 ? 3 : timeLeft >= 5 ? 2 : 1;
         setTimeout(function() { onDone(stars); }, 1000);
       }
     } else {
       window.sfx?.playWrong();
+      window.Juice?.emit('wrong');
       setWrongCount(function(w) { return w + 1; });
       setShake(true);
       setTimeout(function() { setShake(false); }, 300);
@@ -824,16 +851,19 @@ function EchoGame({ word, onDone, onClose }) {
     var expected = word[typed.length];
     if (letter === expected) {
       window.sfx?.playCorrect();
+      window.Juice?.emit('correct');
       recordClick(true, 'echo', Date.now() - taskStartRef.current);
       var nt = typed + letter;
       setTyped(nt);
       if (nt === word) {
         recordTaskComplete('echo', Date.now() - taskStartRef.current);
+        window.Juice?.emit('wordComplete');
         setBurst(true); window.sfx?.complete();
         setTimeout(function() { onDone(wrongCount === 0 ? 3 : wrongCount <= 2 ? 2 : 1); }, 1000);
       }
     } else {
       window.sfx?.playWrong();
+      window.Juice?.emit('wrong');
       recordClick(false, 'echo', Date.now() - taskStartRef.current);
       setWrongCount(function(w) { return w + 1; });
       setShake(true);
@@ -944,16 +974,19 @@ function FlashGame({ word, onDone, onClose }) {
     var expected = word[typed.length];
     if (letter === expected) {
       window.sfx?.playCorrect();
+      window.Juice?.emit('correct');
       recordClick(true, 'flash', Date.now() - taskStartRef.current);
       var nt = typed + letter;
       setTyped(nt);
       if (nt === word) {
         recordTaskComplete('flash', Date.now() - taskStartRef.current);
+        window.Juice?.emit('wordComplete');
         setBurst(true); window.sfx?.complete();
         setTimeout(function() { onDone(wrongCount === 0 ? 3 : wrongCount <= 2 ? 2 : 1); }, 1000);
       }
     } else {
       window.sfx?.playWrong();
+      window.Juice?.emit('wrong');
       recordClick(false, 'flash', Date.now() - taskStartRef.current);
       setWrongCount(function(w) { return w + 1; });
       setShake(true);
@@ -1112,6 +1145,8 @@ function CodingGame({ word, onDone, onClose }) {
     setTimeout(function() {
       setRunning(false);
       if (success) {
+        window.Juice?.emit('correct');
+        window.Juice?.emit('wordComplete');
         setBurst(true);
         window.sfx?.complete();
         var stars = wrongRuns === 0 ? 3 : wrongRuns === 1 ? 2 : 1;
@@ -1120,6 +1155,7 @@ function CodingGame({ word, onDone, onClose }) {
         setResult('fail');
         setWrongRuns(function(w) { return w + 1; });
         window.sfx?.playWrong();
+        window.Juice?.emit('wrong');
       }
     }, path.length * STEP_MS);
   }
