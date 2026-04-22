@@ -100,6 +100,8 @@ function RewardScreen({ word, stars, coins, onNext, onHome }) {
   React.useEffect(() => {
     const t = setTimeout(() => setAnimIn(true), 100);
     [0, 300, 600].forEach((d, i) => { if (i < stars) setTimeout(() => window.sfx?.star(), d + 200); });
+    setTimeout(() => window.Juice?.emit('rewardIn'), 200);
+    setTimeout(() => window.Juice?.emit('coinEarned'), 800);
     return () => clearTimeout(t);
   }, []);
   React.useEffect(function() {
@@ -123,7 +125,7 @@ function RewardScreen({ word, stars, coins, onNext, onHome }) {
           letterSpacing: 2, textTransform: 'uppercase', marginBottom: 8,
           opacity: animIn ? 1 : 0, transition: 'opacity 400ms',
         }}>Level complete</div>
-        <div style={{
+        <div id="juice-reward-heading" style={{
           fontSize: 48, fontWeight: 900, lineHeight: 1, marginBottom: 8,
           transform: animIn ? 'scale(1)' : 'scale(0.5)',
           transition: 'transform 500ms cubic-bezier(.34,1.1,.64,1)',
@@ -134,7 +136,7 @@ function RewardScreen({ word, stars, coins, onNext, onHome }) {
 
         <div style={{ display: 'flex', gap: 12, justifyContent: 'center', marginBottom: 32 }}>
           {[0, 1, 2].map(i => (
-            <div key={i} style={{
+            <div key={i} id={'juice-star-' + i} style={{
               transform: animIn && i < stars ? 'scale(1) rotate(0)' : 'scale(0) rotate(-180deg)',
               transition: `transform 500ms cubic-bezier(.34,1.1,.64,1) ${i * 180 + 200}ms`,
             }}>
