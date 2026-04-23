@@ -348,6 +348,15 @@ window.MODE_META['coding'] = {
 Object.assign(window, { WORDS_EASY, WORDS_MED, WORDS_HARD, WORDS_XLHARD, getWordsForDifficulty, LEVELS, CHAPTER_META, MODE_META, PRECISION_TASKS, PET_SPECIES, PET_OUTFIT_ITEMS, PET_ROOMS, PET_TOYS, PET_TREATS, AVATAR_ITEMS, POWER_UPS });
 
 function getDailyChallenge(dateStr) {
+  // Check for parent-injected custom word (clears after reading)
+  var profileId = window.__currentProfileId || 'p0';
+  var customKey = 'spelloop-custom-word-' + profileId;
+  var customWord = localStorage.getItem(customKey);
+  if (customWord) {
+    localStorage.removeItem(customKey);
+    // Use click mode for custom words (most accessible)
+    return { word: customWord, mode: 'click' };
+  }
   // Simple numeric hash of dateStr for a deterministic daily pick
   var hash = 0;
   for (var i = 0; i < dateStr.length; i++) {

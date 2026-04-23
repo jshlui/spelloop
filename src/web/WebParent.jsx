@@ -368,11 +368,50 @@ function OverviewTab({ profile, levels }) {
     return { id: ch.id, name: ch.name, emoji: ch.emoji, done: chLevels.filter(function(l) { return l.done; }).length, total: chLevels.length };
   }).filter(function(ch) { return ch.total > 0; });
 
+  // Per-mode accuracy from task history
+  var history = ctx.taskHistory || [];
+  var modeStats = {};
+  history.forEach(function(t) {
+    if (!t.mode) return;
+    if (!modeStats[t.mode]) modeStats[t.mode] = { correct: 0, total: 0 };
+    modeStats[t.mode].total++;
+    if (t.correct) modeStats[t.mode].correct++;
+  });
+  var modeAccList = Object.entries(modeStats).map(function(e) {
+    return { mode: e[0], pct: Math.round(e[1].correct / e[1].total * 100), total: e[1].total };
+  }).sort(function(a, b) { return a.pct - b.pct; }); // weakest first
+
+  // Insight card
+  var weakMode = modeAccList.find(function(m) { return m.pct < 70 && m.total >= 3; });
+  var insight = weakMode
+    ? profile.name + ' is finding ' + (MODE_META[weakMode.mode] || {label: weakMode.mode}).label + ' mode tricky (' + weakMode.pct + '% accuracy). Try practising together!'
+    : doneCount >= 5
+      ? profile.name + ' is doing great! ' + doneCount + ' levels done with ' + profile.totalStars + ' stars.'
+      : 'Complete a few levels to see detailed accuracy insights here.';
+
+  // Custom word injection
+  var [customWord, setCustomWord] = React.useState('');
+  var [injected, setInjected] = React.useState(false);
+  function injectWord() {
+    var w = customWord.trim().toUpperCase();
+    if (!w || w.length < 2) return;
+    var key = 'spelloop-custom-word-' + (profile.id || 'p0');
+    localStorage.setItem(key, w);
+    setInjected(true);
+    setTimeout(function() { setInjected(false); }, 3000);
+  }
+
   return (
     <div style={{ padding: 32 }}>
       <div style={{ marginBottom: 24 }}>
         <div style={{ fontSize: 12, fontWeight: 800, color: 'var(--ink-mute)', letterSpacing: 1, textTransform: 'uppercase' }}>Parent overview</div>
         <h1 style={{ fontSize: 28, fontWeight: 900, margin: '4px 0 0' }}>{profile.name}'s progress 🌱</h1>
+      </div>
+
+      {/* Insight banner */}
+      <div style={Object.assign({}, webCard, { background: 'var(--blue-soft)', marginBottom: 16, display: 'flex', alignItems: 'flex-start', gap: 12 })}>
+        <div style={{ fontSize: 24, flexShrink: 0 }}>💡</div>
+        <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--blue-ink)', lineHeight: 1.5 }}>{insight}</div>
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14, marginBottom: 20 }}>
@@ -403,6 +442,29 @@ function OverviewTab({ profile, levels }) {
           })}
         </div>
 
+        {/* Mode accuracy breakdown */}
+        <div style={webCard}>
+          <h3 style={{ margin: '0 0 14px', fontSize: 16, fontWeight: 900 }}>Accuracy by mode</h3>
+          {modeAccList.length === 0 && <div style={{ fontSize: 13, color: 'var(--ink-mute)', fontWeight: 600 }}>Play some levels to see mode accuracy here.</div>}
+          {modeAccList.map(function(m) {
+            var meta = MODE_META[m.mode] || { label: m.mode, icon: '◉' };
+            var tone = m.pct >= 80 ? 'var(--success)' : m.pct >= 60 ? 'var(--warn)' : 'var(--danger, #EF4444)';
+            return (
+              <div key={m.mode} style={{ marginBottom: 12 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 3 }}>
+                  <span style={{ fontSize: 13, fontWeight: 800 }}>{meta.icon} {meta.label}</span>
+                  <span style={{ fontSize: 12, fontWeight: 800, color: tone }}>{m.pct}%</span>
+                </div>
+                <div style={{ height: 8, borderRadius: 4, background: 'var(--bg)', overflow: 'hidden' }}>
+                  <div style={{ height: '100%', width: m.pct + '%', background: tone, borderRadius: 4, transition: 'width 0.5s ease' }}/>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
         {/* Recent completed levels */}
         <div style={webCard}>
           <h3 style={{ margin: '0 0 14px', fontSize: 16, fontWeight: 900 }}>Recent levels ({doneCount} total)</h3>
@@ -420,6 +482,37 @@ function OverviewTab({ profile, levels }) {
               </div>
             );
           })}
+        </div>
+
+        {/* Custom word injection */}
+        <div style={webCard}>
+          <h3 style={{ margin: '0 0 6px', fontSize: 16, fontWeight: 900 }}>Inject a custom word 💬</h3>
+          <div style={{ fontSize: 13, color: 'var(--ink-mute)', fontWeight: 600, marginBottom: 14, lineHeight: 1.5 }}>
+            Type any word and it will be offered as the next Daily Challenge for {profile.name}. Great for real-life context — a word from today's book, trip, or event!
+          </div>
+          <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
+            <input
+              value={customWord}
+              onChange={function(e) { setCustomWord(e.target.value.toUpperCase()); setInjected(false); }}
+              onKeyDown={function(e) { if (e.key === 'Enter') injectWord(); }}
+              maxLength={10}
+              placeholder="e.g. DINOSAUR"
+              style={{
+                flex: 1, border: '2px solid var(--alpha-md)', borderRadius: 10,
+                padding: '10px 14px', fontSize: 15, fontWeight: 800,
+                fontFamily: "'Grandstander','Nunito',sans-serif",
+                color: 'var(--ink)', outline: 'none', letterSpacing: 2,
+                background: 'var(--surface)',
+              }}
+            />
+            <button onClick={injectWord} style={{
+              background: injected ? 'var(--success)' : 'var(--blue-ink)', color: 'white',
+              border: 'none', borderRadius: 10, padding: '10px 18px',
+              fontWeight: 800, fontSize: 13, cursor: 'pointer', fontFamily: 'inherit',
+              transition: 'background 200ms',
+            }}>{injected ? '✓ Set!' : 'Set →'}</button>
+          </div>
+          {injected && <div style={{ fontSize: 12, color: 'var(--success)', fontWeight: 700 }}>"{customWord}" will appear in {profile.name}'s next Daily Challenge!</div>}
         </div>
       </div>
 
