@@ -157,46 +157,21 @@ function speakWord(word, onStart, onEnd) {
   }
 
   function browserFallback() {
+    // Always release the button after 3s regardless of what happens
+    var released = false;
+    function release() { if (!released) { released = true; onEnd && onEnd(); } }
+    setTimeout(release, 3000);
     onStart && onStart();
-    var called = false;
-    function finish() { if (!called) { called = true; onEnd && onEnd(); } }
 
     try {
-      if (!window.speechSynthesis) { finish(); return; }
-
-      function doSpeak() {
-        if (called) return; // guard against double-fire from onvoiceschanged
-        // Create utterance fresh after cancel settles
-        window.speechSynthesis.cancel();
-        setTimeout(function() {
-          if (called) return;
-          var u = new SpeechSynthesisUtterance(word.toLowerCase());
-          u.lang = 'en-AU';
-          u.rate = 0.72;
-          u.pitch = 1.05;
-          u.volume = 1;
-          var voices = window.speechSynthesis.getVoices();
-          var auVoice = voices.find(function(v) { return v.lang === 'en-AU'; })
-            || voices.find(function(v) { return v.lang.startsWith('en-AU'); })
-            || voices.find(function(v) { return v.lang.startsWith('en-GB'); })
-            || null;
-          if (auVoice) u.voice = auVoice;
-          u.onend = finish;
-          u.onerror = finish;
-          // Safety: release button after max expected duration
-          setTimeout(finish, Math.max(2500, word.length * 700));
-          window.speechSynthesis.speak(u);
-        }, 50);
-      }
-
-      var voices = window.speechSynthesis.getVoices();
-      if (voices.length > 0) {
-        doSpeak();
-      } else {
-        window.speechSynthesis.onvoiceschanged = doSpeak;
-        setTimeout(doSpeak, 500); // fallback if event never fires
-      }
-    } catch(e) { finish(); }
+      if (!window.speechSynthesis) { release(); return; }
+      window.speechSynthesis.cancel();
+      var u = new SpeechSynthesisUtterance(word.toLowerCase());
+      u.lang = 'en-AU'; u.rate = 0.72; u.pitch = 1.05; u.volume = 1;
+      u.onend = release; u.onerror = release;
+      // Delay speak by 80ms so cancel() has settled
+      setTimeout(function() { window.speechSynthesis.speak(u); }, 80);
+    } catch(e) { release(); }
   }
 
   // 1. Check cache
