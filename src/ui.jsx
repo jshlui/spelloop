@@ -166,14 +166,30 @@ function speakWord(word, onStart, onEnd) {
         u.rate = 0.72;
         u.pitch = 1.05;
         u.volume = 1;
+        function doSpeak() {
+          var voices = window.speechSynthesis.getVoices();
+          var auVoice = voices.find(function(v) { return v.lang === 'en-AU'; })
+            || voices.find(function(v) { return v.lang.startsWith('en-AU'); })
+            || voices.find(function(v) { return v.lang.startsWith('en-GB'); })
+            || null;
+          if (auVoice) u.voice = auVoice;
+          var done = false;
+          function finish() { if (!done) { done = true; onEnd && onEnd(); } }
+          u.onend = finish;
+          u.onerror = finish;
+          // Safety timeout — if onend never fires (browser quirk), release after word length * 600ms
+          setTimeout(finish, Math.max(2000, word.length * 600));
+          window.speechSynthesis.speak(u);
+        }
+        // Voices may not be loaded yet on first call — wait for them
         var voices = window.speechSynthesis.getVoices();
-        var auVoice = voices.find(function(v) { return v.lang === 'en-AU'; })
-          || voices.find(function(v) { return v.lang.startsWith('en-AU'); })
-          || voices.find(function(v) { return v.lang.startsWith('en-GB'); })
-          || null;
-        if (auVoice) u.voice = auVoice;
-        u.onend = function() { onEnd && onEnd(); };
-        window.speechSynthesis.speak(u);
+        if (voices.length > 0) {
+          doSpeak();
+        } else {
+          window.speechSynthesis.onvoiceschanged = function() { doSpeak(); };
+          // Also try immediately in case onvoiceschanged never fires
+          setTimeout(doSpeak, 300);
+        }
       } else {
         onEnd && onEnd();
       }
