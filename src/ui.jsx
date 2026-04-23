@@ -158,42 +158,45 @@ function speakWord(word, onStart, onEnd) {
 
   function browserFallback() {
     onStart && onStart();
+    var called = false;
+    function finish() { if (!called) { called = true; onEnd && onEnd(); } }
+
     try {
-      if (window.speechSynthesis) {
+      if (!window.speechSynthesis) { finish(); return; }
+
+      function doSpeak() {
+        if (called) return; // guard against double-fire from onvoiceschanged
+        // Create utterance fresh after cancel settles
         window.speechSynthesis.cancel();
-        var u = new SpeechSynthesisUtterance(word.toLowerCase());
-        u.lang = 'en-AU';
-        u.rate = 0.72;
-        u.pitch = 1.05;
-        u.volume = 1;
-        function doSpeak() {
+        setTimeout(function() {
+          if (called) return;
+          var u = new SpeechSynthesisUtterance(word.toLowerCase());
+          u.lang = 'en-AU';
+          u.rate = 0.72;
+          u.pitch = 1.05;
+          u.volume = 1;
           var voices = window.speechSynthesis.getVoices();
           var auVoice = voices.find(function(v) { return v.lang === 'en-AU'; })
             || voices.find(function(v) { return v.lang.startsWith('en-AU'); })
             || voices.find(function(v) { return v.lang.startsWith('en-GB'); })
             || null;
           if (auVoice) u.voice = auVoice;
-          var done = false;
-          function finish() { if (!done) { done = true; onEnd && onEnd(); } }
           u.onend = finish;
           u.onerror = finish;
-          // Safety timeout — if onend never fires (browser quirk), release after word length * 600ms
-          setTimeout(finish, Math.max(2000, word.length * 600));
+          // Safety: release button after max expected duration
+          setTimeout(finish, Math.max(2500, word.length * 700));
           window.speechSynthesis.speak(u);
-        }
-        // Voices may not be loaded yet on first call — wait for them
-        var voices = window.speechSynthesis.getVoices();
-        if (voices.length > 0) {
-          doSpeak();
-        } else {
-          window.speechSynthesis.onvoiceschanged = function() { doSpeak(); };
-          // Also try immediately in case onvoiceschanged never fires
-          setTimeout(doSpeak, 300);
-        }
-      } else {
-        onEnd && onEnd();
+        }, 50);
       }
-    } catch(e) { onEnd && onEnd(); }
+
+      var voices = window.speechSynthesis.getVoices();
+      if (voices.length > 0) {
+        doSpeak();
+      } else {
+        window.speechSynthesis.onvoiceschanged = doSpeak;
+        setTimeout(doSpeak, 500); // fallback if event never fires
+      }
+    } catch(e) { finish(); }
   }
 
   // 1. Check cache
