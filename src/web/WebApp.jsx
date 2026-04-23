@@ -1,6 +1,7 @@
 // Desktop web app — sidebar + main content. Fills full viewport.
 
 function WebApp({ profile, setProfile, levels, setLevels, settings, setSettings, onOpenParent }) {
+  window.__currentProfileId = profile.id || 'p0';
   var [tab, setTab] = React.useState(function() { return localStorage.getItem('sl_web_tab') || 'home'; });
   var [route, setRoute] = React.useState({ name: 'screen' });
   var [dailyState, setDailyState] = React.useState(function() {
@@ -199,7 +200,7 @@ function WebApp({ profile, setProfile, levels, setLevels, settings, setSettings,
       var bossLevel = (window.LEVELS || []).find(function(l) { return l.id === completedId; });
       var bossChapter = bossLevel ? bossLevel.chapter : 1;
       // Show postcard first, then reward
-      setRoute({ name: 'chapterComplete', chapter: bossChapter, pending: { name: 'reward', word: capturedRoute.word, stars: stars, mode: capturedRoute.mode, coins: coinsEarned, isNewRecord: isNewRecord } });
+      setRoute({ name: 'chapterComplete', chapter: bossChapter, pending: { name: 'storyBuilder', chapter: bossChapter, reward: { name: 'reward', word: capturedRoute.word, stars: stars, mode: capturedRoute.mode, coins: coinsEarned, isNewRecord: isNewRecord } } });
     } else {
       setRoute({ name: 'reward', word: capturedRoute.word, stars: stars, mode: capturedRoute.mode, coins: coinsEarned, isNewRecord: isNewRecord });
     }
@@ -220,6 +221,7 @@ function WebApp({ profile, setProfile, levels, setLevels, settings, setSettings,
         {route.name === 'screen' && tab === 'home' && (
           <WebHome profile={profile} levels={levels}
             onContinue={function() { startLevel(currentLevel); }}
+            onPlayLevel={startLevel}
             onPickMode={startMode}
             onTab={function(t) { setTab(t); setRoute({ name: 'screen' }); }}
             dailyState={dailyState}
@@ -227,30 +229,35 @@ function WebApp({ profile, setProfile, levels, setLevels, settings, setSettings,
         )}
         {route.name === 'screen' && tab === 'map'  && <WebMap levels={levels} onPlayLevel={startLevel} onBack={function() { setTab('home'); }}/>}
         {route.name === 'screen' && tab === 'me'   && (
-          <LandscapeShell title="My Stuff" onBack={function() { setTab('home'); }}>
-            <ScreenPanel><WebMe profile={profile} setProfile={setProfile} levels={levels} onOpenParent={onOpenParent}/></ScreenPanel>
-          </LandscapeShell>
+          <DashboardSubPage icon="👤" eyebrow="Profile" title="My Stuff" onBack={function() { setTab('home'); }}>
+            <WebMe profile={profile} setProfile={setProfile} levels={levels} onOpenParent={onOpenParent}/>
+          </DashboardSubPage>
         )}
         {route.name === 'screen' && tab === 'code' && (
-          <LandscapeShell title="Code Lab" onBack={function() { setTab('home'); }}>
-            <ScreenPanel><WebCodeLab levels={levels} onPlayLevel={startLevel}/></ScreenPanel>
-          </LandscapeShell>
+          <WebCodeLab levels={levels} onPlayLevel={startLevel} onBack={function() { setTab('home'); }}/>
         )}
         {route.name === 'screen' && tab === 'shop' && (
-          <LandscapeShell title="Shop" onBack={function() { setTab('home'); }}>
-            <ScreenPanel><WebShop profile={profile} setProfile={setProfile} levels={levels}/></ScreenPanel>
-          </LandscapeShell>
+          <DashboardSubPage icon="🏆" eyebrow="Rewards" title="Shop" onBack={function() { setTab('home'); }}>
+            <WebShop profile={profile} setProfile={setProfile} levels={levels}/>
+          </DashboardSubPage>
         )}
         {route.name === 'screen' && tab === 'pet'  && profile.starterPicked && (
-          <LandscapeShell title="My Pet" onBack={function() { setTab('home'); }}>
-            <ScreenPanel><WebPet profile={profile} setProfile={setProfile} levels={levels}/></ScreenPanel>
-          </LandscapeShell>
+          <DashboardSubPage icon="🥚" eyebrow="Companion" title="My Pet" onBack={function() { setTab('home'); }}>
+            <WebPet profile={profile} setProfile={setProfile} levels={levels}/>
+          </DashboardSubPage>
         )}
         {route.name === 'game'   && <WebGame mode={route.mode} word={route.word} onClose={closeGame} onDone={finishGame}/>}
         {route.name === 'chapterComplete' && typeof ChapterComplete !== 'undefined' && (
           <ChapterComplete
             chapter={route.chapter}
             onNext={function() { setRoute(route.pending); }}
+          />
+        )}
+        {route.name === 'storyBuilder' && typeof StoryBuilder !== 'undefined' && (
+          <StoryBuilder
+            chapter={route.chapter}
+            chapterWords={(levels || []).filter(function(l) { return l.chapter === route.chapter && l.done && l.stars >= 2 && l.mode !== 'coding'; }).map(function(l) { return l.word; })}
+            onDone={function() { setRoute(route.reward); }}
           />
         )}
         {route.name === 'reward' && (
@@ -263,6 +270,27 @@ function WebApp({ profile, setProfile, levels, setLevels, settings, setSettings,
   );
 }
 
+function DashboardSubPage({ icon, eyebrow, title, onBack, children }) {
+  return (
+    <main className="spelloop-dashboard spelloop-subpage">
+      <header className="journey-top">
+        <button className="journey-back" onClick={onBack} aria-label="Back to home">←</button>
+        <div className="journey-title">
+          <span>{icon}</span>
+          <div>
+            <p>{eyebrow}</p>
+            <h1>{title}</h1>
+          </div>
+        </div>
+        <button className="journey-help" aria-label="Help">?</button>
+      </header>
+      <section className="spelloop-subpage-panel">
+        {children}
+      </section>
+    </main>
+  );
+}
+
 function WebSidebar({ tab, onTab, profile, settings, levels, onOpenParent }) {
   var avatarStyle = (settings && settings.avatarStyle) || 'animal';
   var activePetData = profile.starterPicked && profile.activePetId
@@ -272,104 +300,54 @@ function WebSidebar({ tab, onTab, profile, settings, levels, onOpenParent }) {
   var activePetName = activePetData ? (activePetData.name || (activePetSpec && activePetSpec.name) || 'Pet') : 'Pet';
 
   var items = [
-    { id: 'home', label: 'Play', icon: function(c) { return <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M4 12 L12 5 L20 12 V20 H14 V15 H10 V20 H4 Z" stroke={c} strokeWidth="2.2" strokeLinejoin="round"/></svg>; } },
-    { id: 'map',  label: 'Journey', icon: function(c) { return <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M3 6 L9 4 L15 6 L21 4 V18 L15 20 L9 18 L3 20 Z M9 4 V18 M15 6 V20" stroke={c} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round"/></svg>; } },
-    { id: 'me',   label: 'My stuff', icon: function(c) { return <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8" r="4" stroke={c} strokeWidth="2.2"/><path d="M4 20 C4 15 8 14 12 14 C16 14 20 15 20 20" stroke={c} strokeWidth="2.2" strokeLinecap="round"/></svg>; } },
-    { id: 'code', label: 'Code Lab', icon: function(c) { return <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><polyline points="16 18 22 12 16 6" stroke={c} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/><polyline points="8 6 2 12 8 18" stroke={c} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/></svg>; } },
-    { id: 'shop', label: 'Shop', icon: function(c) { return <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z" stroke={c} strokeWidth="2" strokeLinejoin="round"/><line x1="3" y1="6" x2="21" y2="6" stroke={c} strokeWidth="2"/><path d="M16 10a4 4 0 01-8 0" stroke={c} strokeWidth="2" strokeLinecap="round"/></svg>; } },
+    { id: 'home', label: 'Home', icon: function(c) { return <svg width="30" height="30" viewBox="0 0 24 24" fill="none"><path d="M4 12 L12 5 L20 12 V20 H14 V15 H10 V20 H4 Z" fill={c} stroke={c} strokeWidth="1.8" strokeLinejoin="round"/></svg>; } },
+    { id: 'map',  label: 'Learn', icon: function(c) { return <svg width="30" height="30" viewBox="0 0 24 24" fill="none"><path d="M4 6.5 C6.4 5.4 9.2 5.5 12 7.5 C14.8 5.5 17.6 5.4 20 6.5 V19 C17.6 17.9 14.8 18 12 20 C9.2 18 6.4 17.9 4 19 Z" stroke={c} strokeWidth="2" strokeLinejoin="round"/><path d="M12 7.5 V20" stroke={c} strokeWidth="2" strokeLinecap="round"/></svg>; } },
+    { id: 'code', label: 'Play', icon: function(c) { return <svg width="30" height="30" viewBox="0 0 24 24" fill="none"><path d="M7 9 H17 L20 14.5 C20.8 16.1 19.7 18 17.9 18 C16.9 18 16 17.4 15.5 16.5 L14.9 15.5 H9.1 L8.5 16.5 C8 17.4 7.1 18 6.1 18 C4.3 18 3.2 16.1 4 14.5 Z" fill={c}/><path d="M8 12 V15 M6.5 13.5 H9.5" stroke="white" strokeWidth="1.8" strokeLinecap="round"/><circle cx="15.5" cy="13.5" r="1" fill="white"/><circle cx="18" cy="12" r="1" fill="white"/></svg>; } },
+    { id: 'shop', label: 'Rewards', icon: function(c) { return <svg width="30" height="30" viewBox="0 0 24 24" fill="none"><path d="M7 4 H17 V7 C17 10.2 15 12.6 12 13.2 C9 12.6 7 10.2 7 7 Z" fill={c}/><path d="M7 6 H4 V8 C4 10 5.4 11.4 7.5 11.7 M17 6 H20 V8 C20 10 18.6 11.4 16.5 11.7" stroke={c} strokeWidth="2" strokeLinecap="round"/><path d="M12 13 V17 M9 20 H15 M10 17 H14" stroke={c} strokeWidth="2.2" strokeLinecap="round"/></svg>; } },
+    { id: 'me',   label: 'Profile', icon: function(c) { return <svg width="30" height="30" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8" r="4" fill={c}/><path d="M4 20 C4 15.4 8 14 12 14 C16 14 20 15.4 20 20" fill={c}/></svg>; } },
   ];
   return (
-    <aside aria-label="Main navigation" className="web-sidebar" style={{
-      width: 80, flexShrink: 0,
-      background: 'var(--brand-dark)',
-      display: 'flex', flexDirection: 'column', alignItems: 'center',
-      padding: '16px 0', gap: 4,
-      minHeight: '100vh',
-      zIndex: 10,
-    }}>
-      {/* brand icon */}
-      <div className="sidebar-brand" style={{ marginBottom: 14 }}>
-        <div style={{
-          width: 44, height: 44, borderRadius: 14,
-          background: 'var(--gold)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontSize: 22,
-          boxShadow: '0 4px 12px rgba(245,158,11,0.50)',
-        }}>📝</div>
+    <aside aria-label="Main navigation" className="web-sidebar spelloop-sidebar">
+      <div className="spelloop-brand sidebar-brand">
+        <div className="spelloop-brand-star" aria-hidden="true">★</div>
+        <div className="spelloop-brand-word">Spell<span>oop</span></div>
       </div>
 
-      <nav role="navigation" aria-label="App sections" style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+      <nav role="navigation" aria-label="App sections" className="spelloop-sidebar-nav">
         {items.map(function(it) {
           var active = tab === it.id;
           return (
             <button key={it.id} aria-current={active ? 'page' : undefined}
-              className="sidebar-nav-btn"
+              className={'sidebar-nav-btn spelloop-nav-btn' + (active ? ' is-active' : '')}
               onClick={function() { onTab(it.id); window.sfx && window.sfx.tap && window.sfx.tap(); }}
-              style={{
-                width: 60, height: 60, borderRadius: 16,
-                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-                gap: 3, border: 'none', cursor: 'pointer',
-                background: active ? 'rgba(255,255,255,0.20)' : 'transparent',
-                fontFamily: 'inherit',
-                transition: 'background 140ms ease',
-                boxShadow: active ? 'inset 0 0 0 2px rgba(255,255,255,0.35)' : 'none',
-              }}
-              onMouseEnter={function(e) { if (!active) e.currentTarget.style.background = 'rgba(255,255,255,0.12)'; }}
-              onMouseLeave={function(e) { if (!active) e.currentTarget.style.background = 'transparent'; }}>
-              {it.icon(active ? 'white' : 'rgba(255,255,255,0.75)')}
-              <div style={{
-                fontSize: 10,
-                fontFamily: "'Fredoka', 'Nunito', sans-serif",
-                fontWeight: active ? 700 : 600,
-                color: active ? 'white' : 'rgba(255,255,255,0.75)',
-                lineHeight: 1,
-              }}>{it.label}</div>
+              >
+              <span className="spelloop-nav-icon">{it.icon(active ? 'white' : 'var(--spelloop-purple)')}</span>
+              <span className="sidebar-label spelloop-nav-label">{it.label}</span>
             </button>
           );
         })}
       </nav>
 
-      <div style={{ flex: 1 }}/>
+      <div className="spelloop-sidebar-spacer"/>
 
-      {/* Parent button */}
-      <button
-        onClick={onOpenParent}
-        title="Parent area"
-        style={{
-          width: 60, height: 60, borderRadius: 16,
-          display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-          gap: 3, border: 'none', cursor: 'pointer',
-          background: 'transparent',
-          fontFamily: 'inherit',
-          transition: 'background 140ms ease',
-          marginBottom: 4,
-        }}
-        onMouseEnter={function(e) { e.currentTarget.style.background = 'rgba(255,255,255,0.12)'; }}
-        onMouseLeave={function(e) { e.currentTarget.style.background = 'transparent'; }}>
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-          <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" stroke="rgba(255,255,255,0.75)" strokeWidth="2.2" strokeLinecap="round"/>
-          <circle cx="9" cy="7" r="4" stroke="rgba(255,255,255,0.75)" strokeWidth="2.2"/>
-          <path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75" stroke="rgba(255,255,255,0.75)" strokeWidth="2.2" strokeLinecap="round"/>
-        </svg>
-        <div style={{
-          fontSize: 10,
-          fontFamily: "'Fredoka', 'Nunito', sans-serif",
-          fontWeight: 600,
-          color: 'rgba(255,255,255,0.75)',
-          lineHeight: 1,
-        }}>Parent</div>
-      </button>
-
-      {/* coins pill */}
-      <div id="juice-coin" className="sidebar-coins" style={{
-        width: 52, height: 42, background: 'var(--gold)', borderRadius: 999,
-        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-        gap: 1, marginBottom: 8,
-        boxShadow: '0 3px 0 var(--gold-dark)',
-      }}>
-        <div className="juice-coin-icon" style={{ fontSize: 16 }}>🪙</div>
-        <div style={{ fontSize: 10, fontWeight: 900, color: '#451A03' }}>{profile.coins || 0}</div>
+      <div className="spelloop-kid-card sidebar-profile">
+        <div className="spelloop-kid-card__pet">
+          {typeof PetSprite !== 'undefined' && profile.activePetId ? (
+            <PetSprite speciesId={profile.activePetId} mood={(activePetData && activePetData.mood) || 80} size={142} animate={true}/>
+          ) : (
+            <div className="spelloop-dino-fallback">🦖</div>
+          )}
+        </div>
+        <div className="spelloop-kid-card__name">Hi, {profile.name}!</div>
+        <div id="juice-coin" className="spelloop-kid-card__stars sidebar-coins">
+          <span className="juice-coin-icon">⭐</span>
+          <strong>{profile.totalStars || 0}</strong>
+        </div>
+        <div className="spelloop-kid-card__level">Next Level</div>
+        <div className="spelloop-kid-card__bar"><span style={{ width: Math.min(100, ((levels || []).filter(function(l) { return l.done; }).length % 8) / 8 * 100) + '%' }}/></div>
       </div>
+
+      <button onClick={onOpenParent} title="Parent area" className="spelloop-parent-btn">Parent</button>
     </aside>
   );
 }
@@ -557,142 +535,135 @@ var HOME_TILE_ICONS = {
   },
 };
 
-function WebHome({ profile, levels, onContinue, onPickMode, onTab, dailyState, onStartDaily }) {
-  var currentLevel = levels && levels.find(function(l) { return l.current; });
-  var currentWord = currentLevel ? currentLevel.word : '...';
+function SpaceHeroArt() {
+  return (
+    <div className="space-hero-art" aria-hidden="true">
+      <div className="space-planet"/>
+      <div className="space-star space-star--big">★</div>
+      <div className="space-rocket">
+        <div className="space-rocket__body">
+          <div className="space-rocket__window"/>
+          <div className="space-rocket__nose"/>
+          <div className="space-rocket__fin space-rocket__fin--left"/>
+          <div className="space-rocket__fin space-rocket__fin--right"/>
+          <div className="space-rocket__flame"/>
+        </div>
+        <div className="space-astronaut">
+          <div className="space-astronaut__helmet"><div className="space-astronaut__face">●‿●</div></div>
+          <div className="space-astronaut__arm"/>
+        </div>
+      </div>
+      <div className="space-cloud space-cloud--left"/>
+      <div className="space-cloud space-cloud--right"/>
+    </div>
+  );
+}
 
-  var tiles = [
-    { id: 'home', label: 'Play',     grad: 'var(--tile-play)',    featured: true },
-    { id: 'map',  label: 'Journey',  grad: 'var(--tile-journey)', featured: false },
-    { id: 'me',   label: 'My Stuff', grad: 'var(--tile-me)',      featured: false },
-    { id: 'code', label: 'Code Lab', grad: 'var(--tile-code)',    featured: false },
-    { id: 'shop', label: 'Shop',     grad: 'var(--tile-shop)',    featured: false },
-    { id: 'pet',  label: 'My Pet',   grad: 'var(--tile-pet)',     featured: false },
+function LessonThumb({ kind }) {
+  if (kind === 'letters') return <div className="lesson-thumb lesson-thumb--letters"><span>A</span><span>B</span><span>C</span></div>;
+  if (kind === 'numbers') return <div className="lesson-thumb lesson-thumb--numbers"><span>1</span><span>2</span><span>3</span></div>;
+  if (kind === 'space') return <div className="lesson-thumb lesson-thumb--space"><span></span></div>;
+  if (kind === 'animals') return <div className="lesson-thumb lesson-thumb--animals"><span>🦋</span></div>;
+  return <div className="lesson-thumb lesson-thumb--colors"><span></span><i></i></div>;
+}
+
+function ActivityThumb({ kind }) {
+  return <div className={'activity-thumb activity-thumb--' + kind} aria-hidden="true"/>;
+}
+
+function WebHome({ profile, levels, onContinue, onPlayLevel, onPickMode, onTab, dailyState, onStartDaily }) {
+  var playable = (levels || []).filter(function(l) { return !l.locked || l.current || l.done; });
+  var lessonSource = playable.length ? playable : (levels || []).slice(0, 5);
+  var lessonTitles = ['Fun with Letters', 'Numbers Adventure', 'Space Explorers', 'Amazing Animals', 'Color & Shapes'];
+  var lessonKinds = ['letters', 'numbers', 'space', 'animals', 'colors'];
+  var lessonColors = ['green', 'blue', 'purple', 'yellow', 'pink'];
+  var lessonPercents = [60, 40, 75, 60, 30];
+  var lessons = lessonTitles.map(function(title, idx) {
+    return { title: title, kind: lessonKinds[idx], color: lessonColors[idx], percent: lessonPercents[idx], level: lessonSource[idx % Math.max(lessonSource.length, 1)] };
+  });
+  var activities = [
+    { title: 'Math Match', mode: 'missing', kind: 'math' },
+    { title: 'Pizza Party', mode: 'scramble', kind: 'pizza' },
+    { title: 'Song Time', mode: 'speed', kind: 'song' },
+    { title: 'Puzzle World', mode: 'coding', kind: 'puzzle' },
   ];
 
   return (
-    <LandscapeShell title="Home Base" showBack={false}>
-
-      {/* Full-height centered layout */}
-      <div style={{
-        minHeight: '100vh',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: 28,
-        padding: '24px 0 40px',
-        position: 'relative',
-        zIndex: 20,
-      }}>
-
-        {/* Greeting */}
-        <div style={{ textAlign: 'center' }}>
-          <div style={{
-            fontFamily: "'Grandstander', 'Nunito', sans-serif",
-            fontWeight: 900,
-            fontSize: 'clamp(42px, 5.5vw, 72px)',
-            color: 'white',
-            textShadow: '0 4px 16px rgba(15,23,42,0.35), 0 1px 0 rgba(15,23,42,0.2)',
-            letterSpacing: '-0.01em',
-            lineHeight: 1.1,
-            marginBottom: 14,
-          }}>
-            {'Hi, ' + profile.name + '! 👋'}
-          </div>
-
-          {/* Stat badges — solid brand colors, no glassmorphism */}
-          <div style={{ display: 'inline-flex', gap: 10, alignItems: 'center' }}>
-            <div id="juice-streak" className="home-stat-badge home-stat-streak" aria-label={profile.streak + ' day streak'}>
-              <span style={{ fontSize: 16 }}>🔥</span>
-              <span>{profile.streak} streak</span>
-            </div>
-            <div className="home-stat-badge home-stat-stars" aria-label={profile.totalStars + ' total stars'}>
-              <span style={{ fontSize: 16 }}>⭐</span>
-              <span>{profile.totalStars} stars</span>
-            </div>
-            <div className="home-stat-badge home-stat-words" aria-label={profile.words + ' words learned'}>
-              <span style={{ fontSize: 16 }}>📚</span>
-              <span>{profile.words} words</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Nav layout — big Play + 2 rows of 2 */}
-        <div className="home-nav-layout">
-          {/* Featured Play tile */}
-          <button
-            className="home-nav-tile home-nav-tile--featured"
-            aria-label="Play"
-            style={{ background: tiles[0].grad }}
-            onClick={function() { onTab('home'); window.sfx && window.sfx.tap && window.sfx.tap(); }}
-          >
-            <div className="home-nav-tile__icon home-nav-tile__icon--lg">
-              {HOME_TILE_ICONS.home()}
-            </div>
-            <div className="home-nav-tile__label home-nav-tile__label--lg">Play</div>
-          </button>
-
-          {/* Right column — 2 rows of 2 */}
-          <div className="home-nav-secondary">
-            {tiles.slice(1).map(function(t, i) {
-              return (
-                <button
-                  key={t.id}
-                  className="home-nav-tile"
-                  aria-label={t.label}
-                  style={{ background: t.grad, animationDelay: (0.06 + i * 0.05) + 's' }}
-                  onClick={function() { onTab(t.id); window.sfx && window.sfx.tap && window.sfx.tap(); }}
-                >
-                  <div className="home-nav-tile__icon">{HOME_TILE_ICONS[t.id]()}</div>
-                  <div className="home-nav-tile__label">{t.label}</div>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Continue CTA */}
-        <button className="home-continue-btn" onClick={onContinue}>
-          <span style={{ opacity: 0.85 }}>▶ Keep going</span>
-          <span style={{ width: 1, background: 'rgba(69,26,3,0.3)', alignSelf: 'stretch' }}/>
-          <span className="home-continue-word">{currentWord}</span>
+    <main className="spelloop-dashboard">
+      <header className="spelloop-topbar">
+        <button className="spelloop-search" aria-label="Search">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none"><circle cx="10.5" cy="10.5" r="6.5" stroke="currentColor" strokeWidth="2.6"/><path d="M15.5 15.5 L21 21" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round"/></svg>
         </button>
+        <div className="spelloop-topbar__right">
+          <div className="spelloop-gems" aria-label={(profile.coins || 0) + ' gems'}><span className="spelloop-gem-icon">◆</span><strong>{profile.coins || 25}</strong></div>
+          <button className="spelloop-profile-chip" onClick={function() { onTab('me'); }} aria-label="Open profile">
+            <Avatar id={profile.avatar} size={58} style={(window.__tweaks && window.__tweaks.avatarStyle) || 'animal'}/>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M6 9 L12 15 L18 9" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"/></svg>
+          </button>
+        </div>
+      </header>
 
-        {/* Daily Challenge */}
-        {(function() {
-          var today = new Date().toISOString().slice(0, 10);
-          var daily = typeof getDailyChallenge !== 'undefined' ? getDailyChallenge(today) : null;
-          if (!daily) return null;
-          var done = dailyState && dailyState.lastDate === today && dailyState.todayDone;
-          var streak = (dailyState && dailyState.challengeStreak) || 0;
-          return (
-            <div style={{
-              marginTop: 12,
-              background: done ? 'var(--emerald)' : 'var(--gold)',
-              borderRadius: 'var(--r-xl)',
-              padding: '14px 20px',
-              boxShadow: done ? '0 4px 0 var(--emerald-dark)' : 'var(--shadow-gold)',
-              display: 'flex', alignItems: 'center', gap: 12,
-              cursor: done ? 'default' : 'pointer',
-              animation: done ? 'none' : 'juicePop 400ms cubic-bezier(0.34,1.1,0.64,1)',
-            }} onClick={done ? undefined : function() { onStartDaily && onStartDaily(daily); }}>
-              <div style={{ fontSize: 28 }}>{done ? '✅' : '⚡'}</div>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontFamily: "'Fredoka','Nunito',sans-serif", fontWeight: 900, fontSize: 15, color: done ? 'white' : '#451A03' }}>
-                  {done ? 'Daily done!' : "Today's Challenge"}
+      <section className="spelloop-hero">
+        <SpaceHeroArt/>
+        <div className="spelloop-hero__copy">
+          <h1>Let's learn<br/><span>something new!</span></h1>
+          <p>Explore fun lessons and activities just for you.</p>
+          <button className="spelloop-hero-cta" onClick={onContinue}><span>Start Learning</span><i aria-hidden="true">▶</i></button>
+        </div>
+        <div className="spelloop-hero__dots" aria-hidden="true"><span/><span/><span/><span className="is-active"/></div>
+      </section>
+
+      <section className="spelloop-section">
+        <div className="spelloop-section-head"><h2>Continue Learning</h2><button onClick={function() { onTab('map'); }}>View all</button></div>
+        <div className="spelloop-lessons">
+          {lessons.map(function(lesson) {
+            return (
+              <button key={lesson.title} className={'spelloop-lesson spelloop-lesson--' + lesson.color}
+                onClick={function() { if (lesson.level && onPlayLevel) onPlayLevel(lesson.level); else onContinue(); }}>
+                <LessonThumb kind={lesson.kind}/>
+                <div className="spelloop-lesson__body">
+                  <h3>{lesson.title}</h3>
+                  <div className="spelloop-progress"><span style={{ width: lesson.percent + '%' }}/></div>
+                  <strong>{lesson.percent}%</strong>
                 </div>
-                <div style={{ fontSize: 12, fontWeight: 700, color: done ? 'rgba(255,255,255,0.8)' : 'rgba(69,26,3,0.7)', marginTop: 2 }}>
-                  {done ? (streak >= 7 ? '🌟 7-day streak!' : streak + ' day streak') : daily.word + ' · ' + daily.mode + ' mode · +25 coins'}
+              </button>
+            );
+          })}
+        </div>
+      </section>
+
+      <section className="spelloop-section">
+        <div className="spelloop-section-head"><h2>Fun Activities</h2><button onClick={function() { onTab('code'); }}>View all</button></div>
+        <div className="spelloop-activities">
+          {activities.map(function(activity) {
+            return (
+              <article key={activity.title} className={'spelloop-activity spelloop-activity--' + activity.kind}>
+                <ActivityThumb kind={activity.kind}/>
+                <div className="spelloop-activity__row">
+                  <h3>{activity.title}</h3>
+                  <button onClick={function() { onPickMode(activity.mode); }}><span>🎮</span> Play</button>
                 </div>
-              </div>
-            </div>
-          );
-        })()}
+              </article>
+            );
+          })}
+        </div>
+      </section>
 
-      </div>
+      <section className="spelloop-reward-banner">
+        <div className="spelloop-trophy" aria-hidden="true">🏆</div>
+        <h2>Complete activities, earn stars<br/>and unlock awesome rewards!</h2>
+        <button onClick={function() { onTab('shop'); }}>Go to Rewards</button>
+        <div className="spelloop-chest" aria-hidden="true">🎁</div>
+      </section>
 
-    </LandscapeShell>
+      {(function() {
+        var today = new Date().toISOString().slice(0, 10);
+        var daily = typeof getDailyChallenge !== 'undefined' ? getDailyChallenge(today) : null;
+        if (!daily) return null;
+        var done = dailyState && dailyState.lastDate === today && dailyState.todayDone;
+        return <button className={'spelloop-daily' + (done ? ' is-done' : '')} onClick={done ? undefined : function() { onStartDaily && onStartDaily(daily); }}><span>{done ? '✓' : '⚡'}</span><strong>{done ? 'Daily done!' : "Today's Challenge"}</strong></button>;
+      })()}
+    </main>
   );
 }
 
@@ -917,7 +888,7 @@ function WebShop({ profile, setProfile, levels }) {
   // Shared compact grid card renderer for non-species tabs
   function ItemCard({ item, owned, isActive, canAfford, countOwned, onBuy, onAction, actionLabel, actionDisabled, actionColor }) {
     return (
-      <div style={{
+      <div className="shop-item-card" style={{
         background: isActive ? 'var(--blue-soft)' : 'var(--surface)',
         borderRadius: 16, padding: '16px 12px', display: 'flex', flexDirection: 'column',
         alignItems: 'center', gap: 6, boxShadow: 'var(--shadow-soft)', textAlign: 'center',
@@ -964,18 +935,18 @@ function WebShop({ profile, setProfile, levels }) {
   }
 
   function CompactGrid({ children }) {
-    return <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))', gap: 12 }}>{children}</div>;
+    return <div className="shop-compact-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))', gap: 12 }}>{children}</div>;
   }
 
   return (
-    <div style={{ minHeight: '100%' }}>
+    <div className="dashboard-shop" style={{ minHeight: '100%' }}>
       {/* Coin badge + tab row */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20, gap: 16 }}>
-        <div style={{ display: 'flex', gap: 8, overflowX: 'auto', flexShrink: 1 }}>
+      <div className="shop-toolbar" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20, gap: 16 }}>
+        <div className="shop-tabs" style={{ display: 'flex', gap: 8, overflowX: 'auto', flexShrink: 1 }}>
           {shopTabs.map(function(t) {
             var active = shopTab === t.id;
             return (
-              <button key={t.id} onClick={function() { setShopTab(t.id); window.sfx?.tap(); }} style={{
+              <button key={t.id} className={active ? 'is-active' : ''} onClick={function() { setShopTab(t.id); window.sfx?.tap(); }} style={{
                 flexShrink: 0, padding: '8px 18px', borderRadius: 999, border: 'none',
                 background: active ? 'var(--brand)' : 'var(--brand-light)',
                 color: active ? 'white' : 'var(--brand)',
@@ -986,7 +957,7 @@ function WebShop({ profile, setProfile, levels }) {
             );
           })}
         </div>
-        <div style={{
+        <div className="shop-coin-chip" style={{
           display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0,
           background: 'var(--gold)', borderRadius: 999, padding: '8px 18px',
           boxShadow: '0 3px 0 var(--gold-dark)',
@@ -1000,7 +971,7 @@ function WebShop({ profile, setProfile, levels }) {
 
       {/* Species */}
       {shopTab === 'species' && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 16 }}>
+        <div className="shop-species-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 16 }}>
           {allSpecies.map(function(species) {
             var owned = ownedSpecies.includes(species.id);
             var unlocked = isSpeciesUnlocked(species, ownedSpecies, levels);
@@ -1015,7 +986,7 @@ function WebShop({ profile, setProfile, levels }) {
                 : species.unlockLevelId === 48 ? 'Beat Ch.6 boss (Level 48)'
                 : 'Keep playing to unlock';
               return (
-                <div key={species.id} style={{
+                <div key={species.id} className="shop-species-card is-locked" style={{
                   background: 'var(--surface)', borderRadius: 20, padding: 20, textAlign: 'center',
                   border: '2px solid var(--alpha-sm)', opacity: 0.6,
                 }}>
@@ -1030,7 +1001,7 @@ function WebShop({ profile, setProfile, levels }) {
             var petEntry = (profile.petData || {})[species.id];
             var petMood = petEntry ? (petEntry.mood != null ? petEntry.mood : 80) : 80;
             return (
-              <div key={species.id} style={{
+              <div key={species.id} className={'shop-species-card' + (isActive ? ' is-active' : '')} style={{
                 background: isActive ? species.bg : 'var(--surface)',
                 borderRadius: 20, padding: 20, textAlign: 'center',
                 border: isActive ? '2px solid ' + species.color : '2px solid var(--alpha-sm)',
@@ -1230,78 +1201,109 @@ var CODING_LEVEL_INFO = {
   'L3': { title: 'Level 3 — Plan Ahead', desc: '5 moves to reach the star.', emoji: '🔴', difficulty: 'Medium' },
 };
 
-function WebCodeLab({ levels, onPlayLevel }) {
+function CodeLabPreview() {
+  return (
+    <div className="code-lab-preview" aria-hidden="true">
+      <div className="code-lab-grid">
+        {Array.from({ length: 64 }).map(function(_, i) {
+          return <span key={i} className={(i === 9 || i === 18 || i === 27 || i === 36 || i === 45) ? 'is-path' : ''}/>;
+        })}
+      </div>
+      <div className="code-lab-player">🙂</div>
+      <div className="code-lab-star">★</div>
+      <div className="code-lab-route"><span>↑</span><span>→</span><span>→</span></div>
+    </div>
+  );
+}
+
+function WebCodeLab({ levels, onPlayLevel, onBack }) {
   var codingLevels = (levels || []).filter(function(l) { return l.mode === 'coding'; });
+  var doneCount = codingLevels.filter(function(l) { return l.done; }).length;
+  var current = codingLevels.find(function(l) { return l.current; }) || codingLevels.find(function(l) { return !l.locked; }) || codingLevels[0];
 
   return (
-    <div style={{ minHeight: '100%' }}>
-      <div style={{ marginBottom: 24 }}>
-        <div style={{ fontSize: 12, color: 'var(--ink-mute)', fontWeight: 800, letterSpacing: 0.5, textTransform: 'uppercase', marginBottom: 4 }}>New game mode</div>
-        <p style={{ fontSize: 14, color: 'var(--ink-soft)', fontWeight: 600, margin: 0, maxWidth: 520 }}>
-          Build a sequence of moves to guide the player to the star. No spelling — just logic and planning!
-        </p>
-      </div>
-      <div>
+    <main className="spelloop-dashboard code-lab-page">
+      <header className="journey-top">
+        <button className="journey-back" onClick={onBack} aria-label="Back to home">←</button>
+        <div className="journey-title code-lab-title">
+          <span>🤖</span>
+          <div>
+            <p>New game mode</p>
+            <h1>Code Lab</h1>
+          </div>
+        </div>
+        <button className="journey-help" aria-label="Help">?</button>
+      </header>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 20, maxWidth: 760, marginBottom: 40 }}>
+      <section className="code-lab-hero">
+        <div className="code-lab-hero__copy">
+          <div className="code-lab-kicker">Logic and planning</div>
+          <h2>Build a path to the star</h2>
+          <p>Queue moves, run the route, and adjust your plan until the player reaches the goal.</p>
+          <button onClick={function() { if (current) onPlayLevel(current); }}>
+            <span>Start Coding</span><i aria-hidden="true">▶</i>
+          </button>
+        </div>
+        <CodeLabPreview/>
+      </section>
+
+      <section className="journey-summary code-lab-summary">
+        <div className="journey-summary-card"><span className="journey-summary-card__icon">⭐</span><div><strong>{doneCount}</strong><p>Labs solved</p></div></div>
+        <div className="journey-summary-card"><span className="journey-summary-card__icon">🎯</span><div><strong>{current ? ((CODING_LEVEL_INFO[current.word] || {}).title || current.word) : 'Ready'}</strong><p>Next challenge</p></div></div>
+        <div className="journey-summary-card"><span className="journey-summary-card__icon">🧠</span><div><strong>{codingLevels.length}</strong><p>Total levels</p></div></div>
+      </section>
+
+      <section className="spelloop-section">
+        <div className="spelloop-section-head"><h2>Choose a Lab</h2><button type="button">View all</button></div>
+        <div className="code-lab-levels">
         {codingLevels.map(function(lv) {
           var info = CODING_LEVEL_INFO[lv.word] || {};
           var locked = lv.locked && !lv.current && !lv.done;
           return (
             <button key={lv.id} onClick={function() { if (!locked) onPlayLevel(lv); }}
               disabled={locked}
-              style={{
-                background: locked ? 'var(--surface)' : 'white',
-                borderRadius: 20, padding: 24, textAlign: 'left',
-                border: lv.done ? '2px solid var(--mint)' : '2px solid var(--alpha-sm)',
-                boxShadow: locked ? 'none' : 'var(--shadow-toy)',
-                cursor: locked ? 'default' : 'pointer',
-                opacity: locked ? 0.45 : 1,
-                fontFamily: 'inherit',
-                transition: 'transform 150ms var(--ease-toy), box-shadow 150ms',
-              }}
-              onMouseEnter={function(e) { if (!locked) { e.currentTarget.style.transform = 'translateY(-4px)'; e.currentTarget.style.boxShadow = 'var(--shadow-hover)'; } }}
-              onMouseLeave={function(e) { if (!locked) { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'var(--shadow-toy)'; } }}
+              className={'code-lab-card' + (locked ? ' is-locked' : '') + (lv.done ? ' is-done' : '')}
             >
-              <div style={{ fontSize: 40, marginBottom: 12 }}>{locked ? '🔒' : info.emoji}</div>
-              <div style={{ fontWeight: 900, fontSize: 18, marginBottom: 2 }}>{info.title}</div>
-              <div style={{ fontSize: 12, color: 'var(--ink-mute)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 10 }}>{info.difficulty}</div>
-              <div style={{ fontSize: 14, color: 'var(--ink-soft)', fontWeight: 700, marginBottom: 16 }}>{info.desc}</div>
+              <div className="code-lab-card__icon">{locked ? '🔒' : info.emoji}</div>
+              <div className="code-lab-card__meta">{info.difficulty}</div>
+              <h3>{info.title}</h3>
+              <p>{info.desc}</p>
               {lv.done ? (
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <div className="code-lab-card__complete">
                   <StarRow filled={lv.stars} size={16} gap={2}/>
-                  <span style={{ fontSize: 12, color: 'var(--mint-ink)', fontWeight: 800 }}>Complete!</span>
+                  <span>Complete!</span>
                 </div>
               ) : !locked ? (
-                <div style={{ background: 'var(--gold)', color: '#451A03', borderRadius: 8, padding: '6px 14px', fontSize: 13, fontWeight: 700, fontFamily: "'Fredoka', sans-serif", display: 'inline-block', boxShadow: '0 2px 0 var(--gold-dark)' }}>▶ Play</div>
+                <div className="code-lab-card__play">▶ Play</div>
               ) : (
-                <div style={{ fontSize: 12, color: 'var(--ink-mute)', fontWeight: 700 }}>Finish previous level to unlock</div>
+                <div className="code-lab-card__locked">Finish previous level to unlock</div>
               )}
             </button>
           );
         })}
-      </div>
+        </div>
+      </section>
 
-      <div style={{ maxWidth: 620 }}>
-        <h2 style={{ fontSize: 20, fontWeight: 700, fontFamily: "'Fredoka', 'Nunito', sans-serif", margin: '0 0 16px' }}>How it works</h2>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 14 }}>
+      <section className="spelloop-section">
+        <div className="spelloop-section-head"><h2>How it works</h2></div>
+        <div className="code-lab-steps">
           {[
-            { n: '1', title: 'Add moves', desc: 'Tap direction buttons to queue up your sequence.' },
-            { n: '2', title: 'Run it', desc: 'Watch the player follow your instructions step by step.' },
-            { n: '3', title: 'Reach the ⭐', desc: 'Adjust your sequence until the player gets there.' },
+            { n: '1', icon: '➕', title: 'Add moves', desc: 'Tap direction buttons to queue up your sequence.' },
+            { n: '2', icon: '▶', title: 'Run it', desc: 'Watch the player follow your instructions step by step.' },
+            { n: '3', icon: '⭐', title: 'Reach the star', desc: 'Adjust your sequence until the player gets there.' },
           ].map(function(s) {
             return (
-              <div key={s.n} style={{ background: 'var(--surface)', borderRadius: 14, padding: 16 }}>
-                <div style={{ width: 30, height: 30, borderRadius: '50%', background: 'var(--brand)', color: 'white', fontWeight: 900, fontSize: 15, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 10 }}>{s.n}</div>
-                <div style={{ fontWeight: 800, fontSize: 14, marginBottom: 4 }}>{s.title}</div>
-                <div style={{ fontSize: 13, color: 'var(--ink-mute)', fontWeight: 700 }}>{s.desc}</div>
+              <div key={s.n} className="code-lab-step">
+                <div className="code-lab-step__number">{s.n}</div>
+                <div className="code-lab-step__icon">{s.icon}</div>
+                <h3>{s.title}</h3>
+                <p>{s.desc}</p>
               </div>
             );
           })}
         </div>
-      </div>
-      </div>
-    </div>
+      </section>
+    </main>
   );
 }
 
@@ -1426,7 +1428,7 @@ function WebPet({ profile, setProfile, levels }) {
   }
 
   return (
-    <div style={{ padding: '32px 40px 48px', minHeight: '100%', background: 'var(--bg)' }}>
+    <div className="pet-dashboard" style={{ padding: '32px 40px 48px', minHeight: '100%', background: 'var(--bg)' }}>
 
       {/* Collection row */}
       {ownedSpecies.length > 1 && (
