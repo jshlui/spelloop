@@ -102,6 +102,52 @@ function WebMap({ levels, onPlayLevel, onBack }) {
               <path d={d} stroke="rgba(255,255,255,0.46)" strokeWidth="14" fill="none" strokeLinecap="round" strokeDasharray="2 22"/>
             </>
           )}
+          {/* Constellation overlay */}
+          {(function() {
+            var litPts = pts.filter(function(_, i) { return chLevels[i] && chLevels[i].done; });
+            var allLit = chLevels.length > 0 && chLevels.every(function(l) { return l.done; });
+            var CONSTELLATION_NAMES = ['Orion', 'The Dipper', 'Cassiopeia', 'Leo', 'Lyra', 'Scorpius', 'Aquila', 'Cygnus'];
+            var constellationName = CONSTELLATION_NAMES[activeChapter - 1] || 'Stars';
+            return React.createElement(React.Fragment, null,
+              // Connection lines between lit stars
+              litPts.length > 1 && litPts.slice(0, -1).map(function(p, i) {
+                return React.createElement('line', {
+                  key: 'cl' + i,
+                  x1: p.x, y1: p.y - 60,
+                  x2: litPts[i+1].x, y2: litPts[i+1].y - 60,
+                  stroke: '#FCD34D', strokeWidth: 1.5, opacity: 0.45,
+                  strokeDasharray: '4 6',
+                });
+              }),
+              // Stars at each level position
+              pts.map(function(p, i) {
+                var lv = chLevels[i];
+                if (!lv) return null;
+                var lit = lv.done;
+                return React.createElement('g', { key: 'cs' + i, transform: 'translate(' + p.x + ',' + (p.y - 60) + ')' },
+                  lit && !prefersReducedMotion && React.createElement('circle', {
+                    r: 7, fill: '#FCD34D', opacity: 0,
+                    style: { animation: 'juiceStarPulse 2s ease-in-out infinite', animationDelay: (i * 0.3) + 's' },
+                  }),
+                  React.createElement('polygon', {
+                    points: '0,-6 1.4,-2 5,-2 2,0.8 3,5 0,2.5 -3,5 -2,0.8 -5,-2 -1.4,-2',
+                    fill: lit ? '#FCD34D' : 'rgba(255,255,255,0.18)',
+                    stroke: lit ? '#F59E0B' : 'none',
+                    strokeWidth: 0.5,
+                    style: lit ? { filter: 'drop-shadow(0 0 4px rgba(252,211,77,0.8))' } : {},
+                  })
+                );
+              }),
+              // Chapter complete label
+              allLit && React.createElement('text', {
+                x: 570, y: 28,
+                textAnchor: 'middle',
+                fontSize: 13, fontWeight: 800,
+                fill: '#FCD34D',
+                style: { filter: 'drop-shadow(0 0 6px rgba(252,211,77,0.6))' },
+              }, '✦ ' + constellationName + ' complete! ✦')
+            );
+          })()}
           {chLevels.map(function(lv, i) {
             var pt = pts[i] || pts[pts.length - 1];
             return (

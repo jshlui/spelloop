@@ -86,3 +86,9 @@
     display: none !important;
   }
 }
+
+/* Constellation star pulse */
+@keyframes juiceStarPulse {
+  0%, 100% { r: 5; opacity: 0.3; }
+  50%       { r: 10; opacity: 0.6; }
+}
