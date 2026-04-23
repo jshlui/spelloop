@@ -45,6 +45,8 @@ function getWordsForDifficulty(d) {
   return WORDS_MED;
 }
 
+window.WORDS_BY_LENGTH = { 3: WORDS_EASY, 4: WORDS_MED, 5: WORDS_HARD };
+
 // 3 chapters × 8 levels = 24 levels total
 // Modes cycle: click → missing → drag → type → keyboard → missing → drag → boss
 const LEVELS = [
@@ -360,3 +362,23 @@ function getDailyChallenge(dateStr) {
   return { word: picked.word, mode: picked.mode };
 }
 window.getDailyChallenge = getDailyChallenge;
+
+var WORD_HINTS = {
+  CAT:'🐱', DOG:'🐶', SUN:'☀️', BEE:'🐝', HAT:'🎩', COW:'🐄', PIG:'🐷', OWL:'🦉',
+  ANT:'🐜', HEN:'🐔', EGG:'🥚', JAM:'🍓', CUP:'☕', BOX:'📦', NET:'🥅', MAP:'🗺️',
+  PEN:'✏️', KEY:'🔑', JET:'✈️', POT:'🪴',
+  FISH:'🐟', MOON:'🌙', STAR:'⭐', FROG:'🐸', BIRD:'🐦', BEAR:'🐻', CRAB:'🦀',
+  DUCK:'🦆', WOLF:'🐺', DEER:'🦌', KITE:'🪁', RAIN:'🌧️', SNOW:'❄️', WIND:'💨',
+  TREE:'🌳', LEAF:'🍃', LAKE:'🏞️', HILL:'⛰️', CAKE:'🎂', MILK:'🥛', CORN:'🌽',
+  BEAN:'🫘', RICE:'🍚', PEAR:'🍐', PLUM:'🍑', FERN:'🌿', ROSE:'🌹', DOVE:'🕊️',
+  LION:'🦁', SLUG:'🐌', TOAD:'🐸', WORM:'🪱',
+  APPLE:'🍎', HOUSE:'🏠', CLOUD:'☁️', TIGER:'🐯', EAGLE:'🦅', HORSE:'🐴',
+  BUNNY:'🐰', STORM:'⛈️', PIZZA:'🍕', LEMON:'🍋', GRAPE:'🍇', SHEEP:'🐑',
+  FLAME:'🔥', GLOBE:'🌍', PIANO:'🎹', ROBOT:'🤖', SHARK:'🦈',
+  SNAKE:'🐍', SWORD:'⚔️', TOWER:'🗼', ZEBRA:'🦓',
+  RABBIT:'🐰', BRIDGE:'🌉', CASTLE:'🏰', CHEESE:'🧀', FOREST:'🌲', GARDEN:'🌸',
+  ISLAND:'🏝️', JUNGLE:'🌴', KITTEN:'🐱', MIRROR:'🪞', PLANET:'🪐', ROCKET:'🚀',
+  SCHOOL:'🏫', SPIDER:'🕷️', SUNSET:'🌅', TURTLE:'🐢', WINTER:'❄️',
+  DRAGON:'🐲', FLOWER:'🌺', PARROT:'🦜', OCEAN:'🌊',
+};
+window.WORD_HINTS = WORD_HINTS;

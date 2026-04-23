@@ -34,58 +34,83 @@ function WebMap({ levels, onPlayLevel, onBack }) {
   var chDone   = chLevels.filter(function(l) { return l.done; }).length;
   var ch = chapters.find(function(c) { return c.id === activeChapter; }) || chapters[0];
 
-  var chapterPills = (
-    <div style={{ display: 'flex', gap: 8 }}>
-      {chapters.map(function(c) {
-        var chLvs = levels.filter(function(l) { return l.chapter === c.id; });
-        var allDone = chLvs.length > 0 && chLvs.every(function(l) { return l.done; });
-        var isLocked = chLvs.every(function(l) { return l.locked && !l.current; });
-        var isActive = c.id === activeChapter;
-        return (
-          <button key={c.id}
-            onClick={function() { if (!isLocked) setActiveChapter(c.id); }}
-            style={{
-              padding: '6px 14px', borderRadius: 999, border: 'none', cursor: isLocked ? 'default' : 'pointer',
-              fontFamily: "'Bubblegum Sans', cursive", fontSize: 13,
-              background: isActive ? '#1976D2' : allDone ? '#4CAF50' : isLocked ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.7)',
-              color: isActive ? 'white' : allDone ? 'white' : isLocked ? 'rgba(255,255,255,0.5)' : '#1A3A1A',
-              opacity: isLocked ? 0.6 : 1,
-            }}>
-            {allDone ? '✓ ' : ''}{c.emoji} {c.name}
-          </button>
-        );
-      })}
-    </div>
-  );
-
   var pts = CHAPTER_PTS.slice(0, chLevels.length);
   var d = pts.length > 1 ? buildPath(pts) : null;
-
-  var LandscapeShell = window.LandscapeShell;
+  var current = chLevels.find(function(l) { return l.current; }) || chLevels.find(function(l) { return !l.done && !l.locked; }) || chLevels[0];
+  var pct = chLevels.length > 0 ? Math.round(chDone / chLevels.length * 100) : 0;
 
   return (
-    <LandscapeShell title="Journey" onBack={onBack} topExtra={chapterPills}>
-      {/* Path + nodes drawn directly over the landscape */}
-      <div style={{ position: 'relative', width: '100%', minHeight: 'calc(100vh - 140px)', overflow: 'hidden' }}>
+    <main className="spelloop-dashboard spelloop-journey-page">
+      <header className="journey-top">
+        <button className="journey-back" onClick={onBack} aria-label="Back to home">←</button>
+        <div className="journey-title">
+          <span>{ch.emoji}</span>
+          <div>
+            <p>Journey</p>
+            <h1>{ch.name}</h1>
+          </div>
+        </div>
+        <button className="journey-help" aria-label="Help">?</button>
+      </header>
+
+      <div className="journey-chapters" aria-label="Chapters">
+        {chapters.map(function(c) {
+          var chLvs = levels.filter(function(l) { return l.chapter === c.id; });
+          var allDone = chLvs.length > 0 && chLvs.every(function(l) { return l.done; });
+          var isLocked = chLvs.every(function(l) { return l.locked && !l.current; });
+          var isActive = c.id === activeChapter;
+          return (
+            <button key={c.id}
+              className={'journey-chip' + (isActive ? ' is-active' : '') + (allDone ? ' is-done' : '')}
+              disabled={isLocked}
+              onClick={function() { if (!isLocked) setActiveChapter(c.id); }}>
+              <span>{allDone ? '✓' : c.emoji}</span>{c.name}
+            </button>
+          );
+        })}
+      </div>
+
+      <section className="journey-summary">
+        <div className="journey-summary-card">
+          <span className="journey-summary-card__icon">⭐</span>
+          <div><strong>{chDone}</strong><p>Completed</p></div>
+        </div>
+        <div className="journey-summary-card">
+          <span className="journey-summary-card__icon">🎯</span>
+          <div><strong>{current ? current.word : 'Ready'}</strong><p>Next lesson</p></div>
+        </div>
+        <div className="journey-summary-card">
+          <span className="journey-summary-card__icon">💎</span>
+          <div><strong>{pct}%</strong><p>Chapter progress</p></div>
+        </div>
+      </section>
+
+      <section className="journey-map-card">
+        <div className="journey-map-cloud journey-map-cloud--one"/>
+        <div className="journey-map-cloud journey-map-cloud--two"/>
+        <div className="journey-map-hill journey-map-hill--one"/>
+        <div className="journey-map-hill journey-map-hill--two"/>
         <svg
+          className="journey-map-svg"
           width="100%" height="100%"
-          viewBox="0 0 1140 420"
-          preserveAspectRatio="xMidYMid meet"
-          style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', overflow: 'visible' }}>
+          viewBox="0 0 1140 460"
+          preserveAspectRatio="xMidYMid meet">
           {d && (
             <>
-              <path d={d} stroke="var(--path-main)" strokeWidth="30" fill="none" strokeLinecap="round"/>
-              <path d={d} stroke="var(--path-light)" strokeWidth="13" fill="none" strokeLinecap="round" strokeDasharray="3 18" opacity="0.7"/>
+              <path d={d} stroke="rgba(97, 71, 190, 0.11)" strokeWidth="52" fill="none" strokeLinecap="round"/>
+              <path d={d} stroke="#FFC44D" strokeWidth="38" fill="none" strokeLinecap="round"/>
+              <path d={d} stroke="rgba(255,255,255,0.46)" strokeWidth="14" fill="none" strokeLinecap="round" strokeDasharray="2 22"/>
             </>
           )}
           {chLevels.map(function(lv, i) {
             var pt = pts[i] || pts[pts.length - 1];
             return (
               <g key={lv.id} transform={'translate(' + pt.x + ',' + pt.y + ')'}
+                className="journey-node-hit"
                 style={{ cursor: lv.locked && !lv.current ? 'default' : 'pointer' }}
                 role={(!lv.locked || lv.current) ? 'button' : undefined}
                 tabIndex={(!lv.locked || lv.current) ? 0 : -1}
-                aria-label={lv.locked && !lv.current ? 'Level ' + lv.id + ' — locked' : 'Level ' + lv.id + ': ' + lv.word}
+                aria-label={lv.locked && !lv.current ? 'Level ' + lv.id + ' locked' : 'Level ' + lv.id + ': ' + lv.word}
                 onKeyDown={function(e) { if ((e.key === 'Enter' || e.key === ' ') && (!lv.locked || lv.current)) { e.preventDefault(); onPlayLevel(lv); } }}
                 onClick={function() { if (!lv.locked || lv.current) onPlayLevel(lv); }}>
                 <WebLevelNode level={lv}/>
@@ -93,66 +118,48 @@ function WebMap({ levels, onPlayLevel, onBack }) {
             );
           })}
         </svg>
-      </div>
+      </section>
 
-      {/* Frosted progress bar at bottom */}
-      <div style={{
-        position: 'fixed', bottom: 0, left: 72, right: 0, zIndex: 30,
-        background: 'rgba(255,255,255,0.88)', backdropFilter: 'blur(10px)',
-        borderTop: '2px solid rgba(255,255,255,0.8)',
-        padding: '10px 24px', display: 'flex', alignItems: 'center', gap: 16,
-      }}>
-        <span style={{ fontFamily: "'Bubblegum Sans', cursive", fontSize: 15, color: '#1A3A1A', whiteSpace: 'nowrap' }}>
-          {ch.emoji} {ch.name}
-        </span>
-        <div style={{ flex: 1, height: 12, background: 'rgba(0,0,0,0.1)', borderRadius: 999, overflow: 'hidden' }}>
-          <div style={{
-            height: '100%', borderRadius: 999,
-            background: 'linear-gradient(90deg, #4CAF50, #8BC34A)',
-            width: chLevels.length > 0 ? Math.round(chDone / chLevels.length * 100) + '%' : '0%',
-            transition: 'width 0.4s ease',
-          }}/>
-        </div>
-        <span style={{ fontFamily: "'Nunito', sans-serif", fontWeight: 900, fontSize: 14, color: '#1A3A1A', whiteSpace: 'nowrap' }}>
-          {chDone} / {chLevels.length}
-        </span>
-      </div>
-    </LandscapeShell>
+      <section className="journey-progress-card">
+        <div className="journey-progress-label"><strong>{ch.emoji} {ch.name}</strong><span>{chDone} / {chLevels.length}</span></div>
+        <div className="journey-progress-track"><span style={{ width: pct + '%' }}/></div>
+      </section>
+    </main>
   );
 }
 
 function WebLevelNode({ level }) {
   var m = MODE_META[level.mode];
   var isDone = level.done, isCurrent = level.current, isLocked = level.locked && !level.current;
-  var nodeFill = isLocked ? '#9E9E9E' : isDone ? '#4CAF50' : isCurrent ? '#1976D2' : ('var(--' + m.color + ')');
-  var nodeStroke = isCurrent ? 'white' : 'rgba(0,0,0,0.15)';
+  var nodeFill = isLocked ? '#C8C0D9' : isDone ? '#16C184' : isCurrent ? '#6E43D9' : ('var(--' + m.color + ')');
+  var nodeStroke = isCurrent ? '#FFE16B' : isDone ? '#0A9B68' : 'rgba(255,255,255,0.9)';
   return (
     <>
       {isCurrent && !prefersReducedMotion && (
-        <circle r="46" fill="none" stroke="white" strokeWidth="4" opacity="0.6">
-          <animate attributeName="r" from="38" to="54" dur="1.4s" repeatCount="indefinite"/>
-          <animate attributeName="opacity" from="0.6" to="0" dur="1.4s" repeatCount="indefinite"/>
+        <circle r="52" fill="none" stroke="#FFE16B" strokeWidth="7" opacity="0.75">
+          <animate attributeName="r" from="38" to="56" dur="1.4s" repeatCount="indefinite"/>
+          <animate attributeName="opacity" from="0.7" to="0" dur="1.4s" repeatCount="indefinite"/>
         </circle>
       )}
       {isCurrent && (
-        <rect x="-52" y="-82" width="104" height="26" rx="13" fill="white" opacity="0.9"/>
+        <rect x="-72" y="-90" width="144" height="34" rx="17" fill="#6E43D9" opacity="0.97"/>
       )}
       {isCurrent && (
-        <text x="0" y="-64" textAnchor="middle" fontSize="12" fontWeight="900" fill="#1976D2" fontFamily="Bubblegum Sans, Nunito, system-ui">▶ YOU ARE HERE</text>
+        <text x="0" y="-68" textAnchor="middle" fontSize="13" fontWeight="900" fill="white" fontFamily="Fredoka, Nunito, system-ui">▶ YOU ARE HERE</text>
       )}
-      <circle r="36" fill={nodeFill} stroke={nodeStroke} strokeWidth="4" opacity={isLocked ? 0.75 : 1}/>
-      <text x="0" y="9" textAnchor="middle" fontSize={isLocked ? 22 : 24} fontWeight="900" fill="white" fontFamily="Nunito, system-ui">
+      <circle r="43" fill="rgba(40,32,87,0.08)"/>
+      <circle r="36" fill={nodeFill} stroke={nodeStroke} strokeWidth="6" opacity={isLocked ? 0.88 : 1}/>
+      <text x="0" y="9" textAnchor="middle" fontSize={isLocked ? 22 : 26} fontWeight="900" fill="white" fontFamily="Nunito, system-ui">
         {isLocked ? '🔒' : isDone ? '✓' : m.icon}
       </text>
-      <text x="0" y="58" textAnchor="middle" fontSize="13" fontWeight="900" fill="white" fontFamily="Nunito, system-ui"
-        style={{ textShadow: '0 1px 3px rgba(0,0,0,0.5)' }}>
+      <text x="0" y="66" textAnchor="middle" fontSize="17" fontWeight="900" fill="#282057" fontFamily="Grandstander, Fredoka, Nunito, system-ui">
         {isLocked ? 'Level ' + level.id : level.word}
       </text>
       {isDone && (
-        <g transform="translate(-16, 66)">
+        <g transform="translate(-19, 76)">
           {[0,1,2].map(function(i) {
             return (
-              <path key={i} transform={'translate(' + (i*12) + ', 0) scale(0.55)'}
+              <path key={i} transform={'translate(' + (i*15) + ', 0) scale(0.68)'}
                 d="M 6 0 L 7.5 3.5 L 11 4 L 8.5 6.5 L 9 10 L 6 8 L 3 10 L 3.5 6.5 L 1 4 L 4.5 3.5 Z"
                 fill={i < level.stars ? '#FFD700' : 'rgba(255,255,255,0.3)'}
                 stroke={i < level.stars ? '#C9A000' : 'none'} strokeWidth="0.5"/>
@@ -204,7 +211,7 @@ function WebMe({ profile, setProfile, levels, onOpenParent }) {
   }
 
   return (
-    <div style={{ padding: '32px 40px 48px', background: 'linear-gradient(180deg, #EDE4FF 0%, var(--bg) 300px)', minHeight: '100%' }}>
+    <div className="profile-dashboard" style={{ padding: '32px 40px 48px', background: 'var(--bg)', minHeight: '100%' }}>
       {/* Avatar picker modal */}
       {avatarOpen && (
         <div onClick={function() { setAvatarOpen(false); }} style={{
@@ -216,7 +223,7 @@ function WebMe({ profile, setProfile, levels, onOpenParent }) {
             background: 'var(--surface)', borderRadius: 28, padding: 28,
             maxWidth: 480, width: '90vw', boxShadow: 'var(--shadow-pop)',
           }}>
-            <h2 style={{ margin: '0 0 20px', fontSize: 22, fontWeight: 400, fontFamily: "'Bubblegum Sans', cursive" }}>Choose your avatar</h2>
+            <h2 style={{ margin: '0 0 20px', fontSize: 22, fontWeight: 700, fontFamily: "'Fredoka', 'Nunito', sans-serif" }}>Choose your avatar</h2>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }}>
               {AVATARS.map(function(av) {
                 var selected = profile.avatar === av.id;
@@ -243,14 +250,14 @@ function WebMe({ profile, setProfile, levels, onOpenParent }) {
 
       <div style={{ display: 'grid', gridTemplateColumns: 'min(280px,30vw) 1fr', gap: 24 }}>
         {/* left — avatar panel */}
-        <div className="card" style={{ textAlign: 'center', padding: '28px 20px' }}>
+        <div className="card" style={{ textAlign: 'center', padding: '28px 20px', background: 'linear-gradient(160deg, var(--brand-dark) 0%, var(--brand) 100%)', color: 'white' }}>
           <div style={{ display: 'inline-block', position: 'relative' }}>
             <Avatar id={profile.avatar} size={140} style={avatarStyle}/>
             <div style={{
               position: 'absolute', bottom: -2, right: -8,
-              background: 'var(--coral)', color: 'white', fontWeight: 900,
+              background: 'var(--gold)', color: '#451A03', fontWeight: 900,
               fontSize: 14, padding: '4px 12px', borderRadius: 'var(--r-pill)',
-              boxShadow: '0 0 0 3px var(--bg), var(--shadow-toy)',
+              boxShadow: '0 0 0 3px var(--brand-dark), 0 2px 0 var(--gold-dark)',
             }}>Lv {profile.level}</div>
           </div>
           {(function() {
@@ -285,15 +292,15 @@ function WebMe({ profile, setProfile, levels, onOpenParent }) {
             </div>
           ) : (
             <h2 onClick={function() { setNameInput(profile.name); setEditingName(true); }}
-              style={{ fontSize: 26, fontWeight: 400, fontFamily: "'Bubblegum Sans', cursive", margin: '14px 0 4px', cursor: 'pointer' }}>
+              style={{ fontSize: 26, fontWeight: 700, fontFamily: "'Fredoka', 'Nunito', sans-serif", margin: '14px 0 4px', cursor: 'pointer', color: 'white' }}>
               {profile.name} <span style={{ fontSize: 16 }}>✏️</span>
             </h2>
           )}
-          <div style={{ fontSize: 13, color: 'var(--ink-mute)', fontWeight: 700, marginBottom: 18 }}>Age {profile.age}</div>
+          <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.7)', fontWeight: 700, marginBottom: 18 }}>Age {profile.age}</div>
           <button className="btn-3d" onClick={function() { setAvatarOpen(true); }} style={{
-            background: 'var(--lilac-soft)', color: 'var(--lilac-ink)',
-            border: 'none', padding: '10px 18px', borderRadius: 'var(--r-pill)',
-            fontWeight: 900, fontSize: 13, cursor: 'pointer', fontFamily: 'inherit',
+            background: 'rgba(255,255,255,0.18)', color: 'white',
+            border: '1.5px solid rgba(255,255,255,0.35)', padding: '10px 18px', borderRadius: 'var(--r-pill)',
+            fontWeight: 700, fontSize: 13, cursor: 'pointer', fontFamily: "'Fredoka', 'Nunito', sans-serif",
           }}>Change avatar</button>
         </div>
 
@@ -302,7 +309,7 @@ function WebMe({ profile, setProfile, levels, onOpenParent }) {
           {/* XP */}
           <div className="card">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 8 }}>
-              <h3 style={{ fontSize: 18, fontWeight: 400, fontFamily: "'Bubblegum Sans', cursive", margin: 0 }}>XP this week</h3>
+              <h3 style={{ fontSize: 18, fontWeight: 700, fontFamily: "'Fredoka', 'Nunito', sans-serif", margin: 0 }}>XP this week</h3>
               <div style={{ fontSize: 16, fontWeight: 900, color: 'var(--blue-ink)' }}>{xpInLevel} / 500</div>
             </div>
             <div className="progress-track" style={{ height: 14 }}>
@@ -350,6 +357,70 @@ function WebMe({ profile, setProfile, levels, onOpenParent }) {
               })}
             </div>
           </div>
+
+          {/* Word Collection */}
+          {(function() {
+            var wordCollection = (levels || []).filter(function(l) {
+              return l.done && l.stars >= 2 && l.mode !== 'coding' && l.word;
+            });
+            if (!wordCollection.length) return null;
+            var wordThemeMap = {};
+            if (window.WORDS_BY_LENGTH) {
+              Object.values(window.WORDS_BY_LENGTH).forEach(function(arr) {
+                arr.forEach(function(w) { wordThemeMap[w.word] = w.theme; });
+              });
+            }
+            var THEME_EMOJI = {
+              animal:'🐾', food:'🍎', object:'🎒', space:'🚀',
+              weather:'⛅', nature:'🌿', place:'🏘️', body:'👁️',
+            };
+            var milestones = [10, 25, 50];
+            return React.createElement('div', { className: 'card', style: { marginTop: 0 } },
+              React.createElement('div', { style: { display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 } },
+                React.createElement('h3', { style: { fontSize: 18, fontWeight: 400, fontFamily: "'Bubblegum Sans', cursive", margin: 0 } }, 'My Word Collection 🫙'),
+                React.createElement('div', { style: {
+                  background: 'var(--brand)', color: 'white',
+                  fontSize: 11, fontWeight: 900, borderRadius: 999, padding: '2px 8px', lineHeight: 1.4,
+                }}, wordCollection.length)
+              ),
+              milestones.includes(wordCollection.length) && React.createElement('div', { style: {
+                background: 'var(--gold-soft)', borderRadius: 'var(--r-md)',
+                padding: '10px 14px', marginBottom: 12,
+                display: 'flex', alignItems: 'center', gap: 8,
+                fontWeight: 800, fontSize: 13, color: '#92400E',
+              }}, '🎉 ' + wordCollection.length + ' words collected! Amazing!'),
+              React.createElement('div', { style: {
+                display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(72px, 1fr))', gap: 8,
+              }},
+                wordCollection.map(function(l) {
+                  var theme = wordThemeMap[l.word] || 'object';
+                  var emoji = THEME_EMOJI[theme] || '📖';
+                  return React.createElement('button', {
+                    key: l.id,
+                    onClick: function() { window.sfx && window.sfx.speak && window.sfx.speak(l.word, 0.8); },
+                    title: 'Tap to hear ' + l.word,
+                    style: {
+                      background: 'var(--surface)', border: '2px solid var(--brand-light)',
+                      borderRadius: 'var(--r-md)', padding: '8px 4px',
+                      display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
+                      cursor: 'pointer', boxShadow: 'var(--shadow-soft)',
+                      transition: 'transform 120ms',
+                    },
+                    onMouseEnter: function(e) { e.currentTarget.style.transform = 'scale(1.08)'; },
+                    onMouseLeave: function(e) { e.currentTarget.style.transform = 'scale(1)'; },
+                  },
+                    React.createElement('div', { style: { fontSize: 18 } }, emoji),
+                    React.createElement('div', { style: { fontSize: 10, fontWeight: 900, color: 'var(--ink)', letterSpacing: 0.5 } }, l.word),
+                    React.createElement('div', { style: { fontSize: 9, letterSpacing: 1 } },
+                      [1,2,3].map(function(s) {
+                        return React.createElement('span', { key: s, style: { color: s <= l.stars ? '#F59E0B' : '#CBD5E1' } }, '★');
+                      })
+                    )
+                  );
+                })
+              )
+            );
+          })()}
 
           {/* parent link */}
           <button onClick={onOpenParent} className="card btn-3d" style={{

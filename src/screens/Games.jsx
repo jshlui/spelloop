@@ -33,6 +33,79 @@ function GameHeader({ mode, progress, onClose, word }) {
   );
 }
 
+// ── Hint System — 3-tier scaffolded hint overlay ──────────────
+function HintSystem({ word, wrongCount }) {
+  const [tier, setTier] = React.useState(0);
+  const [imgVisible, setImgVisible] = React.useState(false);
+  React.useEffect(() => { setTier(0); setImgVisible(false); }, [word]);
+  if (!wrongCount) return null;
+
+  const emoji = window.WORD_HINTS && window.WORD_HINTS[word] ? window.WORD_HINTS[word] : '💡';
+
+  function advance() {
+    if (tier === 0) {
+      setTier(1);
+    } else if (tier === 1) {
+      setTier(2);
+      if (window.speechSynthesis) {
+        window.speechSynthesis.cancel();
+        (word || '').split('').forEach((l, i) => {
+          setTimeout(() => {
+            const u = new SpeechSynthesisUtterance(l);
+            u.rate = 0.6; u.lang = 'en-AU';
+            window.speechSynthesis.speak(u);
+          }, i * 500);
+        });
+      }
+    } else if (tier === 2) {
+      setTier(3);
+      setImgVisible(true);
+      setTimeout(() => setImgVisible(false), 3000);
+    }
+  }
+
+  const btnLabel = tier === 0 ? '💡 Hint' : tier === 1 ? '🔊 Hear each letter' : tier === 2 ? '🖼️ Show clue' : '✓ Done';
+  const btnBg = tier === 0 ? 'var(--gold)' : tier === 1 ? 'var(--violet)' : tier === 2 ? 'var(--emerald)' : 'var(--alpha-md)';
+  const btnColor = tier === 0 ? '#451A03' : 'white';
+
+  return (
+    <div style={{ position: 'fixed', bottom: 90, right: 16, zIndex: 200, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 8 }}>
+      {imgVisible && (
+        <div style={{
+          background: 'var(--surface)', borderRadius: 'var(--r-lg)', padding: '12px 18px',
+          boxShadow: 'var(--shadow-pop)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
+          animation: 'juicePop 300ms cubic-bezier(0.34,1.1,0.64,1)',
+        }}>
+          <div style={{ fontSize: 36 }}>{emoji}</div>
+          <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--ink-mute)' }}>{word}</div>
+        </div>
+      )}
+      {tier >= 1 && (
+        <div style={{
+          background: 'var(--brand)', color: 'white', borderRadius: 'var(--r-lg)',
+          padding: '8px 14px', fontSize: 13, fontWeight: 900, boxShadow: 'var(--shadow-soft)',
+          animation: 'juicePop 300ms cubic-bezier(0.34,1.1,0.64,1)',
+        }}>🐾 Starts with {word[0]}!</div>
+      )}
+      {tier >= 2 && (
+        <div style={{
+          background: 'var(--violet-soft)', borderRadius: 'var(--r-lg)', padding: '8px 14px',
+          fontSize: 13, fontWeight: 800, color: 'var(--violet)', letterSpacing: 6,
+          boxShadow: 'var(--shadow-soft)',
+        }}>{(word || '').split('').map(() => '●').join('')}</div>
+      )}
+      {tier < 3 && (
+        <button onClick={advance} style={{
+          background: btnBg, color: btnColor, border: 'none', borderRadius: 999,
+          padding: '10px 18px', fontWeight: 900, fontSize: 13, cursor: 'pointer',
+          fontFamily: "'Fredoka','Nunito',sans-serif", boxShadow: '0 4px 0 rgba(0,0,0,0.2)',
+          display: 'flex', alignItems: 'center', gap: 6,
+        }}>{btnLabel}</button>
+      )}
+    </div>
+  );
+}
+
 // ── 1. CLICK spelling — pick the correct letter from choices ──
 function ClickGame({ word, onDone, onClose }) {
   const { distractorCount, recordClick, recordTaskComplete } = React.useContext(window.GameContext);
@@ -128,6 +201,7 @@ function ClickGame({ word, onDone, onClose }) {
           })}
         </div>
       </div>
+      <HintSystem word={word} wrongCount={wrongCount}/>
       <Burst show={burst}/>
     </div>
   );
@@ -245,6 +319,7 @@ function DragGame({ word, onDone, onClose }) {
           </div>
         </div>
       </div>
+      <HintSystem word={word} wrongCount={wrongCount}/>
       <Burst show={burst}/>
     </div>
   );
@@ -316,6 +391,7 @@ function TypeGame({ word, onDone, onClose, device }) {
 
         <KidKeyboard onPress={press} device={device}/>
       </div>
+      <HintSystem word={word} wrongCount={wrongCount}/>
       <Burst show={burst}/>
     </div>
   );
@@ -445,6 +521,7 @@ function MissingGame({ word, onDone, onClose }) {
           })}
         </div>
       </div>
+      <HintSystem word={word} wrongCount={wrongCount}/>
       <Burst show={burst}/>
     </div>
   );
@@ -520,6 +597,7 @@ function KeyboardGame({ word, onDone, onClose }) {
 
         <SequenceKeyboard onPress={press} target={target} flash={flash}/>
       </div>
+      <HintSystem word={word} wrongCount={wrongCount}/>
       <Burst show={burst}/>
     </div>
   );
@@ -651,6 +729,7 @@ function PrecisionGame({ word, onDone, onClose }) {
           {letter}
         </div>
       </div>
+      <HintSystem word={word} wrongCount={wrongCount}/>
       <Burst show={burst}/>
     </div>
   );
@@ -736,6 +815,7 @@ function ScrambleGame({ word, onDone, onClose }) {
           })}
         </div>
       </div>
+      <HintSystem word={word} wrongCount={wrongCount}/>
       <Burst show={burst}/>
     </div>
   );
@@ -824,6 +904,7 @@ function SpeedGame({ word, onDone, onClose }) {
         </div>
         <KidKeyboard onPress={press}/>
       </div>
+      <HintSystem word={word} wrongCount={wrongCount}/>
       <Burst show={burst}/>
     </div>
   );
@@ -938,6 +1019,7 @@ function EchoGame({ word, onDone, onClose }) {
 
         <KidKeyboard onPress={press}/>
       </div>
+      <HintSystem word={word} wrongCount={wrongCount}/>
       <Burst show={burst}/>
     </div>
   );
@@ -1079,6 +1161,7 @@ function FlashGame({ word, onDone, onClose }) {
 
         {phase === 'spell' ? <KidKeyboard onPress={press}/> : <div style={{ height: 200 }}/>}
       </div>
+      <HintSystem word={word} wrongCount={wrongCount}/>
       <Burst show={burst}/>
     </div>
   );
