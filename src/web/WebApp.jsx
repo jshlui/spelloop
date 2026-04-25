@@ -24,6 +24,12 @@ function WebApp({ profile, setProfile, levels, setLevels, settings, setSettings,
       owned.forEach(function(sid) {
         var entry = pd[sid];
         if (!entry) return;
+        var spec = (window.PET_SPECIES || []).find(function(s) { return s.id === sid; });
+        if (spec && !spec.isStarter && entry.growthPoints == null) {
+          entry = Object.assign({}, entry, { growthPoints: 0 });
+          pd[sid] = entry;
+          changed = true;
+        }
         var lastPlayed = entry.lastPlayed;
         if (!lastPlayed) return;
         var diffDays = Math.floor((Date.now() - new Date(lastPlayed).getTime()) / 86400000);
@@ -77,11 +83,15 @@ function WebApp({ profile, setProfile, levels, setLevels, settings, setSettings,
   }, []);
 
   function startLevel(level) {
-    setRoute({ name: 'game', mode: level.mode === 'boss' ? 'type' : level.mode, word: level.word, levelId: level.id });
+    setRoute({ name: 'game', mode: level.mode === 'boss' ? 'type' : level.mode, originalMode: level.mode, word: level.word, levelId: level.id });
   }
 
   function startMode(mode) {
-    if (mode === 'coding') { setRoute({ name: 'game', mode: 'coding', word: 'L1' }); return; }
+    var activityWords = { math: 'MATH', pizza: 'PIZZA', song: 'SONG', coding: 'L1' };
+    if (activityWords[mode]) {
+      setRoute({ name: 'game', mode: mode, word: activityWords[mode], activity: true });
+      return;
+    }
     var pool = getWordsForDifficulty(settings.difficulty || 'med');
     var w = pool[Math.floor(Math.random() * pool.length)].word;
     setRoute({ name: 'game', mode: mode, word: w });
@@ -93,15 +103,16 @@ function WebApp({ profile, setProfile, levels, setLevels, settings, setSettings,
 
   function finishGame(stars, accuracy) {
     var completedId = route.levelId;
-    var baseCoins = stars === 3 ? 15 : stars === 2 ? 10 : 5;
     var speciesId = profile.activePetId;
     var capturedRoute = route;
+    var isActivityReward = !!capturedRoute.activity;
 
     // Power-up: Coin Booster doubles coins; Star Booster guarantees min 2 stars
     var powerups = profile.powerups || {};
     var usedX2 = (powerups['pu-x2'] || 0) > 0;
     var usedStar = (powerups['pu-star'] || 0) > 0 && stars < 2;
     if (usedStar) stars = 2;
+    var baseCoins = stars === 3 ? 15 : stars === 2 ? 10 : 5;
     var coinsEarned = usedX2 ? baseCoins * 2 : baseCoins;
 
     var prevBest = completedId ? (levels.find(function(l) { return l.id === completedId; }) || {}).stars || 0 : 0;
@@ -129,27 +140,61 @@ function WebApp({ profile, setProfile, levels, setLevels, settings, setSettings,
     setProfile(function(prev) {
       var moodBoost = stars === 3 ? 20 : stars === 2 ? 15 : 10;
       var pd = Object.assign({}, prev.petData || {});
+      var activeSpeciesId = prev.activePetId || speciesId;
+      var activeSpec = activeSpeciesId && (window.PET_SPECIES || []).find(function(s) { return s.id === activeSpeciesId; });
 
-      if (speciesId && pd[speciesId]) {
-        var entry = Object.assign({}, pd[speciesId]);
+      if (activeSpeciesId) {
+        var entry = Object.assign({
+          name: (activeSpec && activeSpec.name) || 'Pet',
+          mood: 80,
+          lastPlayed: null,
+          equipped: {},
+          shiny: false,
+          happyDays: 0,
+          lastMoodDate: null,
+          room: null,
+          toys: [],
+        }, pd[activeSpeciesId] || {});
         entry.mood = Math.min(100, (entry.mood || 80) + moodBoost);
         entry.lastPlayed = new Date().toISOString().slice(0, 10);
+        if (entry.growthPoints != null && (!!completedId || isActivityReward)) {
+          var growthMax = (window.PET_GROWTH_THRESHOLDS && window.PET_GROWTH_THRESHOLDS.adult) || 12;
+          entry.growthPoints = Math.min(growthMax, (entry.growthPoints || 0) + 1);
+        }
 
-        if (speciesId === 'ember' && capturedRoute.mode === 'speed') {
+        if (activeSpeciesId === 'ember' && capturedRoute.mode === 'speed') {
           entry.speedPlays = (entry.speedPlays || 0) + 1;
           if (entry.speedPlays >= 20) entry.shiny = true;
         }
-        if (speciesId === 'aqua' && accuracy != null && accuracy >= 0.9) {
+        if (activeSpeciesId === 'aqua' && accuracy != null && accuracy >= 0.9) {
           entry.precisionLevels = (entry.precisionLevels || 0) + 1;
           if (entry.precisionLevels >= 30) entry.shiny = true;
         }
-        if (speciesId === 'sprout') {
+        if (activeSpeciesId === 'sprout') {
+          entry.uniqueLevelsDone = uniqueSpellingDone;
           if (uniqueSpellingDone >= 30) entry.shiny = true;
         }
-        if (speciesId === 'cosmo') {
+        if (activeSpeciesId === 'cosmo') {
           if (codingDone >= 3) entry.shiny = true;
         }
-        pd[speciesId] = entry;
+        if (activeSpeciesId === 'blaze' && capturedRoute.originalMode === 'boss') {
+          entry.bossWins = (entry.bossWins || 0) + 1;
+          if (entry.bossWins >= 5) entry.shiny = true;
+        }
+        if (activeSpeciesId === 'frost') {
+          entry.streakDays = Math.max(entry.streakDays || 0, prev.streak || 0);
+          if (entry.streakDays >= 14) entry.shiny = true;
+        }
+        if (activeSpeciesId === 'luna') {
+          var hour = new Date().getHours();
+          if (hour >= 18 || hour < 6) entry.nightPlays = (entry.nightPlays || 0) + 1;
+          if ((entry.nightPlays || 0) >= 10) entry.shiny = true;
+        }
+        if (activeSpeciesId === 'rex' && capturedRoute.mode === 'scramble') {
+          entry.scramblePlays = (entry.scramblePlays || 0) + 1;
+          if (entry.scramblePlays >= 25) entry.shiny = true;
+        }
+        pd[activeSpeciesId] = entry;
       }
 
       if (pd.petal && (prev.feedCount || 0) >= 15) {
@@ -162,12 +207,13 @@ function WebApp({ profile, setProfile, levels, setLevels, settings, setSettings,
       if (usedStar) pu['pu-star'] = Math.max(0, (pu['pu-star'] || 0) - 1);
 
       var today = new Date().toISOString().slice(0, 10);
-      var newStreak = completedId
+      var earnsProfileProgress = !!completedId || isActivityReward;
+      var newStreak = earnsProfileProgress
         ? (prev.lastStreakDate === today ? prev.streak : prev.streak + 1)
         : prev.streak;
-      var newStreakDate = completedId ? today : prev.lastStreakDate;
+      var newStreakDate = earnsProfileProgress ? today : prev.lastStreakDate;
       return Object.assign({}, prev, {
-        totalStars: prev.totalStars + (completedId ? stars : 0),
+        totalStars: prev.totalStars + (earnsProfileProgress ? stars : 0),
         words: (prev.words || 0) + (completedId && capturedRoute.mode !== 'coding' ? 1 : 0),
         streak: newStreak,
         lastStreakDate: newStreakDate,
@@ -194,19 +240,28 @@ function WebApp({ profile, setProfile, levels, setLevels, settings, setSettings,
       });
     }
 
-    if (capturedRoute.mode === 'boss') {
+    if (capturedRoute.originalMode === 'boss') {
       window.Juice?.emit('chapterBoss');
       // Find which chapter this boss belongs to
       var bossLevel = (window.LEVELS || []).find(function(l) { return l.id === completedId; });
       var bossChapter = bossLevel ? bossLevel.chapter : 1;
       // Show postcard first, then reward
-      setRoute({ name: 'chapterComplete', chapter: bossChapter, pending: { name: 'storyBuilder', chapter: bossChapter, reward: { name: 'reward', word: capturedRoute.word, stars: stars, mode: capturedRoute.mode, coins: coinsEarned, isNewRecord: isNewRecord } } });
+      setRoute({ name: 'chapterComplete', chapter: bossChapter, pending: { name: 'storyBuilder', chapter: bossChapter, reward: { name: 'reward', word: capturedRoute.word, stars: stars, mode: capturedRoute.mode, coins: coinsEarned, isNewRecord: isNewRecord, isActivity: isActivityReward } } });
     } else {
-      setRoute({ name: 'reward', word: capturedRoute.word, stars: stars, mode: capturedRoute.mode, coins: coinsEarned, isNewRecord: isNewRecord });
+      setRoute({ name: 'reward', word: capturedRoute.word, stars: stars, mode: capturedRoute.mode, coins: coinsEarned, isNewRecord: isNewRecord, isActivity: isActivityReward });
     }
   }
 
-  function closeGame() { setRoute({ name: 'screen' }); }
+  function getPostGameTab(gameRoute) {
+    if (gameRoute && gameRoute.mode === 'coding') return 'code';
+    return gameRoute && gameRoute.activity ? 'home' : 'map';
+  }
+
+  function closeGame() {
+    var nextTab = getPostGameTab(route);
+    setRoute({ name: 'screen' });
+    setTab(nextTab);
+  }
 
   var currentLevel = levels.find(function(l) { return l.current; }) || levels[0];
 
@@ -261,9 +316,11 @@ function WebApp({ profile, setProfile, levels, setLevels, settings, setSettings,
           />
         )}
         {route.name === 'reward' && (
-          <WebReward word={route.word} stars={route.stars} coins={route.coins} isNewRecord={route.isNewRecord}
-            onNext={function() { setRoute({ name: 'screen' }); setTab('map'); }}
-            onHome={function() { setRoute({ name: 'screen' }); setTab('home'); }}/>
+          <WebReward word={route.word} stars={route.stars} coins={route.coins} mode={route.mode} isActivity={route.isActivity} isNewRecord={route.isNewRecord}
+            returnLabel={route.mode === 'coding' ? 'Code Lab' : undefined}
+            nextLabel={route.mode === 'coding' ? 'More labs ▶' : undefined}
+            onNext={function() { setRoute({ name: 'screen' }); setTab(getPostGameTab(route)); }}
+            onHome={function() { setRoute({ name: 'screen' }); setTab(route.mode === 'coding' ? 'code' : 'home'); }}/>
         )}
       </div>
     </div>
@@ -298,9 +355,46 @@ function WebSidebar({ tab, onTab, profile, settings, levels, onOpenParent }) {
   var activePetSpec = profile.activePetId
     ? (window.PET_SPECIES || []).find(function(s) { return s.id === profile.activePetId; }) : null;
   var activePetName = activePetData ? (activePetData.name || (activePetSpec && activePetSpec.name) || 'Pet') : 'Pet';
+  var completedChapters = typeof getCompletedChapters !== 'undefined' ? getCompletedChapters(levels) : [];
+  var petMood = activePetData && activePetData.mood != null ? activePetData.mood : 80;
+  var moodLabel = typeof getPetMoodLabel !== 'undefined' ? getPetMoodLabel(petMood) : 'happy';
+  var moodColors = (typeof PET_MOOD_COLORS !== 'undefined' && PET_MOOD_COLORS[moodLabel]) || { bar: 'var(--mint)', label: 'Happy' };
+  var usesPersonalGrowth = activePetData && activePetData.growthPoints != null;
+  var petStage = usesPersonalGrowth && typeof getPetStageFromGrowth !== 'undefined'
+    ? getPetStageFromGrowth(activePetData.growthPoints, activePetData && activePetData.shiny)
+    : typeof getPetStage !== 'undefined' ? getPetStage(completedChapters, activePetData && activePetData.shiny) : 'egg';
+  var growthProgress = usesPersonalGrowth && typeof getPetGrowthProgress !== 'undefined'
+    ? getPetGrowthProgress(activePetData.growthPoints) : null;
+  var nextPetStage = usesPersonalGrowth
+    ? (typeof getPetNextGrowthStage !== 'undefined' ? getPetNextGrowthStage(activePetData.growthPoints) : null)
+    : (typeof getPetNextStage !== 'undefined' ? getPetNextStage(completedChapters) : null);
+  var stageText = petStage === 'shiny' ? 'Shiny' : petStage.charAt(0).toUpperCase() + petStage.slice(1);
+  var nextText = usesPersonalGrowth
+    ? (nextPetStage && nextPetStage.stage ? 'Next: ' + nextPetStage.stage.charAt(0).toUpperCase() + nextPetStage.stage.slice(1) : 'Fully grown')
+    : (nextPetStage && nextPetStage.chapter ? 'Next: Chapter ' + nextPetStage.chapter : 'Fully grown');
+  var nextChapterLevels = nextPetStage && nextPetStage.chapter
+    ? (levels || []).filter(function(l) { return l.chapter === nextPetStage.chapter; })
+    : [];
+  var nextChapterDone = nextChapterLevels.filter(function(l) { return l.done; }).length;
+  var petEvolutionProgress = growthProgress ? growthProgress.percent
+    : nextPetStage && nextPetStage.chapter
+      ? (nextChapterLevels.length ? nextChapterDone / nextChapterLevels.length * 100 : 0)
+      : 100;
 
   var items = [
     { id: 'home', label: 'Home', icon: function(c) { return <svg width="30" height="30" viewBox="0 0 24 24" fill="none"><path d="M4 12 L12 5 L20 12 V20 H14 V15 H10 V20 H4 Z" fill={c} stroke={c} strokeWidth="1.8" strokeLinejoin="round"/></svg>; } },
+    { id: 'pet', label: 'Pet', ariaLabel: activePetData ? 'Pet: ' + activePetName : 'Choose your pet', icon: function(c) {
+      return (typeof PetSprite !== 'undefined' && profile.activePetId) ? (
+        <span className="spelloop-nav-pet-sprite" aria-hidden="true">
+          <PetSprite speciesId={profile.activePetId} completedChapters={completedChapters}
+            growthPoints={activePetData && activePetData.growthPoints}
+            mood={(activePetData && activePetData.mood) || 80} size={36} animate={false}
+            isShiny={activePetData && activePetData.shiny}/>
+        </span>
+      ) : (
+        <svg width="30" height="30" viewBox="0 0 24 24" fill="none"><ellipse cx="12" cy="13" rx="6.5" ry="8" fill={c}/><path d="M10 5.5 C10.7 3.7 13.3 3.7 14 5.5" stroke={c} strokeWidth="2" strokeLinecap="round"/></svg>
+      );
+    } },
     { id: 'map',  label: 'Learn', icon: function(c) { return <svg width="30" height="30" viewBox="0 0 24 24" fill="none"><path d="M4 6.5 C6.4 5.4 9.2 5.5 12 7.5 C14.8 5.5 17.6 5.4 20 6.5 V19 C17.6 17.9 14.8 18 12 20 C9.2 18 6.4 17.9 4 19 Z" stroke={c} strokeWidth="2" strokeLinejoin="round"/><path d="M12 7.5 V20" stroke={c} strokeWidth="2" strokeLinecap="round"/></svg>; } },
     { id: 'code', label: 'Play', icon: function(c) { return <svg width="30" height="30" viewBox="0 0 24 24" fill="none"><path d="M7 9 H17 L20 14.5 C20.8 16.1 19.7 18 17.9 18 C16.9 18 16 17.4 15.5 16.5 L14.9 15.5 H9.1 L8.5 16.5 C8 17.4 7.1 18 6.1 18 C4.3 18 3.2 16.1 4 14.5 Z" fill={c}/><path d="M8 12 V15 M6.5 13.5 H9.5" stroke="white" strokeWidth="1.8" strokeLinecap="round"/><circle cx="15.5" cy="13.5" r="1" fill="white"/><circle cx="18" cy="12" r="1" fill="white"/></svg>; } },
     { id: 'shop', label: 'Rewards', icon: function(c) { return <svg width="30" height="30" viewBox="0 0 24 24" fill="none"><path d="M7 4 H17 V7 C17 10.2 15 12.6 12 13.2 C9 12.6 7 10.2 7 7 Z" fill={c}/><path d="M7 6 H4 V8 C4 10 5.4 11.4 7.5 11.7 M17 6 H20 V8 C20 10 18.6 11.4 16.5 11.7" stroke={c} strokeWidth="2" strokeLinecap="round"/><path d="M12 13 V17 M9 20 H15 M10 17 H14" stroke={c} strokeWidth="2.2" strokeLinecap="round"/></svg>; } },
@@ -317,7 +411,7 @@ function WebSidebar({ tab, onTab, profile, settings, levels, onOpenParent }) {
         {items.map(function(it) {
           var active = tab === it.id;
           return (
-            <button key={it.id} aria-current={active ? 'page' : undefined}
+            <button key={it.id} aria-label={it.ariaLabel || it.label} aria-current={active ? 'page' : undefined}
               className={'sidebar-nav-btn spelloop-nav-btn' + (active ? ' is-active' : '')}
               onClick={function() { onTab(it.id); window.sfx && window.sfx.tap && window.sfx.tap(); }}
               >
@@ -330,22 +424,30 @@ function WebSidebar({ tab, onTab, profile, settings, levels, onOpenParent }) {
 
       <div className="spelloop-sidebar-spacer"/>
 
-      <div className="spelloop-kid-card sidebar-profile">
+      <button type="button" className="spelloop-kid-card sidebar-profile"
+        onClick={function() { onTab('pet'); window.sfx && window.sfx.tap && window.sfx.tap(); }}
+        aria-label={'Open pet. ' + activePetName + ' is ' + moodColors.label.replace(/[^\w\s%]/g, '').trim() + ', ' + petMood + ' percent mood.'}>
         <div className="spelloop-kid-card__pet">
           {typeof PetSprite !== 'undefined' && profile.activePetId ? (
-            <PetSprite speciesId={profile.activePetId} mood={(activePetData && activePetData.mood) || 80} size={142} animate={true}/>
+            <PetSprite speciesId={profile.activePetId} completedChapters={completedChapters}
+              growthPoints={activePetData && activePetData.growthPoints}
+              mood={(activePetData && activePetData.mood) || 80} size={112} animate={true}
+              isShiny={activePetData && activePetData.shiny}/>
           ) : (
-            <div className="spelloop-dino-fallback">🦖</div>
+            <div className="spelloop-dino-fallback">🥚</div>
           )}
         </div>
-        <div className="spelloop-kid-card__name">Hi, {profile.name}!</div>
+        <div className="spelloop-kid-card__eyebrow">Learning buddy</div>
+        <div className="spelloop-kid-card__name">{activePetName}</div>
+        <div className="spelloop-kid-card__status">{moodColors.label} · {stageText}</div>
+        <div className="spelloop-kid-card__mood" aria-hidden="true"><span style={{ width: petMood + '%', background: moodColors.bar }}/></div>
         <div id="juice-coin" className="spelloop-kid-card__stars sidebar-coins">
           <span className="juice-coin-icon">⭐</span>
           <strong>{profile.totalStars || 0}</strong>
         </div>
-        <div className="spelloop-kid-card__level">Next Level</div>
-        <div className="spelloop-kid-card__bar"><span style={{ width: Math.min(100, ((levels || []).filter(function(l) { return l.done; }).length % 8) / 8 * 100) + '%' }}/></div>
-      </div>
+        <div className="spelloop-kid-card__level">{nextText}</div>
+        <div className="spelloop-kid-card__bar"><span style={{ width: Math.min(100, petEvolutionProgress) + '%' }}/></div>
+      </button>
 
       <button onClick={onOpenParent} title="Parent area" className="spelloop-parent-btn">Parent</button>
     </aside>
@@ -540,19 +642,7 @@ function SpaceHeroArt() {
     <div className="space-hero-art" aria-hidden="true">
       <div className="space-planet"/>
       <div className="space-star space-star--big">★</div>
-      <div className="space-rocket">
-        <div className="space-rocket__body">
-          <div className="space-rocket__window"/>
-          <div className="space-rocket__nose"/>
-          <div className="space-rocket__fin space-rocket__fin--left"/>
-          <div className="space-rocket__fin space-rocket__fin--right"/>
-          <div className="space-rocket__flame"/>
-        </div>
-        <div className="space-astronaut">
-          <div className="space-astronaut__helmet"><div className="space-astronaut__face">●‿●</div></div>
-          <div className="space-astronaut__arm"/>
-        </div>
-      </div>
+      <img className="space-hero-illustration" src="assets/hero-space-cockpit.png" alt=""/>
       <div className="space-cloud space-cloud--left"/>
       <div className="space-cloud space-cloud--right"/>
     </div>
@@ -572,30 +662,75 @@ function ActivityThumb({ kind }) {
 }
 
 function WebHome({ profile, levels, onContinue, onPlayLevel, onPickMode, onTab, dailyState, onStartDaily }) {
-  var playable = (levels || []).filter(function(l) { return !l.locked || l.current || l.done; });
-  var lessonSource = playable.length ? playable : (levels || []).slice(0, 5);
-  var lessonTitles = ['Fun with Letters', 'Numbers Adventure', 'Space Explorers', 'Amazing Animals', 'Color & Shapes'];
+  var [searchOpen, setSearchOpen] = React.useState(false);
+  var [searchQuery, setSearchQuery] = React.useState('');
+  var searchInputRef = React.useRef(null);
+  var chapterMeta = (window.CHAPTER_META || []).filter(function(ch) {
+    return (levels || []).some(function(l) { return l.chapter === ch.id && l.mode !== 'coding'; });
+  }).slice(0, 5);
   var lessonKinds = ['letters', 'numbers', 'space', 'animals', 'colors'];
   var lessonColors = ['green', 'blue', 'purple', 'yellow', 'pink'];
-  var lessonPercents = [60, 40, 75, 60, 30];
-  var lessons = lessonTitles.map(function(title, idx) {
-    return { title: title, kind: lessonKinds[idx], color: lessonColors[idx], percent: lessonPercents[idx], level: lessonSource[idx % Math.max(lessonSource.length, 1)] };
+  var lessons = chapterMeta.map(function(ch, idx) {
+    var chapterLevels = (levels || []).filter(function(l) { return l.chapter === ch.id; });
+    var completedCount = chapterLevels.filter(function(l) { return l.done; }).length;
+    var percent = chapterLevels.length ? Math.round(completedCount / chapterLevels.length * 100) : 0;
+    var nextLevel = chapterLevels.find(function(l) { return l.current; })
+      || chapterLevels.find(function(l) { return !l.done && !l.locked; })
+      || chapterLevels.find(function(l) { return !l.done; })
+      || chapterLevels[0];
+    return {
+      title: ch.name,
+      kind: lessonKinds[idx],
+      color: lessonColors[idx],
+      percent: percent,
+      level: nextLevel,
+      locked: !!(nextLevel && nextLevel.locked && !nextLevel.current && !nextLevel.done)
+    };
   });
   var activities = [
-    { title: 'Math Match', mode: 'missing', kind: 'math' },
-    { title: 'Pizza Party', mode: 'scramble', kind: 'pizza' },
-    { title: 'Song Time', mode: 'speed', kind: 'song' },
+    { title: 'Math Match', mode: 'math', kind: 'math' },
+    { title: 'Pizza Party', mode: 'pizza', kind: 'pizza' },
+    { title: 'Song Time', mode: 'song', kind: 'song' },
     { title: 'Puzzle World', mode: 'coding', kind: 'puzzle' },
   ];
+  var query = searchQuery.trim().toLowerCase();
+  var searchableLessons = lessons.filter(function(lesson) {
+    var word = lesson.level && lesson.level.word ? lesson.level.word : '';
+    return !query || lesson.title.toLowerCase().includes(query) || lesson.kind.toLowerCase().includes(query) || word.toLowerCase().includes(query);
+  });
+  var searchableActivities = activities.filter(function(activity) {
+    return !query || activity.title.toLowerCase().includes(query) || activity.kind.toLowerCase().includes(query) || activity.mode.toLowerCase().includes(query);
+  });
+  var hasSearch = searchOpen || query;
+  var resultCount = searchableLessons.length + searchableActivities.length;
+
+  React.useEffect(function() {
+    if (searchOpen && searchInputRef.current) searchInputRef.current.focus();
+  }, [searchOpen]);
 
   return (
     <main className="spelloop-dashboard">
       <header className="spelloop-topbar">
-        <button className="spelloop-search" aria-label="Search">
+        <button className="spelloop-search" aria-label="Search lessons and activities" aria-expanded={searchOpen ? 'true' : 'false'} onClick={function() { setSearchOpen(function(v) { return !v; }); }}>
           <svg width="28" height="28" viewBox="0 0 24 24" fill="none"><circle cx="10.5" cy="10.5" r="6.5" stroke="currentColor" strokeWidth="2.6"/><path d="M15.5 15.5 L21 21" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round"/></svg>
         </button>
+        {searchOpen && (
+          <div className="spelloop-search-panel" role="search">
+            <svg aria-hidden="true" width="23" height="23" viewBox="0 0 24 24" fill="none"><circle cx="10.5" cy="10.5" r="6.5" stroke="currentColor" strokeWidth="2.5"/><path d="M15.5 15.5 L21 21" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"/></svg>
+            <input ref={searchInputRef} type="search" value={searchQuery}
+              onChange={function(e) { setSearchQuery(e.target.value); }}
+              onKeyDown={function(e) { if (e.key === 'Escape') { setSearchQuery(''); setSearchOpen(false); } }}
+              placeholder="Search lessons, games, or words"
+              aria-label="Search lessons, games, or words"/>
+            {searchQuery && (
+              <button type="button" aria-label="Clear search" onClick={function() { setSearchQuery(''); }}>
+                ×
+              </button>
+            )}
+          </div>
+        )}
         <div className="spelloop-topbar__right">
-          <div className="spelloop-gems" aria-label={(profile.coins || 0) + ' gems'}><span className="spelloop-gem-icon">◆</span><strong>{profile.coins || 25}</strong></div>
+          <div className="spelloop-gems" aria-label={(profile.coins || 0) + ' gems'}><span className="spelloop-gem-icon">◆</span><strong>{profile.coins || 0}</strong></div>
           <button className="spelloop-profile-chip" onClick={function() { onTab('me'); }} aria-label="Open profile">
             <Avatar id={profile.avatar} size={58} style={(window.__tweaks && window.__tweaks.avatarStyle) || 'animal'}/>
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M6 9 L12 15 L18 9" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"/></svg>
@@ -613,13 +748,45 @@ function WebHome({ profile, levels, onContinue, onPlayLevel, onPickMode, onTab, 
         <div className="spelloop-hero__dots" aria-hidden="true"><span/><span/><span/><span className="is-active"/></div>
       </section>
 
+      {hasSearch && (
+        <section className="spelloop-search-results" aria-live="polite">
+          <div className="spelloop-section-head">
+            <h2>{query ? 'Search Results' : 'Quick Search'}</h2>
+            <button type="button" onClick={function() { setSearchQuery(''); setSearchOpen(false); }}>Close</button>
+          </div>
+          {query && <p>{resultCount ? resultCount + ' match' + (resultCount === 1 ? '' : 'es') + ' for "' + searchQuery + '"' : 'No matches yet. Try letters, math, pizza, song, puzzle, or a word.'}</p>}
+          {resultCount > 0 && (
+            <div className="spelloop-search-grid">
+              {searchableLessons.map(function(lesson) {
+                return (
+                  <button key={'search-' + lesson.title} className="spelloop-search-result" onClick={function() { if (lesson.level && onPlayLevel) onPlayLevel(lesson.level); else onContinue(); }}>
+                    <span><LessonThumb kind={lesson.kind}/></span>
+                    <strong>{lesson.title}</strong>
+                    <small>{lesson.level && lesson.level.word ? lesson.level.word : 'Lesson'}</small>
+                  </button>
+                );
+              })}
+              {searchableActivities.map(function(activity) {
+                return (
+                  <button key={'search-' + activity.title} className="spelloop-search-result" onClick={function() { onPickMode(activity.mode); }}>
+                    <span><ActivityThumb kind={activity.kind}/></span>
+                    <strong>{activity.title}</strong>
+                    <small>Activity</small>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </section>
+      )}
+
       <section className="spelloop-section">
         <div className="spelloop-section-head"><h2>Continue Learning</h2><button onClick={function() { onTab('map'); }}>View all</button></div>
         <div className="spelloop-lessons">
-          {lessons.map(function(lesson) {
+          {(query ? searchableLessons : lessons).map(function(lesson) {
             return (
-              <button key={lesson.title} className={'spelloop-lesson spelloop-lesson--' + lesson.color}
-                onClick={function() { if (lesson.level && onPlayLevel) onPlayLevel(lesson.level); else onContinue(); }}>
+              <button key={lesson.title} className={'spelloop-lesson spelloop-lesson--' + lesson.color + (lesson.locked ? ' is-locked' : '')}
+                onClick={function() { if (lesson.locked) { onTab('map'); return; } if (lesson.level && onPlayLevel) onPlayLevel(lesson.level); else onContinue(); }}>
                 <LessonThumb kind={lesson.kind}/>
                 <div className="spelloop-lesson__body">
                   <h3>{lesson.title}</h3>
@@ -635,7 +802,7 @@ function WebHome({ profile, levels, onContinue, onPlayLevel, onPickMode, onTab, 
       <section className="spelloop-section">
         <div className="spelloop-section-head"><h2>Fun Activities</h2><button onClick={function() { onTab('code'); }}>View all</button></div>
         <div className="spelloop-activities">
-          {activities.map(function(activity) {
+          {(query ? searchableActivities : activities).map(function(activity) {
             return (
               <article key={activity.title} className={'spelloop-activity spelloop-activity--' + activity.kind}>
                 <ActivityThumb kind={activity.kind}/>
@@ -669,7 +836,7 @@ function WebHome({ profile, levels, onContinue, onPlayLevel, onPickMode, onTab, 
 
 function WebModeCard({ mode, onClick }) {
   var m = MODE_META[mode];
-  var descs = { click: 'Pick each letter', drag: 'Drag into order', type: 'Use the keyboard', missing: 'Find the gap', keyboard: 'Find keys fast', scramble: 'Tap in order', speed: 'Race the clock', coding: 'Build the path' };
+  var descs = { click: 'Pick each letter', drag: 'Drag into order', type: 'Use the keyboard', missing: 'Find the gap', keyboard: 'Find keys fast', scramble: 'Tap in order', speed: 'Race the clock', math: 'Solve number matches', pizza: 'Build tasty orders', song: 'Copy the rhythm', coding: 'Build the path' };
   return (
     <button onClick={onClick} style={{
       background: 'var(--surface)', border: 'none', cursor: 'pointer',
@@ -739,7 +906,7 @@ function WebShop({ profile, setProfile, levels }) {
     setProfile(function(prev) {
       var pd = Object.assign({}, prev.petData || {});
       if (!pd[species.id]) {
-        var entry = { name: species.name, mood: 80, lastPlayed: null, equipped: {}, shiny: false, room: null, toys: [] };
+        var entry = { name: species.name, mood: 80, lastPlayed: null, equipped: {}, shiny: false, room: null, toys: [], growthPoints: 0 };
         if (species.shinyKey) entry[species.shinyKey] = 0;
         if (species.id === 'pebble') { entry.happyDays = 0; entry.lastMoodDate = null; }
         pd[species.id] = entry;
@@ -1000,6 +1167,12 @@ function WebShop({ profile, setProfile, levels }) {
 
             var petEntry = (profile.petData || {})[species.id];
             var petMood = petEntry ? (petEntry.mood != null ? petEntry.mood : 80) : 80;
+            var petGrowth = petEntry && petEntry.growthPoints != null && typeof getPetGrowthProgress !== 'undefined'
+              ? getPetGrowthProgress(petEntry.growthPoints) : null;
+            var petStage = petEntry && petEntry.growthPoints != null && typeof getPetStageFromGrowth !== 'undefined'
+              ? getPetStageFromGrowth(petEntry.growthPoints, petEntry.shiny)
+              : typeof getPetStage !== 'undefined' ? getPetStage(completedChapters, petEntry && petEntry.shiny) : 'egg';
+            var petStageLabel = petStage === 'shiny' ? 'Shiny' : petStage.charAt(0).toUpperCase() + petStage.slice(1);
             return (
               <div key={species.id} className={'shop-species-card' + (isActive ? ' is-active' : '')} style={{
                 background: isActive ? species.bg : 'var(--surface)',
@@ -1011,14 +1184,24 @@ function WebShop({ profile, setProfile, levels }) {
                 <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 8 }}>
                   {typeof PetSprite !== 'undefined' && owned ? (
                     <PetSprite speciesId={species.id} completedChapters={completedChapters}
-                      mood={petMood} size={80} equipped={petEntry ? (petEntry.equipped || {}) : {}} animate={false}/>
+                      growthPoints={petEntry && petEntry.growthPoints}
+                      mood={petMood} size={80} equipped={petEntry ? (petEntry.equipped || {}) : {}}
+                      animate={false} isShiny={petEntry && petEntry.shiny}/>
                   ) : (
                     <div style={{ fontSize: 64 }}>🥚</div>
                   )}
                 </div>
                 <div style={{ fontWeight: 900, fontSize: 16, marginBottom: 2 }}>{species.name}</div>
-                <div style={{ fontSize: 12, color: 'var(--ink-mute)', fontWeight: 700, marginBottom: 4 }}>{species.typeIcon} {species.type}</div>
+                <div style={{ fontSize: 12, color: 'var(--ink-mute)', fontWeight: 700, marginBottom: 4 }}>{species.typeIcon} {species.type}{owned ? ' · ' + petStageLabel : ''}</div>
                 <div style={{ fontSize: 12, color: 'var(--ink-soft)', fontWeight: 700, marginBottom: 12, lineHeight: 1.4 }}>{species.tagline}</div>
+                {owned && petGrowth && (
+                  <div style={{ margin: '0 0 12px' }}>
+                    <div className="pet-meter" aria-label={species.name + ' growth ' + petGrowth.points + ' of ' + petGrowth.target}>
+                      <span style={{ width: petGrowth.percent + '%', background: species.color }}/>
+                    </div>
+                    <div style={{ marginTop: 5, fontSize: 10, color: 'var(--ink-mute)', fontWeight: 900 }}>{petGrowth.points}/{petGrowth.target} growth</div>
+                  </div>
+                )}
                 {owned ? (
                   isActive ? (
                     <div style={{ padding: '9px 0', borderRadius: 10, background: species.color, color: 'white', fontWeight: 900, fontSize: 13 }}>✓ Active</div>
@@ -1056,7 +1239,9 @@ function WebShop({ profile, setProfile, levels }) {
             {typeof PetSprite !== 'undefined' && activePetId && (
               <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 10 }}>
                 <PetSprite speciesId={activePetId} completedChapters={completedChapters}
-                  mood={activePetData.mood || 80} size={100} equipped={activePetEquipped} animate={true}/>
+                  growthPoints={activePetData.growthPoints}
+                  mood={activePetData.mood || 80} size={100} equipped={activePetEquipped}
+                  animate={true} isShiny={activePetData.shiny}/>
               </div>
             )}
             {!activePetId && <div style={{ fontSize: 40, marginBottom: 10 }}>🥚</div>}
@@ -1198,7 +1383,12 @@ function WebShop({ profile, setProfile, levels }) {
 var CODING_LEVEL_INFO = {
   'L1': { title: 'Level 1 — First Steps', desc: 'Guide the player in just 2 moves.', emoji: '🟢', difficulty: 'Beginner' },
   'L2': { title: 'Level 2 — Find the Route', desc: '3 moves. Think before you tap.', emoji: '🟡', difficulty: 'Easy' },
-  'L3': { title: 'Level 3 — Plan Ahead', desc: '5 moves to reach the star.', emoji: '🔴', difficulty: 'Medium' },
+  'L3': { title: 'Level 3 — Bonus Gem', desc: 'Plan ahead and collect the gem.', emoji: '💎', difficulty: 'Medium' },
+  'L4': { title: 'Level 4 — Wall Maze', desc: 'Route around blocks to reach the star.', emoji: '🧱', difficulty: 'Medium' },
+  'L5': { title: 'Level 5 — Key Quest', desc: 'Collect the key before the locked gate.', emoji: '🔑', difficulty: 'Tricky' },
+  'L6': { title: 'Level 6 — Repeat Move', desc: 'Use repeat to make a shorter plan.', emoji: '↻', difficulty: 'Logic' },
+  'L7': { title: 'Level 7 — Gem Detour', desc: 'Pick up the key and bonus gem.', emoji: '🧭', difficulty: 'Hard' },
+  'L8': { title: 'Level 8 — Code Boss', desc: 'Use every trick to solve the route.', emoji: '👑', difficulty: 'Boss' },
 };
 
 function CodeLabPreview() {
@@ -1254,7 +1444,7 @@ function WebCodeLab({ levels, onPlayLevel, onBack }) {
       </section>
 
       <section className="spelloop-section">
-        <div className="spelloop-section-head"><h2>Choose a Lab</h2><button type="button">View all</button></div>
+        <div className="spelloop-section-head"><h2>Choose a Lab</h2><button type="button" onClick={function() { if (current) onPlayLevel(current); }}>Play current</button></div>
         <div className="code-lab-levels">
         {codingLevels.map(function(lv) {
           var info = CODING_LEVEL_INFO[lv.word] || {};
@@ -1321,13 +1511,48 @@ function WebPet({ profile, setProfile, levels }) {
   var petEquipped = activePetData.equipped || {};
   var isShiny = activePetData.shiny || false;
 
-  var stage = typeof getPetStage !== 'undefined' ? getPetStage(completedChapters, isShiny) : 'egg';
+  var usesPersonalGrowth = activePetData.growthPoints != null;
+  var stage = usesPersonalGrowth && typeof getPetStageFromGrowth !== 'undefined'
+    ? getPetStageFromGrowth(activePetData.growthPoints, isShiny)
+    : typeof getPetStage !== 'undefined' ? getPetStage(completedChapters, isShiny) : 'egg';
   var moodLabel = typeof getPetMoodLabel !== 'undefined' ? getPetMoodLabel(petMood) : 'happy';
   var moodColors = (typeof PET_MOOD_COLORS !== 'undefined' && PET_MOOD_COLORS[moodLabel]) || { bar: 'var(--mint)', text: 'var(--mint-ink)', label: '😄 Happy' };
-  var next = typeof getPetNextStage !== 'undefined' ? getPetNextStage(completedChapters) : { chapter: 1, label: 'Complete Chapter 1 to hatch!' };
+  var growthProgress = usesPersonalGrowth && typeof getPetGrowthProgress !== 'undefined'
+    ? getPetGrowthProgress(activePetData.growthPoints) : null;
+  var next = usesPersonalGrowth && typeof getPetNextGrowthStage !== 'undefined'
+    ? getPetNextGrowthStage(activePetData.growthPoints)
+    : typeof getPetNextStage !== 'undefined' ? getPetNextStage(completedChapters) : { chapter: 1, label: 'Complete Chapter 1 to hatch!' };
 
   var [editingName, setEditingName] = React.useState(false);
   var [nameInput, setNameInput] = React.useState(petName);
+  var [petReaction, setPetReaction] = React.useState(null);
+  var [petPlayNote, setPetPlayNote] = React.useState('');
+
+  function claimStarterPet() {
+    var starter = allSpecies.find(function(s) { return s.isStarter; }) || allSpecies[0] || { id: 'pebble', name: 'Pebble' };
+    window.sfx?.complete();
+    setProfile(function(prev) {
+      var pd = Object.assign({}, prev.petData || {});
+      pd[starter.id] = Object.assign({
+        name: starter.name || 'Pebble',
+        mood: 80,
+        lastPlayed: null,
+        equipped: {},
+        shiny: false,
+        happyDays: 0,
+        lastMoodDate: null,
+        room: null,
+        toys: [],
+      }, pd[starter.id] || {});
+      if (starter.shinyKey && pd[starter.id][starter.shinyKey] == null) pd[starter.id][starter.shinyKey] = 0;
+      return Object.assign({}, prev, {
+        starterPicked: true,
+        ownedSpecies: [starter.id].concat((prev.ownedSpecies || []).filter(function(id) { return id !== starter.id; })),
+        activePetId: starter.id,
+        petData: pd,
+      });
+    });
+  }
 
   function feed() {
     if (coins < 5 || petMood >= 100 || !activePetId) return;
@@ -1346,6 +1571,26 @@ function WebPet({ profile, setProfile, levels }) {
         feedCount: newFeedCount,
         petData: pd,
       });
+    });
+  }
+
+  function playWithPet() {
+    if (!activePetId) return;
+    window.sfx?.tap();
+    window.Juice?.emit('petHappy');
+    setPetReaction('bounce');
+    setPetPlayNote(petMood >= 100 ? petName + ' loved that!' : '+5 mood');
+    setTimeout(function() {
+      setPetReaction(null);
+      setPetPlayNote('');
+    }, 900);
+    setProfile(function(prev) {
+      var pd = Object.assign({}, prev.petData || {});
+      var entry = Object.assign({}, pd[prev.activePetId] || {});
+      entry.mood = Math.min(100, (entry.mood != null ? entry.mood : 80) + 5);
+      entry.lastPlayed = new Date().toISOString().slice(0, 10);
+      pd[prev.activePetId] = entry;
+      return Object.assign({}, prev, { petData: pd });
     });
   }
 
@@ -1373,6 +1618,15 @@ function WebPet({ profile, setProfile, levels }) {
     adult: 'Fully grown! Meet the shiny condition to unlock ✨.',
     shiny: 'You did it! This is the ultimate form. Amazing!',
   };
+  if (usesPersonalGrowth) {
+    stageTips = {
+      egg: 'Play lessons with this pet active to help it hatch.',
+      baby: 'Keep learning together. This pet grows from its own wins.',
+      kid: 'Almost grown! More completed lessons will help it reach Adult.',
+      adult: 'Fully grown! Meet the shiny condition to unlock ✨.',
+      shiny: 'You did it! This is the ultimate form. Amazing!',
+    };
+  }
 
   var specBg = activePetSpec ? activePetSpec.bg : 'var(--lilac-soft, #F3EEFF)';
   var specColor = activePetSpec ? activePetSpec.color : 'var(--blue)';
@@ -1427,214 +1681,179 @@ function WebPet({ profile, setProfile, levels }) {
     shinyProgress = { cur: codingDone, target: 3, label: activePetSpec.shinyLabel };
   }
 
-  return (
-    <div className="pet-dashboard" style={{ padding: '32px 40px 48px', minHeight: '100%', background: 'var(--bg)' }}>
+  if (!activePetId || !activePetSpec) {
+    return (
+      <div className="pet-dashboard" style={{ padding: '32px 40px 48px', minHeight: '100%', background: 'var(--bg)' }}>
+        <div className="pet-empty-state">
+          <div className="pet-empty-state__egg">
+            {typeof PetSprite !== 'undefined' ? (
+              <PetSprite speciesId={(allSpecies.find(function(s) { return s.isStarter; }) || {}).id || 'pebble'} completedChapters={[]} mood={80} size={128} animate={true}/>
+            ) : (
+              <span>🥚</span>
+            )}
+          </div>
+          <h2>Your pet is waiting</h2>
+          <p>Pick a companion so it can travel with you, cheer for wins, and grow as you finish chapters.</p>
+          <button type="button" onClick={claimStarterPet}>Start with Pebble</button>
+        </div>
+      </div>
+    );
+  }
 
-      {/* Collection row */}
+  return (
+    <div className="pet-dashboard pet-page" style={{ '--pet-bg': specBg, '--pet-color': specColor, '--pet-room-bg': petRoomBg || 'linear-gradient(135deg, #7B45EA 0%, #FF8CB7 100%)' }}>
       {ownedSpecies.length > 1 && (
-        <div style={{ marginBottom: 28 }}>
-          <div style={{ fontSize: 12, color: 'var(--ink-mute)', fontWeight: 800, letterSpacing: 0.5, textTransform: 'uppercase', marginBottom: 10 }}>Your Collection</div>
-          <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+        <section className="pet-collection">
+          <div className="spelloop-section-head"><h2>Your Pets</h2></div>
+          <div className="pet-collection-row">
             {ownedSpecies.map(function(sid) {
               var spec = allSpecies.find(function(s) { return s.id === sid; });
               var pData = (profile.petData || {})[sid] || {};
               var isAct = sid === activePetId;
               return (
-                <button key={sid} onClick={function() { switchActive(sid); }} style={{
-                  background: isAct ? (spec ? spec.bg : 'var(--blue-soft)') : 'var(--surface)',
-                  border: isAct ? '2px solid ' + (spec ? spec.color : 'var(--blue)') : '2px solid var(--alpha-sm)',
-                  borderRadius: 14, padding: '8px 14px', display: 'flex', alignItems: 'center', gap: 8,
-                  cursor: 'pointer', fontFamily: 'inherit', fontWeight: 800, fontSize: 13,
-                  transition: 'border-color 150ms, background 150ms',
-                }}>
+                <button key={sid} className={'pet-collection-chip' + (isAct ? ' is-active' : '')} onClick={function() { switchActive(sid); }}>
                   {typeof PetSprite !== 'undefined' && (
                     <PetSprite speciesId={sid} completedChapters={completedChapters}
-                      mood={pData.mood != null ? pData.mood : 80} size={32} equipped={pData.equipped || {}} animate={false}/>
+                      growthPoints={pData.growthPoints}
+                      mood={pData.mood != null ? pData.mood : 80} size={38} equipped={pData.equipped || {}}
+                      animate={false} isShiny={pData.shiny}/>
                   )}
                   <span>{pData.name || (spec && spec.name) || sid}</span>
-                  {pData.shiny && <span>✨</span>}
+                  {pData.shiny && <i>✨</i>}
                 </button>
               );
             })}
           </div>
-        </div>
+        </section>
       )}
 
-      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 40, flexWrap: 'wrap' }}>
-
-        {/* Left — active pet display */}
-        <div style={{ minWidth: 260 }}>
-          <div style={{ fontSize: 13, color: 'var(--ink-mute)', fontWeight: 800, letterSpacing: 0.5, textTransform: 'uppercase', marginBottom: 4 }}>
-            {activePetSpec && activePetSpec.typeIcon} Active companion
-          </div>
+      <section className="pet-hero">
+        <div className="pet-hero__copy">
+          <div className="code-lab-kicker">{activePetSpec && activePetSpec.typeIcon} Active companion</div>
           {editingName ? (
-            <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 8 }}>
+            <div className="pet-name-edit">
               <input value={nameInput} onChange={function(e) { setNameInput(e.target.value); }}
                 onKeyDown={function(e) { if (e.key === 'Enter') saveName(); if (e.key === 'Escape') setEditingName(false); }}
-                style={{ fontSize: 32, fontWeight: 900, border: 'none', borderBottom: '2px solid var(--blue)', background: 'transparent', outline: 'none', fontFamily: 'inherit', maxWidth: 200 }} autoFocus/>
-              <button onClick={saveName} style={{ background: 'var(--blue)', color: 'white', border: 'none', borderRadius: 8, padding: '6px 14px', fontFamily: 'inherit', fontWeight: 800, cursor: 'pointer' }}>Save</button>
+                autoFocus/>
+              <button onClick={saveName}>Save</button>
             </div>
           ) : (
-            <h1 style={{ fontSize: 34, fontWeight: 700, fontFamily: "'Fredoka', 'Nunito', sans-serif", margin: '0 0 4px', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 10 }}
-              onClick={function() { setNameInput(petName); setEditingName(true); }}>
-              {petName} <span style={{ fontSize: 18, color: 'var(--ink-mute)' }}>✏️</span>
-            </h1>
+            <h2 onClick={function() { setNameInput(petName); setEditingName(true); }}>
+              {petName} <span aria-hidden="true">✎</span>
+            </h2>
           )}
-          <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--ink-soft)', marginBottom: 24 }}>
-            {stageLabels[stage]} · {moodColors.label}
-            {activePetSpec && <span style={{ marginLeft: 8, fontSize: 13, color: 'var(--ink-mute)' }}>{activePetSpec.type}</span>}
+          <p>{stageLabels[stage]} · {moodColors.label} · {activePetSpec && activePetSpec.type}</p>
+          <div className="pet-hero-actions">
+            <button type="button" onClick={feed} disabled={coins < 5 || petMood >= 100 || !activePetId}>
+              {petMood >= 100 ? petName + ' is full' : coins < 5 ? 'Need 5 coins' : 'Feed for 5 coins'}
+            </button>
+            <span>{coins} coins</span>
           </div>
+        </div>
 
-          <div style={{
-            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-            marginBottom: 24, borderRadius: 20, padding: '20px 0 12px',
-            background: petRoomBg || 'linear-gradient(135deg, var(--brand-dark) 0%, var(--violet) 100%)',
-            transition: 'background 0.5s ease',
-          }}>
+        <div className="pet-stage-card">
+          <div className="pet-playground">
             {typeof PetSprite !== 'undefined' && activePetId && (
-              <div id="juice-pet" style={{ filter: 'drop-shadow(0 0 24px rgba(37,99,235,0.5))' }}>
+              <button id="juice-pet" className="pet-interaction-button" type="button"
+                onClick={playWithPet}
+                aria-label={'Play with ' + petName}>
                 <PetSprite speciesId={activePetId} completedChapters={completedChapters}
-                  mood={petMood} size={160} equipped={petEquipped} animate={true}/>
-              </div>
+                  growthPoints={activePetData.growthPoints}
+                  mood={petMood} size={176} equipped={petEquipped} animate={true}
+                  reaction={petReaction} isShiny={isShiny}/>
+              </button>
             )}
+            <div className="pet-play-hint">{petPlayNote || 'Tap to play'}</div>
             {equippedToys.length > 0 && (
-              <div style={{ display: 'flex', gap: 10, marginTop: 12 }}>
+              <div className="pet-toys">
                 {equippedToys.map(function(toy) {
-                  return <span key={toy.id} style={{ fontSize: 26 }} title={toy.name}>{toy.emoji}</span>;
+                  return <span key={toy.id} title={toy.name}>{toy.emoji}</span>;
                 })}
               </div>
             )}
-            {roomItem && (
-              <div style={{ fontSize: 10, fontWeight: 800, color: 'rgba(255,255,255,0.8)', marginTop: 6, textTransform: 'uppercase', letterSpacing: 0.5 }}>{roomItem.emoji} {roomItem.name}</div>
-            )}
+            {roomItem && <div className="pet-room-label">{roomItem.emoji} {roomItem.name}</div>}
           </div>
-
-          {/* Mood bar + feed */}
-          <div style={{ background: 'var(--surface)', borderRadius: 16, padding: '16px 20px', marginBottom: 16, boxShadow: 'var(--shadow-soft)' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-              <span style={{ fontWeight: 800, fontSize: 14 }}>Mood</span>
-              <span style={{ fontWeight: 900, fontSize: 14, color: moodColors.text }}>{moodColors.label}</span>
-            </div>
-            <div style={{ height: 14, background: 'var(--alpha-sm)', borderRadius: 7, overflow: 'hidden', marginBottom: 10 }}>
-              <div style={{ height: '100%', width: petMood + '%', background: moodColors.bar, borderRadius: 7, transition: 'width 0.6s ease' }}/>
-            </div>
-            <button onClick={feed} disabled={coins < 5 || petMood >= 100 || !activePetId} style={{
-              width: '100%', padding: '12px 0', borderRadius: 12, border: 'none',
-              background: (coins < 5 || petMood >= 100 || !activePetId) ? 'var(--alpha-sm)' : 'var(--yellow)',
-              color: (coins < 5 || petMood >= 100 || !activePetId) ? 'var(--ink-mute)' : 'var(--yellow-ink)',
-              fontFamily: 'inherit', fontWeight: 900, fontSize: 15,
-              cursor: (coins < 5 || petMood >= 100 || !activePetId) ? 'default' : 'pointer',
-              transition: 'background 150ms',
-            }}>
-              {petMood >= 100 ? '😄 ' + petName + ' is full!' : coins < 5 ? '🍎 Need 5 🪙 to feed' : '🍎 Feed ' + petName + ' (5 🪙)'}
-            </button>
-            {ownedTreats.length > 0 && (
-              <div style={{ marginTop: 10 }}>
-                <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--ink-mute)', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 6 }}>Special treats</div>
-                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                  {ownedTreats.map(function(item) {
-                    var count = (profile.treats || {})[item.id] || 0;
-                    return (
-                      <button key={item.id} onClick={function() { useTreat(item); }} disabled={petMood >= 100 || !activePetId} style={{
-                        display: 'flex', alignItems: 'center', gap: 5,
-                        padding: '6px 12px', borderRadius: 10, border: 'none',
-                        background: (petMood >= 100 || !activePetId) ? 'var(--alpha-sm)' : 'var(--pink-soft, #FFE0F0)',
-                        color: (petMood >= 100 || !activePetId) ? 'var(--ink-mute)' : 'var(--pink-ink, #C2185B)',
-                        fontFamily: 'inherit', fontWeight: 800, fontSize: 12,
-                        cursor: (petMood >= 100 || !activePetId) ? 'default' : 'pointer',
-                      }}>
-                        <span>{item.emoji}</span>
-                        <span>{item.name}</span>
-                        <span style={{ background: 'rgba(0,0,0,0.12)', borderRadius: 999, padding: '1px 6px', fontSize: 10 }}>×{count}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Growth progress */}
-          {next.chapter && (
-            <div style={{ background: 'var(--surface)', borderRadius: 16, padding: '16px 20px', marginBottom: 16, boxShadow: 'var(--shadow-soft)' }}>
-              <div style={{ fontWeight: 800, fontSize: 14, marginBottom: 6 }}>Next evolution</div>
-              <div style={{ fontSize: 13, color: 'var(--ink-mute)', fontWeight: 700 }}>{next.label}</div>
-            </div>
-          )}
-          {!next.chapter && (
-            <div style={{ background: 'var(--mint-soft)', borderRadius: 16, padding: '14px 20px', textAlign: 'center', marginBottom: 16 }}>
-              <div style={{ fontSize: 22, marginBottom: 4 }}>🎉</div>
-              <div style={{ fontWeight: 900, fontSize: 15, color: 'var(--mint-ink)' }}>Fully evolved!</div>
-            </div>
-          )}
-
-          {/* Shiny progress */}
-          {shinyProgress && (
-            <div style={{ background: 'var(--surface)', borderRadius: 16, padding: '16px 20px', boxShadow: 'var(--shadow-soft)' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
-                <span style={{ fontWeight: 800, fontSize: 14 }}>✨ Shiny progress</span>
-                <span style={{ fontWeight: 900, fontSize: 13, color: 'var(--yellow-ink)' }}>{shinyProgress.cur}/{shinyProgress.target}</span>
-              </div>
-              <div style={{ height: 10, background: 'var(--alpha-sm)', borderRadius: 5, overflow: 'hidden', marginBottom: 6 }}>
-                <div style={{ height: '100%', width: Math.min(100, shinyProgress.cur / shinyProgress.target * 100) + '%', background: '#FFD166', borderRadius: 5, transition: 'width 0.6s ease' }}/>
-              </div>
-              <div style={{ fontSize: 12, color: 'var(--ink-mute)', fontWeight: 700 }}>{shinyProgress.label}</div>
-            </div>
-          )}
-          {isShiny && (
-            <div style={{ background: '#FFFBEB', borderRadius: 16, padding: '14px 20px', textAlign: 'center', boxShadow: '0 0 0 2px #FFD166' }}>
-              <div style={{ fontSize: 24, marginBottom: 4 }}>✨</div>
-              <div style={{ fontWeight: 900, fontSize: 15, color: '#B45309' }}>Shiny unlocked!</div>
-              <div style={{ fontSize: 12, color: 'var(--ink-mute)', fontWeight: 700 }}>This {petName} has a golden glow.</div>
-            </div>
-          )}
         </div>
+      </section>
 
-        {/* Right — stage info + tips */}
-        <div style={{ flex: 1, minWidth: 260 }}>
-          <div style={{ background: specBg, borderRadius: 20, padding: '20px 24px', marginBottom: 20, boxShadow: 'var(--shadow-soft)' }}>
-            <div style={{ fontWeight: 900, fontSize: 18, marginBottom: 8 }}>{stageLabels[stage]}</div>
-            <div style={{ fontSize: 14, color: 'var(--ink-soft)', fontWeight: 700, lineHeight: 1.5 }}>{stageTips[stage]}</div>
+      <section className="journey-summary pet-summary">
+        <div className="journey-summary-card pet-mood-card">
+          <span className="journey-summary-card__icon">😄</span>
+          <div>
+            <strong>{petMood}%</strong>
+            <p>{moodColors.label}</p>
+            <div className="pet-meter"><span style={{ width: petMood + '%', background: moodColors.bar }}/></div>
           </div>
+        </div>
+        <div className="journey-summary-card">
+          <span className="journey-summary-card__icon">🥚</span>
+          <div><strong>{stageLabels[stage]}</strong><p>{usesPersonalGrowth ? next.label : next.chapter ? next.label : 'Fully evolved'}</p></div>
+        </div>
+        <div className="journey-summary-card">
+          <span className="journey-summary-card__icon">⭐</span>
+          <div><strong>{profile.totalStars || 0}</strong><p>Total stars</p></div>
+        </div>
+      </section>
 
-          <h3 style={{ fontSize: 17, fontWeight: 900, margin: '0 0 14px' }}>Care tips</h3>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 28 }}>
-            {[
-              { icon: '🗺', tip: 'Complete whole chapters to evolve your pet!' },
-              { icon: '🎮', tip: 'Play every day to keep their mood up — it drops if you skip.' },
-              { icon: '🪙', tip: 'Feed your pet for 5 coins to boost mood instantly.' },
-              { icon: '🛍', tip: 'Buy outfits in the Shop → Outfits tab to dress them up.' },
-              { icon: '✨', tip: 'Meet your pet\'s special condition to unlock their shiny form!' },
-            ].map(function(t, i) {
-              return (
-                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 14, background: 'var(--surface)', borderRadius: 14, padding: '14px 18px', boxShadow: 'var(--shadow-soft)' }}>
-                  <div style={{ fontSize: 26, flexShrink: 0 }}>{t.icon}</div>
-                  <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--ink-soft)' }}>{t.tip}</div>
-                </div>
-              );
-            })}
+      <section className="spelloop-section pet-progress-grid">
+        <div className="pet-progress-card">
+          <div className="pet-progress-card__label">Growth</div>
+          <h3>{stageLabels[stage]}</h3>
+          {growthProgress && <div className="pet-meter"><span style={{ width: growthProgress.percent + '%', background: specColor }}/></div>}
+          {growthProgress && <p>{growthProgress.points}/{growthProgress.target} growth points</p>}
+          <p>{stageTips[stage]}</p>
+        </div>
+        {shinyProgress && (
+          <div className="pet-progress-card pet-progress-card--shiny">
+            <div className="pet-progress-card__label">Shiny progress <span>{shinyProgress.cur}/{shinyProgress.target}</span></div>
+            <h3>Special glow</h3>
+            <div className="pet-meter"><span style={{ width: Math.min(100, shinyProgress.cur / shinyProgress.target * 100) + '%', background: '#FFD166' }}/></div>
+            <p>{shinyProgress.label}</p>
           </div>
-
-          <div style={{ background: 'var(--surface)', borderRadius: 16, padding: '16px 20px', boxShadow: 'var(--shadow-soft)' }}>
-            <div style={{ fontWeight: 900, fontSize: 15, marginBottom: 12 }}>Stats</div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-              {[
-                { label: 'Total stars', value: (profile.totalStars || 0) + ' ⭐' },
-                { label: 'Mood', value: petMood + '%' },
-                { label: 'Stage', value: stageLabels[stage] },
-                { label: 'Pets owned', value: ownedSpecies.length + ' / ' + allSpecies.length },
-              ].map(function(s) {
+        )}
+        {isShiny && (
+          <div className="pet-progress-card pet-progress-card--shiny">
+            <div className="pet-progress-card__label">Unlocked</div>
+            <h3>Shiny form</h3>
+            <p>This {petName} has a golden glow.</p>
+          </div>
+        )}
+        {ownedTreats.length > 0 && (
+          <div className="pet-progress-card">
+            <div className="pet-progress-card__label">Treats</div>
+            <div className="pet-treat-row">
+              {ownedTreats.map(function(item) {
+                var count = (profile.treats || {})[item.id] || 0;
                 return (
-                  <div key={s.label} style={{ background: 'var(--bg)', borderRadius: 12, padding: '10px 14px' }}>
-                    <div style={{ fontSize: 11, color: 'var(--ink-mute)', fontWeight: 700, marginBottom: 2 }}>{s.label}</div>
-                    <div style={{ fontSize: 18, fontWeight: 900 }}>{s.value}</div>
-                  </div>
+                  <button key={item.id} onClick={function() { useTreat(item); }} disabled={petMood >= 100 || !activePetId}>
+                    <span>{item.emoji}</span>{item.name}<i>x{count}</i>
+                  </button>
                 );
               })}
             </div>
           </div>
+        )}
+      </section>
+
+      <section className="spelloop-section">
+        <div className="spelloop-section-head"><h2>Care Tips</h2></div>
+        <div className="pet-tips-grid">
+          {[
+            { icon: '🗺', tip: 'Complete whole chapters to evolve your pet.' },
+            { icon: '🎮', tip: 'Play every day to keep their mood up.' },
+            { icon: '🪙', tip: 'Feed your pet for 5 coins to boost mood.' },
+            { icon: '🛍', tip: 'Buy outfits in Rewards to dress them up.' },
+            { icon: '✨', tip: 'Meet the special condition to unlock shiny form.' },
+          ].map(function(t, i) {
+            return (
+              <div key={i} className="pet-tip-card">
+                <span>{t.icon}</span>
+                <p>{t.tip}</p>
+              </div>
+            );
+          })}
         </div>
-      </div>
+      </section>
     </div>
   );
 }

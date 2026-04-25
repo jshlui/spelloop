@@ -4,31 +4,15 @@
 function GameHeader({ mode, progress, onClose, word }) {
   const m = MODE_META[mode];
   return (
-    <div style={{ padding: '60px 16px 12px', display: 'flex', alignItems: 'center', gap: 10 }}>
-      <button onClick={onClose} aria-label="Close" style={{
-        width: 44, height: 44, borderRadius: '50%', border: 'none',
-        background: 'var(--surface)', cursor: 'pointer',
-        boxShadow: 'var(--shadow-soft)', fontSize: 18, fontWeight: 900,
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-      }}>✕</button>
-      <div style={{ flex: 1 }}>
-        <div className="progress-track">
+    <div className="game-mission-bar">
+      <button className="game-close-btn" onClick={onClose} aria-label="Close">✕</button>
+      <div className="game-progress-wrap" aria-hidden="true">
+        <div className="game-progress-label"><span>Word mission</span><strong>{Math.round(progress * 100)}%</strong></div>
+        <div className="progress-track game-progress-track">
           <div className="progress-fill" style={{ width: `${progress*100}%`, background: `var(--${m.color})` }}/>
         </div>
       </div>
       <ModeBadge mode={mode}/>
-      {word && (
-        <button
-          onClick={() => { window.sfx?.speak(word); window.Juice?.emit('petHappy'); }}
-          aria-label="Hear the word again"
-          style={{
-            width: 44, height: 44, borderRadius: '50%', border: 'none',
-            background: 'var(--surface)', cursor: 'pointer',
-            boxShadow: 'var(--shadow-soft)', fontSize: 18,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-          }}
-        >🔊</button>
-      )}
     </div>
   );
 }
@@ -125,8 +109,10 @@ function ClickGame({ word, onDone, onClose }) {
       }
       return arr;
     }
+    var maxChoices = word.length >= 5 ? 4 : 6;
+    var choiceCount = Math.min(distractorCount, maxChoices);
     var pool = shuffle('ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').filter(function(c) { return c !== target; }));
-    var others = pool.slice(0, distractorCount - 1);
+    var others = pool.slice(0, choiceCount - 1);
     return shuffle([...others, target]);
   }, [idx, word, distractorCount]);
 
@@ -222,6 +208,7 @@ function DragGame({ word, onDone, onClose }) {
   const [wrongCount, setWrongCount] = React.useState(0);
   const [burst, setBurst] = React.useState(false);
   const [dragging, setDragging] = React.useState(null);
+  const [selectedKey, setSelectedKey] = React.useState(null);
 
   const filledCount = slots.filter(x => x !== null).length;
   const progress = filledCount / word.length;
@@ -247,15 +234,17 @@ function DragGame({ word, onDone, onClose }) {
     }
   }, [filledCount]);
 
-  function placeTile(tileKey) {
-    // find first empty slot
-    const slotIdx = slots.findIndex(s => s === null);
+  function placeTile(tileKey, preferredSlotIdx) {
+    const slotIdx = preferredSlotIdx != null ? preferredSlotIdx : slots.findIndex(s => s === null);
     if (slotIdx < 0) return;
+    if (slots[slotIdx]) return;
     const t = tiles.find(x => x.key === tileKey);
     if (!t || t.placed) return;
     const newTiles = tiles.map(x => x.key === tileKey ? { ...x, placed: true } : x);
     const newSlots = [...slots]; newSlots[slotIdx] = { letter: t.letter, key: tileKey };
     setTiles(newTiles); setSlots(newSlots);
+    setSelectedKey(null);
+    setDragging(null);
     if (t.letter === word[slotIdx]) { window.sfx?.tap(); window.Juice?.emit('correct'); }
   }
 
@@ -269,6 +258,15 @@ function DragGame({ word, onDone, onClose }) {
     }
     const newTiles = tiles.map(function(x) { return freedKeys.includes(x.key) ? Object.assign({}, x, { placed: false }) : x; });
     setSlots(newSlots); setTiles(newTiles);
+    setSelectedKey(null);
+  }
+
+  function handleSlotDrop(e, slotIdx) {
+    e.preventDefault();
+    var key = dragging;
+    var dataKey = e.dataTransfer && e.dataTransfer.getData('text/plain');
+    if (dataKey !== '') key = Number(dataKey);
+    if (key != null && !Number.isNaN(key)) placeTile(key, slotIdx);
   }
 
   return (
@@ -283,15 +281,22 @@ function DragGame({ word, onDone, onClose }) {
         {/* slots */}
         <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', justifyContent: 'center' }}>
           {slots.map((s, i) => (
-            <div key={i}
-              onClick={() => s && unplace(i)}
+            <button key={i}
+              type="button"
+              onClick={() => s ? unplace(i) : selectedKey != null && placeTile(selectedKey, i)}
+              onDragOver={function(e) { if (!s) e.preventDefault(); }}
+              onDrop={function(e) { if (!s) handleSlotDrop(e, i); }}
+              aria-label={s ? 'Remove ' + s.letter + ' from slot ' + (i + 1) : 'Empty slot ' + (i + 1)}
               className={`tile ${s ? 'slot filled' : 'slot'}`}
               style={{
                 width: 64, height: 80,
+                border: 'none',
+                fontFamily: 'inherit',
+                cursor: s ? 'pointer' : selectedKey != null ? 'copy' : 'default',
                 animation: s ? 'pop 280ms ease' : 'none',
               }}>
               {s ? s.letter : ''}
-            </div>
+            </button>
           ))}
         </div>
 
@@ -306,7 +311,12 @@ function DragGame({ word, onDone, onClose }) {
               const color = ['blue', 'pink', 'mint', 'coral', 'lilac'][t.key % 5];
               return (
                 <button key={t.key} onClick={() => placeTile(t.key)}
+                  onFocus={function() { if (!t.placed) setSelectedKey(t.key); }}
+                  onDragStart={function(e) { setDragging(t.key); e.dataTransfer && e.dataTransfer.setData('text/plain', String(t.key)); }}
+                  onDragEnd={function() { setDragging(null); }}
+                  draggable={!t.placed}
                   disabled={t.placed}
+                  aria-label={'Place letter ' + t.letter}
                   className={`tile ${color}`}
                   style={{
                     width: 58, height: 68, fontSize: 32, border: 'none',
@@ -370,11 +380,11 @@ function TypeGame({ word, onDone, onClose, device }) {
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: 'var(--bg)' }}>
       <GameHeader mode="type" progress={progress} onClose={onClose} word={word}/>
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '16px 16px 12px', gap: 20 }}>
-        <div style={{ textAlign: 'center' }}>
+        <div className="typing-prompt" style={{ textAlign: 'center' }}>
           <div style={{ fontSize: 12, color: 'var(--ink-mute)', fontWeight: 800, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 8 }}>Type the word</div>
           <SpeakButton word={word}/>
         </div>
-        <div className={shake ? 'shake-wrap' : ''} style={{
+        <div className={'type-word-slots ' + (shake ? 'shake-wrap' : '')} style={{
           display: 'flex', gap: 10, justifyContent: 'center',
           animation: shake ? 'shake 300ms' : 'none',
         }}>
@@ -405,11 +415,11 @@ function KidKeyboard({ onPress, device }) {
     'ZXCVBNM'.split(''),
   ];
   return (
-    <div style={{ width: '100%', maxWidth: 380, display: 'flex', flexDirection: 'column', gap: 8, padding: '0 4px' }}>
+    <div className="kid-keyboard" style={{ width: '100%', maxWidth: 380, display: 'flex', flexDirection: 'column', gap: 8, padding: '0 4px' }}>
       {rows.map((r, i) => (
-        <div key={i} style={{ display: 'flex', gap: 5, justifyContent: 'center', paddingLeft: i === 1 ? 14 : i === 2 ? 30 : 0, paddingRight: i === 1 ? 14 : i === 2 ? 30 : 0 }}>
+        <div key={i} className={'kid-keyboard-row kid-keyboard-row--' + i} style={{ display: 'flex', gap: 5, justifyContent: 'center', paddingLeft: i === 1 ? 14 : i === 2 ? 30 : 0, paddingRight: i === 1 ? 14 : i === 2 ? 30 : 0 }}>
           {r.map(l => (
-            <button key={l} onClick={() => onPress(l)} aria-label={'Letter ' + l} style={{
+            <button key={l} className="kid-key" onClick={() => onPress(l)} aria-label={'Letter ' + l} style={{
               flex: 1, minWidth: 44, height: 52,
               border: 'none', background: 'var(--surface)',
               color: 'var(--ink)', fontWeight: 900, fontSize: 20,
@@ -708,8 +718,10 @@ function PrecisionGame({ word, onDone, onClose }) {
         }}>
           Click when still! ({letterIdx + 1}/{word.length})
         </div>
-        <div
+        <button
+          type="button"
           onClick={handleClick}
+          aria-label={'Tap letter ' + letter + ' when it is still'}
           style={{
             position: 'absolute',
             left: 0, top: 0,
@@ -717,9 +729,11 @@ function PrecisionGame({ word, onDone, onClose }) {
             width: 96, height: 96,
             background: color,
             borderRadius: 22,
+            border: 'none',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontFamily: 'inherit',
             fontSize: 48, fontWeight: 900, color: '#fff',
-            cursor: 'none',
+            cursor: transitioning ? 'wait' : 'pointer',
             transition: 'transform 0.28s cubic-bezier(0.34,1.1,0.64,1)',
             opacity: transitioning ? 0.45 : 1,
             boxShadow: transitioning ? 'none' : '0 6px 20px rgba(0,0,0,0.18)',
@@ -727,7 +741,7 @@ function PrecisionGame({ word, onDone, onClose }) {
           }}
         >
           {letter}
-        </div>
+        </button>
       </div>
       <HintSystem word={word} wrongCount={wrongCount}/>
       <Burst show={burst}/>
@@ -1167,11 +1181,296 @@ function FlashGame({ word, onDone, onClose }) {
   );
 }
 
+// ── Fun Activity: MATH MATCH — solve kid-friendly equations ──
+var MATH_MATCH_QUESTIONS = [
+  { q: '2 + 3', answer: 5, choices: [4, 5, 6], blocks: ['🍎','🍎','+','🍎','🍎','🍎'] },
+  { q: '6 - 2', answer: 4, choices: [3, 4, 5], blocks: ['⭐','⭐','⭐','⭐'] },
+  { q: '4 + 4', answer: 8, choices: [7, 8, 9], blocks: ['🟣','🟣','🟣','🟣','+','🟣','🟣','🟣','🟣'] },
+  { q: '9 - 3', answer: 6, choices: [5, 6, 7], blocks: ['💎','💎','💎','💎','💎','💎'] },
+  { q: '5 + 2', answer: 7, choices: [6, 7, 8], blocks: ['🌟','🌟','🌟','🌟','🌟','+','🌟','🌟'] },
+];
+
+function MathMatchGame({ word, onDone, onClose }) {
+  var [idx, setIdx] = React.useState(0);
+  var [wrongCount, setWrongCount] = React.useState(0);
+  var [feedback, setFeedback] = React.useState(null);
+  var [burst, setBurst] = React.useState(false);
+  var q = MATH_MATCH_QUESTIONS[idx % MATH_MATCH_QUESTIONS.length];
+  var progress = idx / MATH_MATCH_QUESTIONS.length;
+
+  function choose(n) {
+    if (feedback) return;
+    if (n === q.answer) {
+      window.sfx?.playCorrect();
+      window.Juice?.emit('correct');
+      setFeedback('correct');
+      setTimeout(function() {
+        if (idx + 1 >= MATH_MATCH_QUESTIONS.length) {
+          setBurst(true);
+          window.Juice?.emit('wordComplete');
+          window.sfx?.complete();
+          setTimeout(function() { onDone(wrongCount === 0 ? 3 : wrongCount <= 2 ? 2 : 1); }, 900);
+        } else {
+          setIdx(function(i) { return i + 1; });
+          setFeedback(null);
+        }
+      }, 520);
+    } else {
+      setFeedback('wrong');
+      setWrongCount(function(w) { return w + 1; });
+      window.sfx?.playWrong();
+      window.Juice?.emit('wrong');
+      setTimeout(function() { setFeedback(null); }, 520);
+    }
+  }
+
+  return (
+    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: 'linear-gradient(180deg, var(--mint-soft), var(--bg))' }}>
+      <GameHeader mode="math" progress={progress} onClose={onClose}/>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'space-between', padding: '14px 18px 28px', gap: 18 }}>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ fontSize: 12, color: 'var(--mint-ink)', fontWeight: 900, letterSpacing: 1, textTransform: 'uppercase' }}>Match the answer</div>
+          <div style={{ marginTop: 10, fontFamily: "'Grandstander','Fredoka',sans-serif", fontSize: 58, lineHeight: 1, color: 'var(--ink)' }}>{q.q} = ?</div>
+        </div>
+        <div style={{ width: '100%', maxWidth: 390, minHeight: 160, borderRadius: 30, background: 'white', boxShadow: 'var(--shadow-soft)', display: 'flex', flexWrap: 'wrap', alignContent: 'center', justifyContent: 'center', gap: 10, padding: 22 }}>
+          {q.blocks.map(function(b, i) {
+            return <span key={i} style={{ width: b === '+' ? 28 : 38, height: 38, display: 'grid', placeItems: 'center', fontSize: b === '+' ? 28 : 30, fontWeight: 900, color: 'var(--mint-ink)' }}>{b}</span>;
+          })}
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, width: '100%', maxWidth: 390 }}>
+          {q.choices.map(function(n) {
+            var isRight = feedback === 'correct' && n === q.answer;
+            return (
+              <button key={n} onClick={function() { choose(n); }}
+                style={{
+                  minHeight: 78, border: '5px solid white', borderRadius: 24,
+                  background: isRight ? 'var(--success)' : 'var(--surface)',
+                  color: isRight ? 'white' : 'var(--ink)',
+                  boxShadow: 'var(--shadow-toy)', fontFamily: "'Grandstander','Fredoka',sans-serif",
+                  fontSize: 34, fontWeight: 900, cursor: 'pointer',
+                }}>{n}</button>
+            );
+          })}
+        </div>
+      </div>
+      <Burst show={burst}/>
+    </div>
+  );
+}
+
+// ── Fun Activity: PIZZA PARTY — build orders by count ──
+var PIZZA_ORDERS = [
+  { name: 'Cheesy Starter', target: { pep: 2, mush: 0, basil: 1 } },
+  { name: 'Garden Slice', target: { pep: 1, mush: 2, basil: 2 } },
+  { name: 'Party Pizza', target: { pep: 3, mush: 2, basil: 1 } },
+];
+var PIZZA_TOPPINGS = [
+  { id: 'pep', label: 'Pepperoni', icon: '🔴' },
+  { id: 'mush', label: 'Mushroom', icon: '🍄' },
+  { id: 'basil', label: 'Basil', icon: '🌿' },
+];
+
+function PizzaPartyGame({ word, onDone, onClose }) {
+  var [idx, setIdx] = React.useState(0);
+  var [counts, setCounts] = React.useState({ pep: 0, mush: 0, basil: 0 });
+  var [wrongCount, setWrongCount] = React.useState(0);
+  var [feedback, setFeedback] = React.useState(null);
+  var [burst, setBurst] = React.useState(false);
+  var order = PIZZA_ORDERS[idx % PIZZA_ORDERS.length];
+  var progress = idx / PIZZA_ORDERS.length;
+
+  function add(id) {
+    if (feedback === 'correct') return;
+    window.sfx?.tap();
+    setCounts(function(c) {
+      var next = Object.assign({}, c);
+      next[id] = Math.min(5, (next[id] || 0) + 1);
+      return next;
+    });
+  }
+  function clear() {
+    window.sfx?.tap();
+    setCounts({ pep: 0, mush: 0, basil: 0 });
+    setFeedback(null);
+  }
+  function bake() {
+    var ok = PIZZA_TOPPINGS.every(function(t) { return (counts[t.id] || 0) === (order.target[t.id] || 0); });
+    if (!ok) {
+      setFeedback('wrong');
+      setWrongCount(function(w) { return w + 1; });
+      window.sfx?.playWrong();
+      window.Juice?.emit('wrong');
+      return;
+    }
+    setFeedback('correct');
+    window.sfx?.playCorrect();
+    window.Juice?.emit('correct');
+    setTimeout(function() {
+      if (idx + 1 >= PIZZA_ORDERS.length) {
+        setBurst(true);
+        window.sfx?.complete();
+        window.Juice?.emit('wordComplete');
+        setTimeout(function() { onDone(wrongCount === 0 ? 3 : wrongCount <= 1 ? 2 : 1); }, 900);
+      } else {
+        setIdx(function(i) { return i + 1; });
+        setCounts({ pep: 0, mush: 0, basil: 0 });
+        setFeedback(null);
+      }
+    }, 650);
+  }
+
+  var toppingDots = [];
+  PIZZA_TOPPINGS.forEach(function(t) {
+    for (var i = 0; i < (counts[t.id] || 0); i++) toppingDots.push({ icon: t.icon, key: t.id + i });
+  });
+
+  return (
+    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: 'linear-gradient(180deg, var(--yellow-soft), var(--bg-warm))' }}>
+      <GameHeader mode="pizza" progress={progress} onClose={onClose}/>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'space-between', padding: '12px 18px 26px', gap: 14 }}>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ fontSize: 12, color: 'var(--yellow-ink)', fontWeight: 900, letterSpacing: 1, textTransform: 'uppercase' }}>{order.name}</div>
+          <div style={{ marginTop: 8, display: 'flex', gap: 8, justifyContent: 'center', flexWrap: 'wrap' }}>
+            {PIZZA_TOPPINGS.map(function(t) {
+              return <span key={t.id} style={{ padding: '7px 11px', borderRadius: 999, background: 'white', boxShadow: 'var(--shadow-soft)', fontWeight: 900, color: 'var(--ink)' }}>{t.icon} {order.target[t.id] || 0}</span>;
+            })}
+          </div>
+        </div>
+        <div style={{ width: 238, height: 238, borderRadius: '50%', background: '#F9C15D', border: '12px solid #E88B2D', boxShadow: 'var(--shadow-toy)', position: 'relative', display: 'grid', placeItems: 'center', overflow: 'hidden' }}>
+          <div style={{ position: 'absolute', inset: 20, borderRadius: '50%', background: '#FFE08A' }}/>
+          {toppingDots.map(function(t, i) {
+            var angle = (i * 61) % 360;
+            var radius = 54 + (i % 2) * 26;
+            return <span key={t.key} style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%, -50%) rotate(' + angle + 'deg) translate(' + radius + 'px) rotate(-' + angle + 'deg)', fontSize: 27 }}>{t.icon}</span>;
+          })}
+          <span style={{ position: 'relative', zIndex: 1, fontSize: 42 }}>🍕</span>
+        </div>
+        {feedback && <div role="status" style={{ fontWeight: 900, color: feedback === 'correct' ? 'var(--success-text)' : 'var(--danger-text)' }}>{feedback === 'correct' ? 'Perfect pizza!' : 'Check the order again.'}</div>}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10, width: '100%', maxWidth: 420 }}>
+          {PIZZA_TOPPINGS.map(function(t) {
+            return <button key={t.id} onClick={function() { add(t.id); }} style={{ minHeight: 62, border: 'none', borderRadius: 20, background: 'white', boxShadow: 'var(--shadow-soft)', fontFamily: 'inherit', fontSize: 13, fontWeight: 900, color: 'var(--ink)', cursor: 'pointer' }}><span style={{ display: 'block', fontSize: 25 }}>{t.icon}</span>{t.label}</button>;
+          })}
+        </div>
+        <div style={{ display: 'flex', gap: 10, width: '100%', maxWidth: 420 }}>
+          <button onClick={clear} style={{ flex: 1, minHeight: 50, borderRadius: 999, border: '2px solid var(--alpha-md)', background: 'white', fontFamily: 'inherit', fontWeight: 900, cursor: 'pointer' }}>Clear</button>
+          <button onClick={bake} style={{ flex: 2, minHeight: 50, borderRadius: 999, border: 'none', background: 'var(--coral)', color: 'white', fontFamily: 'inherit', fontWeight: 900, cursor: 'pointer' }}>Bake Pizza</button>
+        </div>
+      </div>
+      <Burst show={burst}/>
+    </div>
+  );
+}
+
+// ── Fun Activity: SONG TIME — copy the note pattern ──
+var SONG_NOTES = [
+  { id: 'do', label: 'Do', icon: '🔵', color: 'var(--blue)' },
+  { id: 'mi', label: 'Mi', icon: '🟡', color: 'var(--yellow)' },
+  { id: 'so', label: 'So', icon: '🟢', color: 'var(--mint)' },
+  { id: 'la', label: 'La', icon: '🟣', color: 'var(--lilac)' },
+];
+var SONG_PATTERNS = [
+  ['do','mi','so'],
+  ['so','mi','do','mi'],
+  ['do','la','so','mi','do'],
+];
+
+function SongTimeGame({ word, onDone, onClose }) {
+  var [idx, setIdx] = React.useState(0);
+  var [input, setInput] = React.useState([]);
+  var [active, setActive] = React.useState(null);
+  var [wrongCount, setWrongCount] = React.useState(0);
+  var [feedback, setFeedback] = React.useState(null);
+  var [burst, setBurst] = React.useState(false);
+  var pattern = SONG_PATTERNS[idx % SONG_PATTERNS.length];
+  var progress = idx / SONG_PATTERNS.length;
+
+  function playPattern() {
+    setInput([]);
+    setFeedback(null);
+    pattern.forEach(function(id, i) {
+      setTimeout(function() {
+        setActive(id);
+        window.sfx?.tap();
+        setTimeout(function() { setActive(null); }, 260);
+      }, i * 430);
+    });
+  }
+
+  function tap(id) {
+    if (active) return;
+    window.sfx?.tap();
+    var next = input.concat(id);
+    setInput(next);
+    if (pattern[next.length - 1] !== id) {
+      setFeedback('wrong');
+      setWrongCount(function(w) { return w + 1; });
+      window.sfx?.playWrong();
+      window.Juice?.emit('wrong');
+      setTimeout(function() { setInput([]); setFeedback(null); }, 620);
+      return;
+    }
+    if (next.length === pattern.length) {
+      setFeedback('correct');
+      window.sfx?.playCorrect();
+      window.Juice?.emit('correct');
+      setTimeout(function() {
+        if (idx + 1 >= SONG_PATTERNS.length) {
+          setBurst(true);
+          window.sfx?.complete();
+          window.Juice?.emit('wordComplete');
+          setTimeout(function() { onDone(wrongCount === 0 ? 3 : wrongCount <= 1 ? 2 : 1); }, 900);
+        } else {
+          setIdx(function(i) { return i + 1; });
+          setInput([]);
+          setFeedback(null);
+        }
+      }, 700);
+    }
+  }
+
+  React.useEffect(function() {
+    var t = setTimeout(playPattern, 450);
+    return function() { clearTimeout(t); };
+  }, [idx]);
+
+  return (
+    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: 'linear-gradient(180deg, var(--blue-soft), var(--lilac-soft))' }}>
+      <GameHeader mode="song" progress={progress} onClose={onClose}/>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'space-between', padding: '14px 18px 28px', gap: 18 }}>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ fontSize: 12, color: 'var(--blue-ink)', fontWeight: 900, letterSpacing: 1, textTransform: 'uppercase' }}>Copy the song</div>
+          <div style={{ marginTop: 12, fontFamily: "'Grandstander','Fredoka',sans-serif", fontSize: 42, lineHeight: 1, color: 'var(--ink)' }}>Song {idx + 1}</div>
+        </div>
+        <div style={{ width: '100%', maxWidth: 390, minHeight: 118, borderRadius: 30, background: 'white', boxShadow: 'var(--shadow-soft)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, padding: 18 }}>
+          {pattern.map(function(id, i) {
+            var note = SONG_NOTES.find(function(n) { return n.id === id; });
+            var filled = input[i] === id;
+            return <span key={i} style={{ width: 44, height: 44, borderRadius: '50%', display: 'grid', placeItems: 'center', background: filled ? note.color : 'var(--alpha-sm)', color: 'white', fontSize: 22, transform: active === id ? 'scale(1.18)' : 'scale(1)', transition: 'transform 160ms ease' }}>{filled ? '✓' : '♪'}</span>;
+          })}
+        </div>
+        {feedback && <div role="status" style={{ fontWeight: 900, color: feedback === 'correct' ? 'var(--success-text)' : 'var(--danger-text)' }}>{feedback === 'correct' ? 'Nice rhythm!' : 'Try that melody again.'}</div>}
+        <button onClick={playPattern} style={{ minHeight: 50, padding: '0 24px', borderRadius: 999, border: 'none', background: 'white', color: 'var(--blue-ink)', boxShadow: 'var(--shadow-soft)', fontFamily: 'inherit', fontWeight: 900, cursor: 'pointer' }}>▶ Hear Song</button>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 12, width: '100%', maxWidth: 390 }}>
+          {SONG_NOTES.map(function(n) {
+            return <button key={n.id} onClick={function() { tap(n.id); }} style={{ minHeight: 86, border: '6px solid white', borderRadius: 26, background: n.color, color: 'white', boxShadow: active === n.id ? '0 0 0 9px rgba(255,255,255,0.75), var(--shadow-toy)' : 'var(--shadow-toy)', fontFamily: "'Grandstander','Fredoka',sans-serif", fontSize: 24, fontWeight: 900, cursor: 'pointer' }}><span style={{ display: 'block', fontSize: 28 }}>{n.icon}</span>{n.label}</button>;
+          })}
+        </div>
+      </div>
+      <Burst show={burst}/>
+    </div>
+  );
+}
+
 // ── 11. CODING — Build the Path (sequence builder) ──
 var CODING_LEVEL_CONFIGS = {
   'L1': { start: [2,1], goal: [2,3], minSteps: 2 },
   'L2': { start: [2,0], goal: [1,2], minSteps: 3 },
-  'L3': { start: [4,0], goal: [2,3], minSteps: 5 },
+  'L3': { start: [4,0], goal: [2,3], minSteps: 5, bonus: [3,2] },
+  'L4': { start: [4,0], goal: [0,4], minSteps: 8, obstacles: [[2,1],[2,2],[2,3]] },
+  'L5': { start: [4,0], goal: [0,4], minSteps: 8, key: [4,2], lock: [1,4], obstacles: [[3,1],[2,1],[1,1],[1,2]] },
+  'L6': { start: [2,0], goal: [2,4], minSteps: 4, repeat: true, obstacles: [[1,2],[3,2]] },
+  'L7': { start: [4,4], goal: [0,0], minSteps: 8, key: [2,4], lock: [0,1], bonus: [3,2], obstacles: [[1,1],[2,1],[3,1],[1,3],[2,3]] },
+  'L8': { start: [4,0], goal: [0,4], minSteps: 8, repeat: true, key: [2,2], lock: [0,3], bonus: [4,4], obstacles: [[3,1],[3,2],[1,2],[1,3]] },
 };
 
 var CODING_DIRS = [
@@ -1184,9 +1483,12 @@ var CODING_DIRS = [
 function CodingGame({ word, onDone, onClose }) {
   var GRID = 5;
   var level = CODING_LEVEL_CONFIGS[word] || CODING_LEVEL_CONFIGS['L1'];
+  var obstacles = level.obstacles || [];
 
   var [sequence, setSequence] = React.useState([]);
   var [playerPos, setPlayerPos] = React.useState(level.start.slice());
+  var [hasKey, setHasKey] = React.useState(false);
+  var [gotBonus, setGotBonus] = React.useState(false);
   var [running, setRunning] = React.useState(false);
   var [activeStep, setActiveStep] = React.useState(-1);
   var [result, setResult] = React.useState(null);
@@ -1199,14 +1501,32 @@ function CodingGame({ word, onDone, onClose }) {
     setSequence(function(s) { return s.concat(dir); });
   }
 
+  function addRepeat() {
+    if (running || result === 'success') return;
+    setSequence(function(s) {
+      var lastMove = null;
+      for (var i = s.length - 1; i >= 0; i--) {
+        if (s[i].type !== 'repeat') { lastMove = s[i]; break; }
+      }
+      if (!lastMove) return s;
+      window.sfx?.tap();
+      return s.concat({ type: 'repeat', label: 'Repeat last move', icon: '↻', key: 'P' });
+    });
+  }
+
   function clearSequence() {
     if (running) return;
     window.sfx?.tap();
     setSequence([]);
     setPlayerPos(level.start.slice());
+    setHasKey(false);
+    setGotBonus(false);
     setResult(null);
     setActiveStep(-1);
   }
+
+  function sameCell(a, b) { return !!a && !!b && a[0] === b[0] && a[1] === b[1]; }
+  function hasCell(cells, cell) { return (cells || []).some(function(c) { return sameCell(c, cell); }); }
 
   function runSequence() {
     if (running || sequence.length === 0 || result === 'success') return;
@@ -1215,39 +1535,57 @@ function CodingGame({ word, onDone, onClose }) {
     setRunning(true);
 
     // Compute full path upfront
-    var path = [level.start.slice()];
+    var path = [{ pos: level.start.slice(), key: false, bonus: false, blocked: false }];
     var cur = level.start.slice();
+    var keyCollected = false;
+    var bonusCollected = false;
     var success = false;
+    var blocked = false;
+    var lastMove = null;
     for (var i = 0; i < sequence.length; i++) {
-      var d = sequence[i];
-      var nr = Math.max(0, Math.min(GRID - 1, cur[0] + d.dr));
-      var nc = Math.max(0, Math.min(GRID - 1, cur[1] + d.dc));
+      var d = sequence[i].type === 'repeat' ? lastMove : sequence[i];
+      if (!d) continue;
+      lastMove = d;
+      var nr = cur[0] + d.dr;
+      var nc = cur[1] + d.dc;
+      var next = [nr, nc];
+      if (nr < 0 || nr >= GRID || nc < 0 || nc >= GRID || hasCell(obstacles, next) || (sameCell(level.lock, next) && !keyCollected)) {
+        blocked = true;
+        path.push({ pos: cur.slice(), key: keyCollected, bonus: bonusCollected, blocked: true });
+        break;
+      }
       cur = [nr, nc];
-      path.push(cur.slice());
+      if (sameCell(level.key, cur)) keyCollected = true;
+      if (sameCell(level.bonus, cur)) bonusCollected = true;
+      path.push({ pos: cur.slice(), key: keyCollected, bonus: bonusCollected, blocked: false });
       if (nr === level.goal[0] && nc === level.goal[1]) { success = true; break; }
     }
 
     var STEP_MS = 420;
     for (var step = 1; step < path.length; step++) {
-      (function(s, p) {
+      (function(s, state) {
         setTimeout(function() {
-          setPlayerPos(p);
+          setPlayerPos(state.pos);
+          setHasKey(state.key);
+          setGotBonus(state.bonus);
           setActiveStep(s - 1);
+          if (state.blocked) window.Juice?.emit('wrong');
         }, s * STEP_MS);
       })(step, path[step]);
     }
 
     setTimeout(function() {
       setRunning(false);
-      if (success) {
+      if (success && !blocked) {
         window.Juice?.emit('correct');
         window.Juice?.emit('wordComplete');
         setBurst(true);
         window.sfx?.complete();
-        var stars = wrongRuns === 0 ? 3 : wrongRuns === 1 ? 2 : 1;
+        var onBestRoute = sequence.length <= level.minSteps + (level.repeat ? 1 : 0);
+        var stars = wrongRuns === 0 && (onBestRoute || bonusCollected) ? 3 : wrongRuns <= 1 ? 2 : 1;
         setTimeout(function() { onDone(stars); }, 1000);
       } else {
-        setResult('fail');
+        setResult(blocked ? 'blocked' : 'fail');
         setWrongRuns(function(w) { return w + 1; });
         window.sfx?.playWrong();
         window.Juice?.emit('wrong');
@@ -1274,17 +1612,25 @@ function CodingGame({ word, onDone, onClose }) {
             var c = idx % GRID;
             var isPlayer = playerPos[0] === r && playerPos[1] === c;
             var isGoal = level.goal[0] === r && level.goal[1] === c;
+            var isObstacle = hasCell(obstacles, [r,c]);
+            var isKey = sameCell(level.key, [r,c]) && !hasKey;
+            var isLock = sameCell(level.lock, [r,c]);
+            var isBonus = sameCell(level.bonus, [r,c]) && !gotBonus;
             var isStart = !running && result === null && level.start[0] === r && level.start[1] === c && !isPlayer;
             return (
               <div key={idx} style={{
                 width: CELL, height: CELL, borderRadius: 10,
-                background: isPlayer ? 'var(--blue)' : isGoal ? 'var(--yellow-soft)' : 'var(--alpha-sm)',
-                border: isPlayer ? 'none' : isGoal ? '2px dashed var(--yellow-ink)' : '1px solid var(--alpha-md)',
+                background: isPlayer ? 'var(--blue)' : isObstacle ? 'rgba(31,42,68,0.2)' : isLock ? (hasKey ? 'var(--mint-soft)' : 'var(--coral-soft)') : isGoal ? 'var(--yellow-soft)' : isBonus ? 'var(--violet-soft)' : 'var(--alpha-sm)',
+                border: isPlayer ? 'none' : isGoal ? '2px dashed var(--yellow-ink)' : isObstacle ? '1px solid rgba(31,42,68,0.28)' : isLock ? '2px solid var(--coral)' : '1px solid var(--alpha-md)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 transition: 'background 200ms',
               }}>
                 {isPlayer && isGoal && <span style={{ fontSize: 22 }}>🎉</span>}
                 {isPlayer && !isGoal && <div style={{ width: 26, height: 26, borderRadius: '50%', background: 'white', boxShadow: '0 2px 6px rgba(0,0,0,0.3)' }}/>}
+                {!isPlayer && isObstacle && <span style={{ fontSize: 20 }}>■</span>}
+                {!isPlayer && isKey && <span style={{ fontSize: 22 }}>🔑</span>}
+                {!isPlayer && isLock && <span style={{ fontSize: 20 }}>{hasKey ? '🔓' : '🔒'}</span>}
+                {!isPlayer && isBonus && <span style={{ fontSize: 20 }}>💎</span>}
                 {!isPlayer && isGoal && <span style={{ fontSize: 22 }}>⭐</span>}
               </div>
             );
@@ -1324,7 +1670,7 @@ function CodingGame({ word, onDone, onClose }) {
             color: result === 'success' ? 'white' : 'var(--coral-ink)',
             fontWeight: 800, fontSize: 14,
           }}>
-            {result === 'fail' ? '❌ Not quite — adjust your sequence and try again!' : '🎉 You made it!'}
+            {result === 'blocked' ? '🔒 Blocked! Try a route around it.' : result === 'fail' ? '❌ Not quite — adjust your sequence and try again!' : '🎉 You made it!'}
           </div>
         )}
 
@@ -1352,6 +1698,17 @@ function CodingGame({ word, onDone, onClose }) {
             );
           })}
         </div>
+
+        {level.repeat && (
+          <button onClick={addRepeat} disabled={running || result === 'success' || sequence.length === 0}
+            style={{
+              width: '100%', minHeight: 46, borderRadius: 14, border: 'none',
+              background: running || result === 'success' || sequence.length === 0 ? 'var(--alpha-sm)' : 'var(--violet-soft)',
+              color: running || result === 'success' || sequence.length === 0 ? 'var(--ink-mute)' : 'var(--violet)',
+              fontFamily: 'inherit', fontWeight: 900, fontSize: 14,
+              cursor: running || result === 'success' || sequence.length === 0 ? 'default' : 'pointer',
+            }}>↻ Repeat last move</button>
+        )}
 
         {/* Clear + Run */}
         <div style={{ display: 'flex', gap: 10, width: '100%' }}>
@@ -1381,4 +1738,4 @@ function CodingGame({ word, onDone, onClose }) {
   );
 }
 
-Object.assign(window, { ClickGame, DragGame, TypeGame, MissingGame, KeyboardGame, PrecisionGame, ScrambleGame, SpeedGame, EchoGame, FlashGame, CodingGame });
+Object.assign(window, { ClickGame, DragGame, TypeGame, MissingGame, KeyboardGame, PrecisionGame, ScrambleGame, SpeedGame, EchoGame, FlashGame, MathMatchGame, PizzaPartyGame, SongTimeGame, CodingGame });

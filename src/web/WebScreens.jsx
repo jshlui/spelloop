@@ -8,6 +8,29 @@ var CHAPTER_PTS = [
   { x: 640, y: 340 }, { x: 780, y: 240 }, { x: 920, y: 360 }, { x: 1060, y: 220 },
 ];
 
+function getChapterPoints(count) {
+  if (count <= CHAPTER_PTS.length) return CHAPTER_PTS.slice(0, count);
+  var perRow = 8;
+  var xStep = 970 / (perRow - 1);
+  var yRows = [
+    [340, 260, 360, 220, 340, 240, 360, 220],
+    [155, 80, 180, 95, 165, 75, 175, 90],
+  ];
+  var pts = [];
+  for (var i = 0; i < count; i++) {
+    var row = Math.floor(i / perRow);
+    var idx = i % perRow;
+    var reverse = row % 2 === 1;
+    var xIdx = reverse ? perRow - 1 - idx : idx;
+    var yPattern = yRows[row % yRows.length];
+    pts.push({
+      x: 90 + xIdx * xStep,
+      y: yPattern[idx],
+    });
+  }
+  return pts;
+}
+
 function buildPath(points) {
   var d = 'M ' + points[0].x + ' ' + points[0].y;
   for (var i = 0; i < points.length - 1; i++) {
@@ -34,7 +57,7 @@ function WebMap({ levels, onPlayLevel, onBack }) {
   var chDone   = chLevels.filter(function(l) { return l.done; }).length;
   var ch = chapters.find(function(c) { return c.id === activeChapter; }) || chapters[0];
 
-  var pts = CHAPTER_PTS.slice(0, chLevels.length);
+  var pts = getChapterPoints(chLevels.length);
   var d = pts.length > 1 ? buildPath(pts) : null;
   var current = chLevels.find(function(l) { return l.current; }) || chLevels.find(function(l) { return !l.done && !l.locked; }) || chLevels[0];
   var pct = chLevels.length > 0 ? Math.round(chDone / chLevels.length * 100) : 0;
@@ -346,7 +369,7 @@ function WebMe({ profile, setProfile, levels, onOpenParent }) {
           <button className="btn-3d" onClick={function() { setAvatarOpen(true); }} style={{
             background: 'rgba(255,255,255,0.18)', color: 'white',
             border: '1.5px solid rgba(255,255,255,0.35)', padding: '10px 18px', borderRadius: 'var(--r-pill)',
-            fontWeight: 700, fontSize: 13, cursor: 'pointer', fontFamily: "'Fredoka', 'Nunito', sans-serif",
+            minHeight: 44, fontWeight: 700, fontSize: 13, cursor: 'pointer', fontFamily: "'Fredoka', 'Nunito', sans-serif",
           }}>Change avatar</button>
         </div>
 
@@ -504,6 +527,9 @@ function WebGame({ mode, word, onClose, onDone }) {
     : mode === 'speed' ? SpeedGame
     : mode === 'echo' ? EchoGame
     : mode === 'flash' ? FlashGame
+    : mode === 'math' ? MathMatchGame
+    : mode === 'pizza' ? PizzaPartyGame
+    : mode === 'song' ? SongTimeGame
     : mode === 'coding' ? CodingGame : ClickGame;
   const m = MODE_META[mode];
   const cssSoft = m.color === 'blue' ? '#E3EAFF' : m.color === 'pink' ? '#FFE0EF'
@@ -517,15 +543,15 @@ function WebGame({ mode, word, onClose, onDone }) {
   }
 
   return (
-    <div style={{
-      minHeight: '100%', background: `linear-gradient(180deg, ${cssSoft} 0%, var(--bg) 100%)`,
-      padding: 32, display: 'flex', alignItems: 'center', justifyContent: 'center',
-    }}>
-      <div style={{
-        width: 'min(560px, 92vw)', background: 'var(--surface)', borderRadius: 28,
-        boxShadow: 'var(--shadow-toy)', overflow: 'hidden',
-        position: 'relative', height: 'min(640px, 82vh)',
-      }}>
+    <div className="web-game-stage" style={{ '--mode-soft': cssSoft }}>
+      <div className="web-game-orbit web-game-orbit--one" aria-hidden="true"/>
+      <div className="web-game-orbit web-game-orbit--two" aria-hidden="true"/>
+      <div className="web-game-sparkles" aria-hidden="true"><span>A</span><span>★</span><span>B</span><span>C</span></div>
+      <div className="web-game-card">
+        <div className="web-game-companion" aria-hidden="true">
+          <span>✦</span>
+          <strong>Keep going!</strong>
+        </div>
         <GameComp word={word} onClose={onClose} onDone={handleDone}/>
       </div>
     </div>
@@ -533,14 +559,15 @@ function WebGame({ mode, word, onClose, onDone }) {
 }
 
 // ─── REWARD ────────────────────────────────────────────
-function WebReward({ word, stars, coins, onNext, onHome }) {
+function WebReward({ word, stars, coins, mode, isActivity, returnLabel, nextLabel, onNext, onHome }) {
   return (
     <div style={{
       minHeight: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center',
       background: 'linear-gradient(180deg, var(--yellow-soft) 0%, var(--pink-soft) 100%)', padding: 32,
       position: 'relative', overflow: 'hidden',
     }}>
-      <RewardScreen word={word} stars={stars} coins={coins} onNext={onNext} onHome={onHome}/>
+      <RewardScreen word={word} stars={stars} coins={coins} mode={mode} isActivity={isActivity}
+        returnLabel={returnLabel} nextLabel={nextLabel} onNext={onNext} onHome={onHome}/>
     </div>
   );
 }

@@ -47,7 +47,7 @@ function getWordsForDifficulty(d) {
 
 window.WORDS_BY_LENGTH = { 3: WORDS_EASY, 4: WORDS_MED, 5: WORDS_HARD };
 
-// 3 chapters × 8 levels = 24 levels total
+// Main journey + Code Lab. Chapters unlock in LEVELS order.
 // Modes cycle: click → missing → drag → type → keyboard → missing → drag → boss
 const LEVELS = [
   // ── Chapter 1: The Word Forest (easy, 3-letter words) ─────────────────────
@@ -113,10 +113,33 @@ const LEVELS = [
   { id: 54, chapter: 7, mode: 'flash',    word: 'ROCKET', stars: 0, done: false, locked: true  },
   { id: 55, chapter: 7, mode: 'echo',     word: 'WIZARD', stars: 0, done: false, locked: true  },
   { id: 56, chapter: 7, mode: 'boss',     word: 'DRAGON', stars: 0, done: false, locked: true  },
-  // ── Chapter 8: The Code Lab (sequence builder) ────────────────────────────
-  { id: 57, chapter: 8, mode: 'coding',  word: 'L1',    stars: 0, done: false },
-  { id: 58, chapter: 8, mode: 'coding',  word: 'L2',    stars: 0, done: false, locked: true  },
-  { id: 59, chapter: 8, mode: 'coding',  word: 'L3',    stars: 0, done: false, locked: true  },
+  // ── Chapter 8: The Word Island (advanced adventure words) ────────────────
+  { id: 57, chapter: 8, mode: 'speed',    word: 'PIRATE', stars: 0, done: false, locked: true  },
+  { id: 58, chapter: 8, mode: 'click',    word: 'JUNGLE', stars: 0, done: false, locked: true  },
+  { id: 59, chapter: 8, mode: 'scramble', word: 'MONKEY', stars: 0, done: false, locked: true  },
+  { id: 60, chapter: 8, mode: 'drag',     word: 'TURTLE', stars: 0, done: false, locked: true  },
+  { id: 61, chapter: 8, mode: 'echo',     word: 'PARROT', stars: 0, done: false, locked: true  },
+  { id: 62, chapter: 8, mode: 'missing',  word: 'ISLAND', stars: 0, done: false, locked: true  },
+  { id: 63, chapter: 8, mode: 'type',     word: 'SUNSET', stars: 0, done: false, locked: true  },
+  { id: 64, chapter: 8, mode: 'boss',     word: 'FOREST', stars: 0, done: false, locked: true  },
+  // ── Chapter 9: The Word Tower (challenge mix) ────────────────────────────
+  { id: 65, chapter: 9, mode: 'flash',    word: 'KITTEN', stars: 0, done: false, locked: true  },
+  { id: 66, chapter: 9, mode: 'click',    word: 'MIRROR', stars: 0, done: false, locked: true  },
+  { id: 67, chapter: 9, mode: 'scramble', word: 'SCHOOL', stars: 0, done: false, locked: true  },
+  { id: 68, chapter: 9, mode: 'drag',     word: 'SPIDER', stars: 0, done: false, locked: true  },
+  { id: 69, chapter: 9, mode: 'echo',     word: 'TOWER',  stars: 0, done: false, locked: true  },
+  { id: 70, chapter: 9, mode: 'missing',  word: 'SNAKE',  stars: 0, done: false, locked: true  },
+  { id: 71, chapter: 9, mode: 'type',     word: 'SWORD',  stars: 0, done: false, locked: true  },
+  { id: 72, chapter: 9, mode: 'boss',     word: 'ZEBRA',  stars: 0, done: false, locked: true  },
+  // ── Chapter 10: The Code Lab (sequence builder) ───────────────────────────
+  { id: 73, chapter: 10, mode: 'coding',  word: 'L1',    stars: 0, done: false, locked: true  },
+  { id: 74, chapter: 10, mode: 'coding',  word: 'L2',    stars: 0, done: false, locked: true  },
+  { id: 75, chapter: 10, mode: 'coding',  word: 'L3',    stars: 0, done: false, locked: true  },
+  { id: 76, chapter: 10, mode: 'coding',  word: 'L4',    stars: 0, done: false, locked: true  },
+  { id: 77, chapter: 10, mode: 'coding',  word: 'L5',    stars: 0, done: false, locked: true  },
+  { id: 78, chapter: 10, mode: 'coding',  word: 'L6',    stars: 0, done: false, locked: true  },
+  { id: 79, chapter: 10, mode: 'coding',  word: 'L7',    stars: 0, done: false, locked: true  },
+  { id: 80, chapter: 10, mode: 'coding',  word: 'L8',    stars: 0, done: false, locked: true  },
 ];
 
 var WORDS_XLHARD = [
@@ -130,6 +153,12 @@ var WORDS_XLHARD = [
   { word: 'DRAGON', theme: 'fantasy' },{ word: 'PIRATE', theme: 'fantasy' },
   { word: 'JUNGLE', theme: 'nature' }, { word: 'MONKEY', theme: 'animal' },
   { word: 'TURTLE', theme: 'animal' }, { word: 'PARROT', theme: 'animal' },
+  { word: 'ISLAND', theme: 'nature' }, { word: 'SUNSET', theme: 'nature' },
+  { word: 'FOREST', theme: 'nature' }, { word: 'KITTEN', theme: 'animal' },
+  { word: 'MIRROR', theme: 'object' }, { word: 'SCHOOL', theme: 'object' },
+  { word: 'SPIDER', theme: 'animal' }, { word: 'TOWER', theme: 'object' },
+  { word: 'SNAKE', theme: 'animal' },  { word: 'SWORD', theme: 'fantasy' },
+  { word: 'ZEBRA', theme: 'animal' },
 ];
 
 var PET_SPECIES = [
@@ -307,7 +336,9 @@ var CHAPTER_META = [
   { id: 5, name: 'The Word Sky',     theme: 'nature/animals', bg: 'linear-gradient(180deg, #D7F0FF 0%, #E8E0FF 100%)', emoji: '☁️' },
   { id: 6, name: 'The Word Castle',  theme: 'objects/nature', bg: 'linear-gradient(180deg, #E8E0FF 0%, #FFE8F0 100%)', emoji: '🏰' },
   { id: 7, name: 'The Word Galaxy',  theme: 'fantasy/space',  bg: 'linear-gradient(180deg, #1A1A3E 0%, #2D1B69 100%)', emoji: '🚀', dark: true },
-  { id: 8, name: 'The Code Lab',     theme: 'coding',         bg: 'linear-gradient(180deg, #D7F5E8 0%, #E3EAFF 100%)', emoji: '🤖' },
+  { id: 8, name: 'The Word Island',  theme: 'adventure',      bg: 'linear-gradient(180deg, #D7F0FF 0%, #D7F5E8 100%)', emoji: '🏝️' },
+  { id: 9, name: 'The Word Tower',   theme: 'challenge',      bg: 'linear-gradient(180deg, #EDE4FF 0%, #FFF6EA 100%)', emoji: '🗼' },
+  { id: 10, name: 'The Code Lab',    theme: 'coding',         bg: 'linear-gradient(180deg, #D7F5E8 0%, #E3EAFF 100%)', emoji: '🤖' },
 ];
 
 const MODE_META = {
@@ -343,6 +374,15 @@ window.MODE_META['flash'] = {
 };
 window.MODE_META['coding'] = {
   label: 'Code', color: 'mint', ink: 'var(--mint-ink)', soft: 'var(--mint-soft)', icon: '🤖'
+};
+window.MODE_META['math'] = {
+  label: 'Math', color: 'mint', ink: 'var(--mint-ink)', soft: 'var(--mint-soft)', icon: '➕'
+};
+window.MODE_META['pizza'] = {
+  label: 'Pizza', color: 'yellow', ink: 'var(--yellow-ink)', soft: 'var(--yellow-soft)', icon: '🍕'
+};
+window.MODE_META['song'] = {
+  label: 'Song', color: 'blue', ink: 'var(--blue-ink)', soft: 'var(--blue-soft)', icon: '🎵'
 };
 
 Object.assign(window, { WORDS_EASY, WORDS_MED, WORDS_HARD, WORDS_XLHARD, getWordsForDifficulty, LEVELS, CHAPTER_META, MODE_META, PRECISION_TASKS, PET_SPECIES, PET_OUTFIT_ITEMS, PET_ROOMS, PET_TOYS, PET_TREATS, AVATAR_ITEMS, POWER_UPS });
@@ -388,6 +428,6 @@ var WORD_HINTS = {
   RABBIT:'🐰', BRIDGE:'🌉', CASTLE:'🏰', CHEESE:'🧀', FOREST:'🌲', GARDEN:'🌸',
   ISLAND:'🏝️', JUNGLE:'🌴', KITTEN:'🐱', MIRROR:'🪞', PLANET:'🪐', ROCKET:'🚀',
   SCHOOL:'🏫', SPIDER:'🕷️', SUNSET:'🌅', TURTLE:'🐢', WINTER:'❄️',
-  DRAGON:'🐲', FLOWER:'🌺', PARROT:'🦜', OCEAN:'🌊',
+  DRAGON:'🐲', FLOWER:'🌺', MONKEY:'🐒', PARROT:'🦜', PIRATE:'🏴‍☠️', OCEAN:'🌊',
 };
 window.WORD_HINTS = WORD_HINTS;

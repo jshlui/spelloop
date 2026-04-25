@@ -123,11 +123,19 @@ function NewRecordBanner() {
   );
 }
 
-function RewardScreen({ word, stars, coins, isNewRecord, onNext, onHome }) {
+function RewardScreen({ word, stars, coins, mode, isActivity, isNewRecord, returnLabel, nextLabel, onNext, onHome }) {
   coins = coins != null ? coins : (stars === 3 ? 15 : stars === 2 ? 10 : 5);
   const [animIn, setAnimIn] = React.useState(false);
   const [showConfetti, setShowConfetti] = React.useState(false);
   const [showReport, setShowReport] = React.useState(false);
+  var activityNames = { math: 'Math Match', pizza: 'Pizza Party', song: 'Song Time', coding: 'Puzzle World' };
+  var activityName = activityNames[mode] || word || 'Activity';
+  var eyebrow = isActivity ? 'Activity complete' : 'Level complete';
+  var summary = isActivity
+    ? <>You completed <span style={{ color: 'var(--blue-ink)', fontWeight: 900 }}>{activityName}</span></>
+    : <>You spelled <span style={{ color: 'var(--blue-ink)', fontWeight: 900 }}>{word}</span></>;
+  var homeLabel = returnLabel || (isActivity ? 'Home' : 'Map');
+  nextLabel = nextLabel || (isActivity ? 'Play more ▶' : 'Next level ▶');
   React.useEffect(() => {
     const t = setTimeout(() => setAnimIn(true), 100);
     [0, 300, 600].forEach((d, i) => { if (i < stars) setTimeout(() => window.sfx?.star(), d + 200); });
@@ -156,14 +164,14 @@ function RewardScreen({ word, stars, coins, isNewRecord, onNext, onHome }) {
           fontSize: 14, color: 'var(--coral-ink)', fontWeight: 900,
           letterSpacing: 2, textTransform: 'uppercase', marginBottom: 8,
           opacity: animIn ? 1 : 0, transition: 'opacity 400ms',
-        }}>Level complete</div>
+        }}>{eyebrow}</div>
         <div id="juice-reward-heading" style={{
           fontSize: 48, fontWeight: 900, lineHeight: 1, marginBottom: 8,
           transform: animIn ? 'scale(1)' : 'scale(0.5)',
           transition: 'transform 500ms cubic-bezier(.34,1.1,.64,1)',
         }}>You did it!</div>
         <div style={{ fontSize: 20, color: 'var(--ink-soft)', fontWeight: 700, marginBottom: 28 }}>
-          You spelled <span style={{ color: 'var(--blue-ink)', fontWeight: 900 }}>{word}</span>
+          {summary}
         </div>
 
         <div style={{ display: 'flex', gap: 12, justifyContent: 'center', marginBottom: 32 }}>
@@ -195,8 +203,8 @@ function RewardScreen({ word, stars, coins, isNewRecord, onNext, onHome }) {
         </div>
 
         <div style={{ display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap', alignItems: 'center' }}>
-          <BigButton onClick={onHome} color="yellow" style={{ background: 'var(--surface)', color: 'var(--ink)' }}>Map</BigButton>
-          <BigButton onClick={onNext} color="coral">Next level ▶</BigButton>
+          <BigButton onClick={onHome} color="yellow" style={{ background: 'var(--surface)', color: 'var(--ink)' }}>{homeLabel}</BigButton>
+          <BigButton onClick={onNext} color="coral">{nextLabel}</BigButton>
           <button onClick={() => setShowReport(true)} style={{
             background: 'transparent', color: 'var(--ink-soft)', border: '2px solid var(--ink-soft)',
             borderRadius: 999, padding: '14px 20px', fontWeight: 800, fontSize: 'var(--fs-md)',

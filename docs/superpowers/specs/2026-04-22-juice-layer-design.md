@@ -34,7 +34,7 @@ A tiny global event bus (`window.Juice`) lives in `src/juice.js`. Game screens c
 
 | Event | Emitted from | Visual response |
 |-------|-------------|-----------------|
-| `correct` | Games.jsx — on correct letter/word | `.tile-correct` gets `juiceBounce` (replaces `pop` keyframe) |
+| `correct` | Games.jsx — on correct letter/word | `.tile.correct` gets `juiceBounce` (replaces `pop` keyframe via CSS override in juice.css) |
 | `wrong` | Games.jsx — on wrong answer | Shake wrapper gets amber→rose glow via `juiceShake` extended |
 | `streak(n)` | Games.jsx — after consecutive corrects | `#juice-streak` gets `juicePop` at n=3; amber glow at n=5+ |
 | `wordComplete` | Games.jsx — before `setBurst(true)` | Screen flash overlay: opacity 0→0.14→0, warm amber, 500ms |
@@ -54,6 +54,7 @@ A tiny global event bus (`window.Juice`) lives in `src/juice.js`. Game screens c
 
 ```css
 /* Override existing pop on correct tiles — replaces, doesn't stack */
+/* Note: game code uses .tile.correct (two classes), not .tile-correct */
 @keyframes juiceBounce {
   0%   { transform: scale(1); }
   25%  { transform: scale(1.22); }
@@ -61,7 +62,7 @@ A tiny global event bus (`window.Juice`) lives in `src/juice.js`. Game screens c
   78%  { transform: scale(1.06); }
   100% { transform: scale(1); }
 }
-.tile-correct { animation: juiceBounce 400ms cubic-bezier(0.2, 0, 0, 1) forwards; }
+.tile.correct { animation: juiceBounce 400ms cubic-bezier(0.2, 0, 0, 1) forwards; }
 
 /* Extended shake — compatible with React wrapper targeting */
 @keyframes juiceShake {

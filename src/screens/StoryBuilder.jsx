@@ -43,8 +43,20 @@ var STORY_TEMPLATES = [
     { text: 'It crashed into a planet made of [word1].', slots: ['word1'] },
     { text: 'The [word0] used [word2] to fix the rocket and fly home!', slots: ['word0', 'word2'] },
   ]},
-  // Chapter 8 — Code Lab
-  { chapter: 8, bg: '#D7F5E8', panels: [
+  // Chapter 8 — Island
+  { chapter: 8, bg: '#D7F0FF', panels: [
+    { text: 'A [word0] sailed to a secret island at sunrise.', slots: ['word0'] },
+    { text: 'Under the palm trees, it found a whispering [word1].', slots: ['word1'] },
+    { text: 'The map glowed when everyone spelled [word2] together!', slots: ['word2'] },
+  ]},
+  // Chapter 9 — Tower
+  { chapter: 9, bg: '#EDE4FF', panels: [
+    { text: 'At the top of the tall tower waited a brave [word0].', slots: ['word0'] },
+    { text: 'A silver [word1] opened the hidden door.', slots: ['word1'] },
+    { text: 'The final word was [word2], and the whole tower sparkled!', slots: ['word2'] },
+  ]},
+  // Chapter 10 — Code Lab
+  { chapter: 10, bg: '#D7F5E8', panels: [
     { text: 'In the Code Lab, a [word0] built a clever robot.', slots: ['word0'] },
     { text: 'The robot loved to eat [word1] for energy.', slots: ['word1'] },
     { text: 'Together they invented [word2] and changed the world!', slots: ['word2'] },

@@ -17,6 +17,31 @@ var DEFAULT_PROFILE  = {
   powerups:      {},
 };
 
+function makePetEntry(spec, source) {
+  source = source || {};
+  var entry = {
+    name:         source.name || source.petName || (spec && spec.name) || 'Pebble',
+    mood:         source.mood != null ? source.mood : (source.petMood != null ? source.petMood : 80),
+    lastPlayed:   source.lastPlayed || source.petLastPlayed || null,
+    equipped:     source.equipped || source.petEquipped || {},
+    shiny:        source.shiny || false,
+    happyDays:    source.happyDays || 0,
+    lastMoodDate: source.lastMoodDate || null,
+    room:         source.room || null,
+    toys:         source.toys || [],
+  };
+  if (source.growthPoints != null) entry.growthPoints = source.growthPoints;
+  if (spec && spec.shinyKey && entry[spec.shinyKey] == null) entry[spec.shinyKey] = 0;
+  return entry;
+}
+
+function getStarterPetSpec(id) {
+  var species = window.PET_SPECIES || [];
+  return species.find(function(s) { return s.id === id; })
+    || species.find(function(s) { return s.isStarter; })
+    || { id: 'pebble', name: 'Pebble' };
+}
+
 function migrateProfile(p) {
   var out = Object.assign({}, p);
   // Legacy field migrations
@@ -39,17 +64,22 @@ function migrateProfile(p) {
     out.ownedSpecies  = out.ownedSpecies || ['pebble'];
     out.activePetId   = out.activePetId  || 'pebble';
     if (!out.petData.pebble) {
-      out.petData = Object.assign({}, out.petData, {
-        pebble: {
-          name:         out.petName      || 'Pebble',
-          mood:         out.petMood != null ? out.petMood : 80,
-          lastPlayed:   out.petLastPlayed || null,
-          equipped:     out.petEquipped  || {},
-          shiny:        false,
-          happyDays:    0,
-          lastMoodDate: null,
-        }
-      });
+      out.petData = Object.assign({}, out.petData, { pebble: makePetEntry(getStarterPetSpec('pebble'), out) });
+    }
+  }
+  if (out.starterPicked) {
+    var owned = Array.isArray(out.ownedSpecies) ? out.ownedSpecies.slice() : [];
+    var active = out.activePetId || owned[0] || 'pebble';
+    var spec = getStarterPetSpec(active);
+    active = spec.id || active;
+    if (!owned.includes(active)) owned.unshift(active);
+    out.ownedSpecies = owned.length ? owned : [active];
+    out.activePetId = active;
+    if (!out.petData[active]) {
+      out.petData = Object.assign({}, out.petData);
+      out.petData[active] = makePetEntry(spec, out);
+    } else {
+      out.petData[active] = makePetEntry(spec, out.petData[active]);
     }
   }
   // Remove old flat pet fields now nested in petData
@@ -138,18 +168,41 @@ function App() {
 
   // ── Levels (per profile) ───────────────────────────────────────────
   function mergeWithCanonical(parsed) {
-    if (!parsed || parsed.length < LEVELS.length) return LEVELS.slice();
-    var canonById = {};
-    LEVELS.forEach(function(lv) { canonById[lv.id] = lv; });
-    return parsed.map(function(sv) {
-      var canon = canonById[sv.id];
-      if (!canon) return sv;
-      // Never-played level: respect canonical lock state so new unlocked entries aren't frozen
-      if (!sv.done && sv.stars === 0 && sv.locked && !canon.locked) {
-        return Object.assign({}, sv, { locked: false });
-      }
-      return sv;
+    if (!parsed || !parsed.length) return LEVELS.slice();
+    var savedById = {};
+    var savedByKey = {};
+    parsed.forEach(function(lv) {
+      savedById[lv.id] = lv;
+      savedByKey[lv.mode + '|' + lv.word] = lv;
     });
+    var next = LEVELS.map(function(canon) {
+      var byId = savedById[canon.id];
+      var sv = byId && byId.mode === canon.mode && byId.word === canon.word
+        ? byId
+        : savedByKey[canon.mode + '|' + canon.word];
+      if (!sv) return Object.assign({}, canon);
+      var merged = Object.assign({}, canon, {
+        stars: sv.stars || 0,
+        done: !!sv.done,
+        locked: sv.locked,
+        current: !!sv.current,
+      });
+      if (merged.locked == null) delete merged.locked;
+      // Never-played level: respect canonical lock state so new unlocked entries aren't frozen
+      if (!merged.done && merged.stars === 0 && merged.locked && !canon.locked) {
+        return Object.assign({}, merged, { locked: false });
+      }
+      return merged;
+    });
+    if (!next.some(function(lv) { return lv.current; })) {
+      var firstOpen = next.findIndex(function(lv, idx) {
+        if (lv.done) return false;
+        var prev = idx > 0 ? next[idx - 1] : null;
+        return !lv.locked || !prev || prev.done;
+      });
+      if (firstOpen !== -1) next[firstOpen] = Object.assign({}, next[firstOpen], { locked: false, current: true });
+    }
+    return next;
   }
 
   var [levels, setLevels] = React.useState(function() {
