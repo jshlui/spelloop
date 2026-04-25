@@ -4,3 +4,6 @@ src/.DS_Store
 .playwright-mcp/
 .superpowers/
 *.png
+
+# Local Netlify folder
+.netlify
