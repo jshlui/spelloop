@@ -257,11 +257,20 @@ function WebApp({ profile, setProfile, levels, setLevels, settings, setSettings,
     return gameRoute && gameRoute.activity ? 'home' : 'map';
   }
 
-  function closeGame() {
+  var closeGame = React.useCallback(function() {
     var nextTab = getPostGameTab(route);
     setRoute({ name: 'screen' });
     setTab(nextTab);
-  }
+  }, [route]);
+
+  React.useEffect(function() {
+    if (route.name !== 'game') return;
+    function onKey(e) {
+      if (e.key === 'Escape') closeGame();
+    }
+    window.addEventListener('keydown', onKey);
+    return function() { window.removeEventListener('keydown', onKey); };
+  }, [route.name, closeGame]);
 
   var currentLevel = levels.find(function(l) { return l.current; }) || levels[0];
 
