@@ -4,6 +4,8 @@ src/.DS_Store
 .playwright-mcp/
 .superpowers/
 *.png
+!assets/*.png
+!favicon.png
 
 # Local Netlify folder
 .netlify
