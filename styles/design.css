@@ -3300,6 +3300,7 @@ html, body {
   }
 }
 
+/* Phone + iPad portrait (all models up to iPad Pro 13" at 1024px CSS width) */
 @media (max-width: 760px), (max-width: 1100px) and (orientation: portrait) and (pointer: coarse) {
   .spelloop-sidebar {
     position: fixed;
