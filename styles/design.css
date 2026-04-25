@@ -3620,5 +3620,5 @@ html, body {
 
 /* Hide custom cursor on touch devices — mousemove never fires on iPad */
 @media (pointer: coarse) {
-  #cursor-canvas { display: none !important; }
+  #cursor-root { display: none !important; }
 }

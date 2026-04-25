@@ -8,6 +8,10 @@
   let targetX = -200, targetY = -200;
   let rafId = null;
 
+  const cursorRoot = document.createElement('div');
+  cursorRoot.id = 'cursor-root';
+  document.body.appendChild(cursorRoot);
+
   function createDot(size, opacity, zIndex) {
     const el = document.createElement('div');
     el.style.cssText = `
@@ -18,7 +22,7 @@
       transition:background 0.1s, transform 0.1s;
       will-change:transform;
     `;
-    document.body.appendChild(el);
+    cursorRoot.appendChild(el);
     return el;
   }
 
