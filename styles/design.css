@@ -3300,7 +3300,7 @@ html, body {
   }
 }
 
-@media (max-width: 760px) {
+@media (max-width: 768px) {
   .spelloop-sidebar {
     position: fixed;
     left: 12px;
