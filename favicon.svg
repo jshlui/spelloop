@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- Tile background -->
+  <rect x="4" y="4" width="56" height="56" rx="14" fill="#7C3AED"/>
+  <!-- Bottom shadow edge (like game tiles) -->
+  <rect x="4" y="46" width="56" height="14" rx="14" fill="#5B21B6"/>
+  <rect x="4" y="40" width="56" height="16" rx="0" fill="#5B21B6"/>
+  <rect x="4" y="40" width="56" height="20" rx="14" fill="#5B21B6"/>
+  <!-- Tile face -->
+  <rect x="4" y="4" width="56" height="54" rx="14" fill="#7C3AED"/>
+  <!-- Letter S -->
+  <text
+    x="32"
+    y="46"
+    font-family="Fredoka, Nunito, system-ui, sans-serif"
+    font-size="38"
+    font-weight="900"
+    fill="white"
+    text-anchor="middle"
+    letter-spacing="-1"
+  >S</text>
+</svg>
