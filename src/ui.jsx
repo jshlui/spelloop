@@ -140,8 +140,6 @@ function BigButton({ children, onClick, color = 'blue', style = {} }) {
 }
 
 // ElevenLabs + browser-speech word pronunciation
-var EL_DEFAULT_VOICE = 'pNInz6obpgDQGcFmaJgB'; // Adam
-
 function speakWord(word, onStart, onEnd) {
   var key = (word || '').toUpperCase();
   var cacheKey = 'spelloop-audio-' + key;
@@ -180,31 +178,21 @@ function speakWord(word, onStart, onEnd) {
     if (cached) { playDataUrl(cached); return; }
   } catch(e) {}
 
-  // 2. Try ElevenLabs
-  var elKey = '';
-  try { elKey = localStorage.getItem('spelloop-el-key') || ''; } catch(e) {}
+  // 2. Try server-side TTS proxy (key lives in Netlify env, never exposed to browser)
+  onStart && onStart();
 
-  if (!elKey) { browserFallback(); return; }
-
-  var voiceId = '';
-  try { voiceId = localStorage.getItem('spelloop-el-voice') || EL_DEFAULT_VOICE; } catch(e) {}
-  if (!voiceId) voiceId = EL_DEFAULT_VOICE;
-
-  onStart && onStart(); // show loading state immediately
-
-  fetch('https://api.elevenlabs.io/v1/text-to-speech/' + voiceId, {
+  fetch('/.netlify/functions/tts', {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'xi-api-key': elKey,
-    },
-    body: JSON.stringify({ text: word.toLowerCase(), model_id: 'eleven_turbo_v2' }),
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ word: word.toLowerCase() }),
   })
   .then(function(res) {
-    if (!res.ok) throw new Error('EL ' + res.status);
+    if (res.status === 503) { onEnd && onEnd(); browserFallback(); return null; }
+    if (!res.ok) throw new Error('TTS ' + res.status);
     return res.blob();
   })
   .then(function(blob) {
+    if (!blob) return;
     var reader = new FileReader();
     reader.onload = function() {
       var dataUrl = reader.result;
@@ -214,6 +202,7 @@ function speakWord(word, onStart, onEnd) {
     reader.readAsDataURL(blob);
   })
   .catch(function() {
+    onEnd && onEnd();
     browserFallback();
   });
 }

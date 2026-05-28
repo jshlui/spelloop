@@ -22,8 +22,15 @@ function HintSystem({ word, wrongCount }) {
   const [tier, setTier] = React.useState(0);
   const [imgVisible, setImgVisible] = React.useState(false);
   const btnRef = React.useRef(null);
+  const timerIds = React.useRef([]);
   React.useEffect(() => { setTier(0); setImgVisible(false); }, [word]);
   React.useEffect(() => { if (tier > 0 && btnRef.current) btnRef.current.focus(); }, [tier]);
+  React.useEffect(function() {
+    return function() {
+      timerIds.current.forEach(clearTimeout);
+      if (window.speechSynthesis) window.speechSynthesis.cancel();
+    };
+  }, []);
   if (!wrongCount) return null;
 
   const emoji = window.WORD_HINTS && window.WORD_HINTS[word] ? window.WORD_HINTS[word] : '💡';
@@ -36,17 +43,19 @@ function HintSystem({ word, wrongCount }) {
       if (window.speechSynthesis) {
         window.speechSynthesis.cancel();
         (word || '').split('').forEach((l, i) => {
-          setTimeout(() => {
+          var id = setTimeout(() => {
             const u = new SpeechSynthesisUtterance(l);
             u.rate = 0.6; u.lang = 'en-AU';
             window.speechSynthesis.speak(u);
           }, i * 500);
+          timerIds.current.push(id);
         });
       }
     } else if (tier === 2) {
       setTier(3);
       setImgVisible(true);
-      setTimeout(() => setImgVisible(false), 3000);
+      var id = setTimeout(() => setImgVisible(false), 3000);
+      timerIds.current.push(id);
     }
   }
 
@@ -906,14 +915,19 @@ function SpeedGame({ word, onDone, onClose }) {
   const [shake, setShake] = React.useState(false);
   const [burst, setBurst] = React.useState(false);
   const [done, setDone] = React.useState(false);
+  const isMounted = React.useRef(true);
   const progress = typed.length / word.length;
+
+  React.useEffect(function() {
+    return function() { isMounted.current = false; };
+  }, []);
 
   React.useEffect(function() {
     if (done || timeLeft <= 0) {
       if (timeLeft <= 0 && !done) { window.sfx?.playWrong(); onDone(0); }
       return;
     }
-    const t = setTimeout(function() { setTimeLeft(function(p) { return p - 1; }); }, 1000);
+    const t = setTimeout(function() { if (isMounted.current) setTimeLeft(function(p) { return p - 1; }); }, 1000);
     return function() { clearTimeout(t); };
   }, [timeLeft, done]);
 
@@ -929,14 +943,14 @@ function SpeedGame({ word, onDone, onClose }) {
         window.Juice?.emit('wordComplete');
         setDone(true); setBurst(true); window.sfx?.complete();
         const stars = timeLeft >= 10 ? 3 : timeLeft >= 5 ? 2 : 1;
-        setTimeout(function() { onDone(stars); }, 1000);
+        setTimeout(function() { if (isMounted.current) onDone(stars); }, 1000);
       }
     } else {
       window.sfx?.playWrong();
       window.Juice?.emit('wrong');
       setWrongCount(function(w) { return w + 1; });
       setShake(true);
-      setTimeout(function() { setShake(false); }, 300);
+      setTimeout(function() { if (isMounted.current) setShake(false); }, 300);
     }
   }
 
@@ -1010,10 +1024,7 @@ function EchoGame({ word, onDone, onClose }) {
     } catch(e) {}
   }
 
-  React.useEffect(function() {
-    var t = setTimeout(speak, 500);
-    return function() { clearTimeout(t); };
-  }, []);
+  // No auto-play: browsers block speechSynthesis without a prior user gesture.
 
   function press(letter) {
     if (typed.length >= word.length) return;
@@ -1055,7 +1066,7 @@ function EchoGame({ word, onDone, onClose }) {
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'space-between', padding: '24px 16px 32px' }}>
         <div style={{ textAlign: 'center' }}>
           <div style={{ fontSize: 12, color: 'var(--ink-mute)', fontWeight: 800, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 20 }}>
-            Listen, then spell!
+            Tap to hear, then spell!
           </div>
           <button onClick={speak} aria-label="Hear the word" style={{
             width: 100, height: 100, borderRadius: '50%',

@@ -216,7 +216,7 @@ function ProfilesTab({ profiles, activeId, onSwitch, onAdd, onDelete, onReset })
 
   var inputStyle = {
     border: '1px solid var(--alpha-md)', borderRadius: 8, padding: '8px 12px',
-    fontSize: 14, fontFamily: 'inherit', fontWeight: 700, color: 'var(--ink)',
+    fontSize: 16, fontFamily: 'inherit', fontWeight: 700, color: 'var(--ink)',
     outline: 'none',
   };
 
@@ -621,54 +621,6 @@ function SettingsTab({ profile, setProfile, settings, setSettings }) {
   var s = settings || {};
   var [nameVal, setNameVal] = React.useState(profile ? profile.name : '');
   var [ageVal, setAgeVal] = React.useState(profile ? String(profile.age) : '');
-  var [elKey, setElKey]           = React.useState(function() { try { return localStorage.getItem('spelloop-el-key') || ''; } catch(e) { return ''; } });
-  var [elVoice, setElVoice]       = React.useState(function() { try { return localStorage.getItem('spelloop-el-voice') || 'pNInz6obpgDQGcFmaJgB'; } catch(e) { return 'pNInz6obpgDQGcFmaJgB'; } });
-  var [elKeyError, setElKeyError] = React.useState('');
-  var [elKeySaved, setElKeySaved] = React.useState(false);
-
-  var EL_VOICES = [
-    { id: 'pNInz6obpgDQGcFmaJgB', label: 'Adam' },
-    { id: 'EXAVITQu4vr4xnSDxMaL', label: 'Bella' },
-    { id: 'VR6AewLTigWG4xSOukaG', label: 'Arnold' },
-    { id: 'TxGEqnHWrfWFTfGW9XjX', label: 'Josh' },
-    { id: 'yoZ06aMxZJJ28mfd3POQ', label: 'Sam' },
-    { id: 'jBpfuIE2acCys8YRkVHT', label: 'Freya' },
-  ];
-
-  function saveElKey() {
-    try {
-      var trimmed = elKey.trim();
-      if (!trimmed) { clearElKey(); return; }
-      localStorage.setItem('spelloop-el-key', trimmed);
-      setElKeyError('');
-      setElKeySaved(true);
-      setTimeout(function() { setElKeySaved(false); }, 2000);
-    } catch(e) { setElKeyError('Could not save — storage error'); }
-  }
-
-  function clearElKey() {
-    try {
-      localStorage.removeItem('spelloop-el-key');
-      localStorage.removeItem('spelloop-el-voice');
-      var toRemove = [];
-      for (var i = 0; i < localStorage.length; i++) {
-        var k = localStorage.key(i);
-        if (k && k.startsWith('spelloop-audio-')) toRemove.push(k);
-      }
-      toRemove.forEach(function(k) { localStorage.removeItem(k); });
-      setElKey('');
-      setElVoice('pNInz6obpgDQGcFmaJgB');
-      setElKeyError('');
-      setElKeySaved(false);
-    } catch(e) {}
-  }
-
-  function handleVoiceChange(e) {
-    var id = e.target.value;
-    setElVoice(id);
-    try { localStorage.setItem('spelloop-el-voice', id); } catch(e2) {}
-  }
-
   function updateSetting(key, val) {
     setSettings && setSettings(function(prev) { return Object.assign({}, prev, { [key]: val }); });
   }
@@ -686,7 +638,7 @@ function SettingsTab({ profile, setProfile, settings, setSettings }) {
 
   var inputStyle = {
     border: '1px solid var(--alpha-md)', borderRadius: 8, padding: '8px 12px',
-    fontSize: 14, fontFamily: 'inherit', fontWeight: 700, color: 'var(--ink)',
+    fontSize: 16, fontFamily: 'inherit', fontWeight: 700, color: 'var(--ink)',
     outline: 'none', width: '100%',
     transition: 'border-color var(--dur-fast) ease',
   };
@@ -739,52 +691,8 @@ function SettingsTab({ profile, setProfile, settings, setSettings }) {
       <div style={Object.assign({}, webCard, { marginTop: 14 })}>
         <h3 style={{ margin: '0 0 14px', fontSize: 15, fontWeight: 900 }}>🔊 Voice settings</h3>
 
-        <div style={{ marginBottom: 14 }}>
-          <label htmlFor="settings-el-key" style={{ display: 'block', fontSize: 12, fontWeight: 700, color: 'var(--ink-mute)', marginBottom: 4 }}>ElevenLabs API Key</label>
-          <div style={{ display: 'flex', gap: 8 }}>
-            <input
-              id="settings-el-key"
-              type="password"
-              value={elKey}
-              onChange={function(e) { setElKey(e.target.value); setElKeyError(''); setElKeySaved(false); }}
-              onKeyDown={function(e) { if (e.key === 'Enter') saveElKey(); }}
-              placeholder="Paste your API key here"
-              style={inputStyle}
-            />
-            <button onClick={saveElKey} style={{
-              flexShrink: 0, padding: '8px 14px', borderRadius: 8, border: 'none',
-              background: elKeySaved ? 'var(--success)' : 'var(--blue-ink)',
-              color: 'white', fontFamily: 'inherit', fontWeight: 800, fontSize: 13, cursor: 'pointer',
-              transition: 'background 200ms',
-            }}>{elKeySaved ? '✓ Saved' : 'Save'}</button>
-            {elKey && (
-              <button onClick={clearElKey} style={{
-                flexShrink: 0, padding: '8px 14px', borderRadius: 8, border: 'none',
-                background: 'var(--danger-soft)', color: 'var(--danger-text)',
-                fontFamily: 'inherit', fontWeight: 800, fontSize: 13, cursor: 'pointer',
-              }}>Clear</button>
-            )}
-          </div>
-          {elKeyError && <div style={{ fontSize: 12, color: 'var(--danger)', fontWeight: 700, marginTop: 4 }}>{elKeyError}</div>}
-        </div>
-
-        <div style={{ marginBottom: 14 }}>
-          <label htmlFor="settings-el-voice" style={{ display: 'block', fontSize: 12, fontWeight: 700, color: 'var(--ink-mute)', marginBottom: 4 }}>Voice</label>
-          <select
-            id="settings-el-voice"
-            value={elVoice}
-            onChange={handleVoiceChange}
-            style={Object.assign({}, inputStyle, { width: 'auto', minWidth: 160 })}
-          >
-            {EL_VOICES.map(function(v) {
-              return React.createElement('option', { key: v.id, value: v.id }, v.label);
-            })}
-          </select>
-        </div>
-
         <div style={{ fontSize: 12, color: 'var(--ink-mute)', fontWeight: 700, lineHeight: 1.5, background: 'var(--bg)', borderRadius: 8, padding: '10px 12px' }}>
-          ℹ️ Get a free key at <strong>elevenlabs.io</strong> (10,000 characters/month free).<br/>
-          Without a key, the app uses your device's built-in voice.
+          🔊 High-quality AI voice is configured server-side. If unavailable, the app falls back to your device's built-in voice automatically.
         </div>
       </div>
     </div>

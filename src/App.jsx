@@ -90,7 +90,13 @@ function migrateProfile(p) {
   return out;
 }
 
+function canUseStorage() {
+  try { localStorage.setItem('__sl_test', '1'); localStorage.removeItem('__sl_test'); return true; }
+  catch(e) { return false; }
+}
+
 function App() {
+  var storageAvailable = React.useMemo(canUseStorage, []);
   var [settings, setSettings] = React.useState(function() {
     try { var s = localStorage.getItem('spelloop-settings'); return s ? JSON.parse(s) : DEFAULT_SETTINGS; }
     catch(e) { return DEFAULT_SETTINGS; }
@@ -250,6 +256,15 @@ function App() {
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg)', fontFamily: "'Nunito', system-ui, sans-serif" }}>
+      {!storageAvailable && (
+        <div role="alert" style={{
+          position: 'fixed', top: 0, left: 0, right: 0, zIndex: 9999,
+          background: '#FEF3C7', color: '#92400E', padding: '10px 16px',
+          fontSize: 13, fontWeight: 700, textAlign: 'center', boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+        }}>
+          Private browsing detected — progress won't be saved between sessions.
+        </div>
+      )}
       {!tutorialDone && <HoverTutorial onComplete={handleTutorialComplete} />}
       <StreakBadge />
       <WebApp
