@@ -21,7 +21,9 @@ function GameHeader({ mode, progress, onClose, word }) {
 function HintSystem({ word, wrongCount }) {
   const [tier, setTier] = React.useState(0);
   const [imgVisible, setImgVisible] = React.useState(false);
+  const btnRef = React.useRef(null);
   React.useEffect(() => { setTier(0); setImgVisible(false); }, [word]);
+  React.useEffect(() => { if (tier > 0 && btnRef.current) btnRef.current.focus(); }, [tier]);
   if (!wrongCount) return null;
 
   const emoji = window.WORD_HINTS && window.WORD_HINTS[word] ? window.WORD_HINTS[word] : '💡';
@@ -50,7 +52,7 @@ function HintSystem({ word, wrongCount }) {
 
   const btnLabel = tier === 0 ? '💡 Hint' : tier === 1 ? '🔊 Hear each letter' : tier === 2 ? '🖼️ Show clue' : '✓ Done';
   const btnBg = tier === 0 ? 'var(--gold)' : tier === 1 ? 'var(--violet)' : tier === 2 ? 'var(--emerald)' : 'var(--alpha-md)';
-  const btnColor = tier === 0 ? '#451A03' : 'white';
+  const btnColor = tier === 0 ? 'var(--btn-back-ink)' : 'white';
 
   return (
     <div style={{ position: 'fixed', bottom: 90, right: 16, zIndex: 200, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 8 }}>
@@ -79,7 +81,7 @@ function HintSystem({ word, wrongCount }) {
         }}>{(word || '').split('').map(() => '●').join('')}</div>
       )}
       {tier < 3 && (
-        <button onClick={advance} style={{
+        <button ref={btnRef} onClick={advance} style={{
           background: btnBg, color: btnColor, border: 'none', borderRadius: 999,
           padding: '10px 18px', fontWeight: 900, fontSize: 13, cursor: 'pointer',
           fontFamily: "'Fredoka','Nunito',sans-serif", boxShadow: '0 4px 0 rgba(0,0,0,0.2)',
@@ -1336,7 +1338,7 @@ function PizzaPartyGame({ word, onDone, onClose }) {
             })}
           </div>
         </div>
-        <div style={{ width: 238, height: 238, borderRadius: '50%', background: '#F9C15D', border: '12px solid #E88B2D', boxShadow: 'var(--shadow-toy)', position: 'relative', display: 'grid', placeItems: 'center', overflow: 'hidden' }}>
+        <div style={{ width: 238, height: 238, borderRadius: '50%', background: 'var(--gold-soft)', border: '12px solid var(--gold-dark)', boxShadow: 'var(--shadow-toy)', position: 'relative', display: 'grid', placeItems: 'center', overflow: 'hidden' }}>
           <div style={{ position: 'absolute', inset: 20, borderRadius: '50%', background: '#FFE08A' }}/>
           {toppingDots.map(function(t, i) {
             var angle = (i * 61) % 360;

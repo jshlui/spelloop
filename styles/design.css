@@ -758,6 +758,10 @@ html, body {
   box-shadow: 0 2px 0 rgba(67,55,127,0.18), 0 6px 12px rgba(67,55,127,0.08) !important;
 }
 
+@media (pointer: coarse) {
+  .kid-key { height: 60px !important; }
+}
+
 /* == Avatars (on-cards) == */
 .avatar-circle {
   width: 72px; height: 72px;

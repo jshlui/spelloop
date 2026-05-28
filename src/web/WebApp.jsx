@@ -541,7 +541,7 @@ function LandscapeShell({ title, onBack, onHelp, topExtra, showBack, children })
           }
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <div style={{ fontFamily: "'Fredoka', 'Nunito', sans-serif", fontSize: 26, fontWeight: 700, color: '#0F172A' }}>{title}</div>
+            <div style={{ fontFamily: "'Fredoka', 'Nunito', sans-serif", fontSize: 26, fontWeight: 700, color: 'var(--ink)' }}>{title}</div>
             {topExtra}
           </div>
 
@@ -1139,7 +1139,7 @@ function WebShop({ profile, setProfile, levels }) {
           boxShadow: '0 3px 0 var(--gold-dark)',
         }}>
           <span style={{ fontSize: 18 }}>🪙</span>
-          <span style={{ fontSize: 20, fontWeight: 900, color: '#451A03', fontFamily: "'Fredoka', sans-serif" }}>{coins}</span>
+          <span style={{ fontSize: 20, fontWeight: 900, color: 'var(--btn-back-ink)', fontFamily: "'Fredoka', sans-serif" }}>{coins}</span>
         </div>
       </div>
 
