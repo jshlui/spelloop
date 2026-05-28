@@ -127,10 +127,11 @@ function HoverTutorial({ onComplete }) {
           position: 'absolute', bottom: 24, right: 24,
           background: 'none',
           border: '2px solid var(--ink-soft, #4B587A)',
-          borderRadius: 20, padding: '8px 18px',
+          borderRadius: 20, padding: '10px 22px',
           fontSize: 14, color: 'var(--ink-soft, #4B587A)',
           fontFamily: 'inherit',
-          cursor: 'none',
+          cursor: 'pointer',
+          minHeight: 44,
         }}
       >
         Skip
