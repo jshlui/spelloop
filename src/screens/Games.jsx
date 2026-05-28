@@ -196,6 +196,8 @@ function ClickGame({ word, onDone, onClose }) {
 }
 
 // ── 2. DRAG spelling — drag tiles into slots in order ──
+var isTouch = typeof window !== 'undefined' && window.matchMedia('(pointer: coarse)').matches;
+
 function DragGame({ word, onDone, onClose }) {
   const scrambled = React.useMemo(() => {
     const arr = word.split('');
@@ -211,6 +213,11 @@ function DragGame({ word, onDone, onClose }) {
   const [burst, setBurst] = React.useState(false);
   const [dragging, setDragging] = React.useState(null);
   const [selectedKey, setSelectedKey] = React.useState(null);
+  // Pointer drag state for touch devices
+  const pointerDragRef = React.useRef(null);
+  const ghostRef = React.useRef(null);
+  const slotRectsRef = React.useRef([]);
+  const trayRef = React.useRef(null);
 
   const filledCount = slots.filter(x => x !== null).length;
   const progress = filledCount / word.length;
@@ -271,6 +278,50 @@ function DragGame({ word, onDone, onClose }) {
     if (key != null && !Number.isNaN(key)) placeTile(key, slotIdx);
   }
 
+  // Pointer-based drag for touch devices (iOS Safari doesn't support HTML5 DnD)
+  function onTilePointerDown(e, tileKey, placed) {
+    if (!isTouch || placed) return;
+    e.preventDefault();
+    e.currentTarget.setPointerCapture(e.pointerId);
+    var rect = e.currentTarget.getBoundingClientRect();
+    // Snapshot slot rects at drag start
+    if (trayRef.current) {
+      var slotEls = trayRef.current.parentElement.querySelectorAll('[data-slot]');
+      slotRectsRef.current = Array.from(slotEls).map(function(el) { return el.getBoundingClientRect(); });
+    }
+    // Create floating ghost
+    var ghost = document.createElement('div');
+    ghost.textContent = tiles.find(function(t) { return t.key === tileKey; })?.letter || '';
+    ghost.style.cssText = 'position:fixed;z-index:9999;pointer-events:none;width:58px;height:68px;border-radius:16px;background:var(--violet);color:white;font-size:32px;font-weight:900;display:flex;align-items:center;justify-content:center;font-family:inherit;box-shadow:0 8px 20px rgba(0,0,0,0.25);transform:scale(1.1);transition:none;';
+    ghost.style.left = (e.clientX - 29) + 'px';
+    ghost.style.top = (e.clientY - 34) + 'px';
+    document.body.appendChild(ghost);
+    ghostRef.current = ghost;
+    pointerDragRef.current = { tileKey: tileKey, pointerId: e.pointerId };
+    setDragging(tileKey);
+  }
+
+  function onTilePointerMove(e) {
+    if (!pointerDragRef.current || !ghostRef.current) return;
+    ghostRef.current.style.left = (e.clientX - 29) + 'px';
+    ghostRef.current.style.top = (e.clientY - 34) + 'px';
+  }
+
+  function onTilePointerUp(e) {
+    if (!pointerDragRef.current) return;
+    var tileKey = pointerDragRef.current.tileKey;
+    // Find which slot we're over
+    var hit = -1;
+    slotRectsRef.current.forEach(function(r, i) {
+      if (e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom) hit = i;
+    });
+    // Clean up ghost
+    if (ghostRef.current) { document.body.removeChild(ghostRef.current); ghostRef.current = null; }
+    pointerDragRef.current = null;
+    setDragging(null);
+    if (hit >= 0) placeTile(tileKey, hit);
+  }
+
   return (
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: 'var(--bg)' }}>
       <GameHeader mode="drag" progress={progress} onClose={onClose} word={word}/>
@@ -285,9 +336,10 @@ function DragGame({ word, onDone, onClose }) {
           {slots.map((s, i) => (
             <button key={i}
               type="button"
+              data-slot={i}
               onClick={() => s ? unplace(i) : selectedKey != null && placeTile(selectedKey, i)}
-              onDragOver={function(e) { if (!s) e.preventDefault(); }}
-              onDrop={function(e) { if (!s) handleSlotDrop(e, i); }}
+              onDragOver={function(e) { if (!s && !isTouch) e.preventDefault(); }}
+              onDrop={function(e) { if (!s && !isTouch) handleSlotDrop(e, i); }}
               aria-label={s ? 'Remove ' + s.letter + ' from slot ' + (i + 1) : 'Empty slot ' + (i + 1)}
               className={`tile ${s ? 'slot filled' : 'slot'}`}
               style={{
@@ -303,27 +355,35 @@ function DragGame({ word, onDone, onClose }) {
         </div>
 
         {/* tile tray */}
-        <div style={{
+        <div ref={trayRef} style={{
           background: 'var(--surface)', borderRadius: 'var(--r-lg)',
           padding: 14, boxShadow: 'var(--shadow-soft)', width: '100%', maxWidth: 340,
         }}>
-          <div style={{ fontSize: 11, color: 'var(--ink-mute)', fontWeight: 800, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 10, textAlign: 'center' }}>Letters</div>
+          <div style={{ fontSize: 11, color: 'var(--ink-mute)', fontWeight: 800, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 10, textAlign: 'center' }}>
+            {isTouch ? 'Tap a letter, then tap a slot' : 'Drag letters into the slots'}
+          </div>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'center' }}>
             {tiles.map(t => {
               const color = ['blue', 'pink', 'mint', 'coral', 'lilac'][t.key % 5];
               return (
-                <button key={t.key} onClick={() => placeTile(t.key)}
+                <button key={t.key}
+                  onClick={() => !t.placed && (isTouch ? (selectedKey === t.key ? setSelectedKey(null) : setSelectedKey(t.key)) : placeTile(t.key))}
                   onFocus={function() { if (!t.placed) setSelectedKey(t.key); }}
-                  onDragStart={function(e) { setDragging(t.key); e.dataTransfer && e.dataTransfer.setData('text/plain', String(t.key)); }}
-                  onDragEnd={function() { setDragging(null); }}
-                  draggable={!t.placed}
+                  onDragStart={!isTouch ? function(e) { setDragging(t.key); e.dataTransfer && e.dataTransfer.setData('text/plain', String(t.key)); } : undefined}
+                  onDragEnd={!isTouch ? function() { setDragging(null); } : undefined}
+                  onPointerDown={isTouch ? function(e) { onTilePointerDown(e, t.key, t.placed); } : undefined}
+                  onPointerMove={isTouch ? onTilePointerMove : undefined}
+                  onPointerUp={isTouch ? onTilePointerUp : undefined}
+                  draggable={!isTouch && !t.placed}
                   disabled={t.placed}
                   aria-label={'Place letter ' + t.letter}
+                  aria-pressed={selectedKey === t.key}
                   className={`tile ${color}`}
                   style={{
                     width: 58, height: 68, fontSize: 32, border: 'none',
-                    cursor: t.placed ? 'default' : 'grab', fontFamily: 'inherit',
+                    cursor: t.placed ? 'default' : isTouch ? 'pointer' : 'grab', fontFamily: 'inherit',
                     opacity: t.placed ? 0.2 : 1,
+                    outline: selectedKey === t.key ? '3px solid var(--brand)' : 'none',
                     transition: 'opacity 200ms',
                   }}>{t.letter}</button>
               );
