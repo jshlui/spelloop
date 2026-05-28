@@ -1300,6 +1300,14 @@ html, body {
   color: var(--spelloop-muted);
   font-weight: 800;
   cursor: pointer;
+  min-height: 44px;
+  padding: 8px 12px;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  width: 100%;
 }
 
 .spelloop-dashboard {
