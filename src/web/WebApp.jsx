@@ -1899,7 +1899,7 @@ function StarterSelect({ profile, setProfile }) {
       display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
       padding: 32, fontFamily: "'Nunito', system-ui, sans-serif",
     }}>
-      <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.6)', fontWeight: 800, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 8 }}>Welcome to SpellLoop</div>
+      <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.6)', fontWeight: 800, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 8, fontFamily: "'Fredoka', 'Nunito', sans-serif" }}>Welcome to Spelloop</div>
       <h1 style={{ fontSize: 38, fontWeight: 900, color: 'white', margin: '0 0 8px', letterSpacing: '-0.02em', textAlign: 'center' }}>Choose your starter!</h1>
       <p style={{ fontSize: 16, color: 'rgba(255,255,255,0.7)', fontWeight: 700, margin: '0 0 40px', textAlign: 'center' }}>Pick a companion egg to journey with you. Choose wisely!</p>
 
