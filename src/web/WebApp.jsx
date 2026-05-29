@@ -293,7 +293,7 @@ function WebApp({ profile, setProfile, levels, setLevels, settings, setSettings,
         )}
         {route.name === 'screen' && tab === 'map'  && <WebMap levels={levels} onPlayLevel={startLevel} onBack={function() { setTab('home'); }}/>}
         {route.name === 'screen' && tab === 'me'   && (
-          <DashboardSubPage icon="👤" eyebrow="Profile" title="My Stuff" onBack={function() { setTab('home'); }}>
+          <DashboardSubPage icon="⭐" eyebrow="Profile" title="My Stuff" onBack={function() { setTab('home'); }}>
             <WebMe profile={profile} setProfile={setProfile} levels={levels} onOpenParent={onOpenParent}/>
           </DashboardSubPage>
         )}
@@ -380,7 +380,7 @@ function WebSidebar({ tab, onTab, profile, settings, levels, onOpenParent }) {
   var stageText = petStage === 'shiny' ? 'Shiny' : petStage.charAt(0).toUpperCase() + petStage.slice(1);
   var nextText = usesPersonalGrowth
     ? (nextPetStage && nextPetStage.stage ? 'Next: ' + nextPetStage.stage.charAt(0).toUpperCase() + nextPetStage.stage.slice(1) : 'Fully grown')
-    : (nextPetStage && nextPetStage.chapter ? 'Next: Chapter ' + nextPetStage.chapter : 'Fully grown');
+    : (nextPetStage && nextPetStage.chapter ? 'Ch. ' + nextPetStage.chapter + ' next' : 'Fully grown');
   var nextChapterLevels = nextPetStage && nextPetStage.chapter
     ? (levels || []).filter(function(l) { return l.chapter === nextPetStage.chapter; })
     : [];
