@@ -1163,13 +1163,12 @@ function WebShop({ profile, setProfile, levels }) {
                 : 'Keep playing to unlock';
               return (
                 <div key={species.id} className="shop-species-card is-locked" style={{
-                  background: 'var(--surface)', borderRadius: 20, padding: 20, textAlign: 'center',
-                  border: '2px solid var(--alpha-sm)', opacity: 0.6,
+                  background: 'var(--alpha-sm)', borderRadius: 20, padding: 20, textAlign: 'center',
+                  border: '2px dashed var(--alpha-md)',
                 }}>
-                  <div style={{ fontSize: 64, marginBottom: 8, filter: 'grayscale(1)' }}>🥚</div>
-                  <div style={{ fontWeight: 900, fontSize: 16, marginBottom: 4, color: 'var(--ink-mute)' }}>???</div>
-                  <div style={{ fontSize: 12, color: 'var(--ink-mute)', fontWeight: 700, marginBottom: 8 }}>{species.typeIcon} {species.type}</div>
-                  <div style={{ fontSize: 12, color: 'var(--ink-mute)', fontWeight: 700, background: 'var(--alpha-sm)', borderRadius: 8, padding: '6px 10px' }}>🔒 {hint}</div>
+                  <div style={{ fontSize: 48, marginBottom: 8, filter: 'grayscale(1) brightness(0.7)', opacity: 0.5 }}>🥚</div>
+                  <div style={{ fontWeight: 900, fontSize: 15, marginBottom: 6, color: 'var(--ink-mute)' }}>???</div>
+                  <div style={{ fontSize: 11, color: 'var(--ink-mute)', fontWeight: 800, background: 'var(--alpha-sm)', borderRadius: 8, padding: '5px 8px', lineHeight: 1.4 }}>🔒 {hint}</div>
                 </div>
               );
             }
