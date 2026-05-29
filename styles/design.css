@@ -2028,8 +2028,11 @@ html, body {
   display: flex;
   gap: 12px;
   overflow-x: auto;
-  padding: 4px 2px 8px;
+  padding: 4px 2px 12px;
   scrollbar-width: none;
+  /* Fade-out hint that more chips are scrollable */
+  -webkit-mask-image: linear-gradient(to right, black calc(100% - 40px), transparent 100%);
+  mask-image: linear-gradient(to right, black calc(100% - 40px), transparent 100%);
 }
 
 .journey-chapters::-webkit-scrollbar { display: none; }
