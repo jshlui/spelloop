@@ -530,6 +530,16 @@ function WebGame({ mode, word, onClose, onDone }) {
     : mode === 'math' ? MathMatchGame
     : mode === 'pizza' ? PizzaPartyGame
     : mode === 'song' ? SongTimeGame
+    : mode === 'rhyme' ? RhymeGame
+    : mode === 'picture' ? PictureMatchGame
+    : mode === 'wordorder' ? WordOrderGame
+    : mode === 'race' ? RaceGame
+    : mode === 'volcano' ? VowelGame
+    : mode === 'safari' ? SafariGame
+    : mode === 'story' ? StoryGame
+    : mode === 'detective' ? DetectiveGame
+    : mode === 'memory' ? MemoryGame
+    : mode === 'soup' ? SoupGame
     : mode === 'coding' ? CodingGame : ClickGame;
   const m = MODE_META[mode];
   const cssSoft = m.color === 'blue' ? '#E3EAFF' : m.color === 'pink' ? '#FFE0EF'
@@ -539,7 +549,8 @@ function WebGame({ mode, word, onClose, onDone }) {
   var gameCtx = window.GameContext ? React.useContext(window.GameContext) : null;
   function handleDone(stars) {
     var accuracy = (gameCtx && gameCtx.totalClicks > 0) ? gameCtx.accuracy : 1;
-    onDone(stars, accuracy);
+    var taskHistory = gameCtx ? gameCtx.taskHistory : [];
+    onDone(stars, accuracy, taskHistory);
   }
 
   return (

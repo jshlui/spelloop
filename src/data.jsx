@@ -1,42 +1,72 @@
 // Game data — words, levels, mode metadata.
 
 const WORDS_EASY = [
-  { word: 'CAT', theme: 'animal' },  { word: 'DOG', theme: 'animal' },
-  { word: 'SUN', theme: 'space' },   { word: 'BEE', theme: 'animal' },
-  { word: 'HAT', theme: 'object' },  { word: 'COW', theme: 'animal' },
-  { word: 'PIG', theme: 'animal' },  { word: 'OWL', theme: 'animal' },
-  { word: 'ANT', theme: 'animal' },  { word: 'HEN', theme: 'animal' },
-  { word: 'EGG', theme: 'food' },    { word: 'JAM', theme: 'food' },
-  { word: 'CUP', theme: 'object' },  { word: 'BOX', theme: 'object' },
-  { word: 'NET', theme: 'object' },  { word: 'MAP', theme: 'object' },
-  { word: 'PEN', theme: 'object' },  { word: 'KEY', theme: 'object' },
-  { word: 'JET', theme: 'object' },  { word: 'POT', theme: 'object' },
+  { word: 'CAT', theme: 'animal',  phonemes: ['CVC', 'short-a'] },
+  { word: 'DOG', theme: 'animal',  phonemes: ['CVC', 'short-o'] },
+  { word: 'SUN', theme: 'space',   phonemes: ['CVC', 'short-u'] },
+  { word: 'BEE', theme: 'animal',  phonemes: ['long-e', 'double-vowel'] },
+  { word: 'HAT', theme: 'object',  phonemes: ['CVC', 'short-a'] },
+  { word: 'COW', theme: 'animal',  phonemes: ['CVC', 'ow-diphthong'] },
+  { word: 'PIG', theme: 'animal',  phonemes: ['CVC', 'short-i'] },
+  { word: 'OWL', theme: 'animal',  phonemes: ['ow-diphthong', 'blend-l'] },
+  { word: 'ANT', theme: 'animal',  phonemes: ['CVC', 'short-a', 'blend-nt'] },
+  { word: 'HEN', theme: 'animal',  phonemes: ['CVC', 'short-e'] },
+  { word: 'EGG', theme: 'food',    phonemes: ['CVC', 'short-e', 'double-consonant'] },
+  { word: 'JAM', theme: 'food',    phonemes: ['CVC', 'short-a'] },
+  { word: 'CUP', theme: 'object',  phonemes: ['CVC', 'short-u'] },
+  { word: 'BOX', theme: 'object',  phonemes: ['CVC', 'short-o'] },
+  { word: 'NET', theme: 'object',  phonemes: ['CVC', 'short-e'] },
+  { word: 'MAP', theme: 'object',  phonemes: ['CVC', 'short-a'] },
+  { word: 'PEN', theme: 'object',  phonemes: ['CVC', 'short-e'] },
+  { word: 'KEY', theme: 'object',  phonemes: ['long-e', 'silent-y'] },
+  { word: 'JET', theme: 'object',  phonemes: ['CVC', 'short-e'] },
+  { word: 'POT', theme: 'object',  phonemes: ['CVC', 'short-o'] },
 ];
 
 const WORDS_MED = [
-  { word: 'FISH', theme: 'animal' }, { word: 'MOON', theme: 'space' },
-  { word: 'STAR', theme: 'space' },  { word: 'FROG', theme: 'animal' },
-  { word: 'BIRD', theme: 'animal' }, { word: 'BEAR', theme: 'animal' },
-  { word: 'CRAB', theme: 'animal' }, { word: 'DUCK', theme: 'animal' },
-  { word: 'WOLF', theme: 'animal' }, { word: 'DEER', theme: 'animal' },
-  { word: 'KITE', theme: 'object' }, { word: 'RAIN', theme: 'weather' },
-  { word: 'SNOW', theme: 'weather' }, { word: 'WIND', theme: 'weather' },
-  { word: 'TREE', theme: 'nature' }, { word: 'LEAF', theme: 'nature' },
-  { word: 'LAKE', theme: 'nature' }, { word: 'HILL', theme: 'nature' },
-  { word: 'CAKE', theme: 'food' },   { word: 'MILK', theme: 'food' },
+  { word: 'FISH', theme: 'animal',  phonemes: ['digraph-sh', 'short-i'] },
+  { word: 'MOON', theme: 'space',   phonemes: ['long-oo', 'double-vowel'] },
+  { word: 'STAR', theme: 'space',   phonemes: ['blend-st', 'r-controlled'] },
+  { word: 'FROG', theme: 'animal',  phonemes: ['blend-fr', 'short-o'] },
+  { word: 'BIRD', theme: 'animal',  phonemes: ['r-controlled', 'blend-rd'] },
+  { word: 'BEAR', theme: 'animal',  phonemes: ['ea-digraph', 'r-controlled'] },
+  { word: 'CRAB', theme: 'animal',  phonemes: ['blend-cr', 'short-a'] },
+  { word: 'DUCK', theme: 'animal',  phonemes: ['digraph-ck', 'short-u'] },
+  { word: 'WOLF', theme: 'animal',  phonemes: ['blend-lf', 'short-o'] },
+  { word: 'DEER', theme: 'animal',  phonemes: ['long-e', 'double-vowel', 'r-controlled'] },
+  { word: 'KITE', theme: 'object',  phonemes: ['long-i', 'silent-e'] },
+  { word: 'RAIN', theme: 'weather', phonemes: ['ai-digraph', 'long-a'] },
+  { word: 'SNOW', theme: 'weather', phonemes: ['blend-sn', 'ow-diphthong'] },
+  { word: 'WIND', theme: 'weather', phonemes: ['blend-nd', 'short-i'] },
+  { word: 'TREE', theme: 'nature',  phonemes: ['blend-tr', 'long-e', 'double-vowel'] },
+  { word: 'LEAF', theme: 'nature',  phonemes: ['ea-digraph', 'long-e'] },
+  { word: 'LAKE', theme: 'nature',  phonemes: ['long-a', 'silent-e'] },
+  { word: 'HILL', theme: 'nature',  phonemes: ['short-i', 'double-consonant'] },
+  { word: 'CAKE', theme: 'food',    phonemes: ['long-a', 'silent-e'] },
+  { word: 'MILK', theme: 'food',    phonemes: ['blend-lk', 'short-i'] },
 ];
 
 const WORDS_HARD = [
-  { word: 'APPLE', theme: 'fruit' },  { word: 'PANDA', theme: 'animal' },
-  { word: 'HOUSE', theme: 'object' }, { word: 'CLOUD', theme: 'weather' },
-  { word: 'PIZZA', theme: 'food' },   { word: 'SHARK', theme: 'animal' },
-  { word: 'TIGER', theme: 'animal' }, { word: 'EAGLE', theme: 'animal' },
-  { word: 'HORSE', theme: 'animal' }, { word: 'BUNNY', theme: 'animal' },
-  { word: 'OCEAN', theme: 'nature' }, { word: 'RIVER', theme: 'nature' },
-  { word: 'STORM', theme: 'weather' },{ word: 'PLANT', theme: 'nature' },
-  { word: 'BEACH', theme: 'nature' }, { word: 'GRAPE', theme: 'fruit' },
-  { word: 'LEMON', theme: 'fruit' },  { word: 'MANGO', theme: 'fruit' },
-  { word: 'FLAME', theme: 'nature' }, { word: 'GLOBE', theme: 'object' },
+  { word: 'APPLE', theme: 'fruit',   phonemes: ['short-a', 'double-consonant', 'silent-e'] },
+  { word: 'PANDA', theme: 'animal',  phonemes: ['short-a', 'blend-nd'] },
+  { word: 'HOUSE', theme: 'object',  phonemes: ['ou-diphthong', 'silent-e'] },
+  { word: 'CLOUD', theme: 'weather', phonemes: ['blend-cl', 'ou-diphthong'] },
+  { word: 'PIZZA', theme: 'food',    phonemes: ['double-consonant', 'short-a'] },
+  { word: 'SHARK', theme: 'animal',  phonemes: ['digraph-sh', 'r-controlled'] },
+  { word: 'TIGER', theme: 'animal',  phonemes: ['long-i', 'r-controlled'] },
+  { word: 'EAGLE', theme: 'animal',  phonemes: ['ea-digraph', 'long-e', 'silent-e'] },
+  { word: 'HORSE', theme: 'animal',  phonemes: ['r-controlled', 'silent-e'] },
+  { word: 'BUNNY', theme: 'animal',  phonemes: ['short-u', 'double-consonant', 'silent-y'] },
+  { word: 'OCEAN', theme: 'nature',  phonemes: ['long-o', 'ea-digraph'] },
+  { word: 'RIVER', theme: 'nature',  phonemes: ['short-i', 'r-controlled'] },
+  { word: 'STORM', theme: 'weather', phonemes: ['blend-st', 'r-controlled'] },
+  { word: 'PLANT', theme: 'nature',  phonemes: ['blend-pl', 'blend-nt', 'short-a'] },
+  { word: 'BEACH', theme: 'nature',  phonemes: ['ea-digraph', 'ch-digraph', 'long-e'] },
+  { word: 'GRAPE', theme: 'fruit',   phonemes: ['blend-gr', 'long-a', 'silent-e'] },
+  { word: 'LEMON', theme: 'fruit',   phonemes: ['short-e', 'short-o'] },
+  { word: 'MANGO', theme: 'fruit',   phonemes: ['short-a', 'long-o'] },
+  { word: 'FLAME', theme: 'nature',  phonemes: ['blend-fl', 'long-a', 'silent-e'] },
+  { word: 'GLOBE', theme: 'object',  phonemes: ['blend-gl', 'long-o', 'silent-e'] },
 ];
 
 function getWordsForDifficulty(d) {
@@ -45,75 +75,123 @@ function getWordsForDifficulty(d) {
   return WORDS_MED;
 }
 
+// Returns words prioritised by the child's weak phonemes (from letterErrors),
+// sorted by spaced-repetition due date. Falls back to the full pool if no data.
+function getAdaptiveWordPool(letterErrors, difficulty) {
+  var allWords = [].concat(WORDS_EASY, WORDS_MED, WORDS_HARD, WORDS_XLHARD);
+  if (!letterErrors || Object.keys(letterErrors).length < 3) {
+    return getWordsForDifficulty(difficulty || 'med');
+  }
+
+  // Tally error counts per phoneme
+  var phonemeCounts = {};
+  Object.values(letterErrors).forEach(function(e) {
+    // Look up the word's phonemes from the pool
+    var wordEntry = allWords.find(function(w) { return w.word === e.word; });
+    if (!wordEntry || !wordEntry.phonemes) return;
+    wordEntry.phonemes.forEach(function(ph) {
+      phonemeCounts[ph] = (phonemeCounts[ph] || 0) + (e.count || 1);
+    });
+  });
+
+  // Top 3 weak phonemes
+  var weakPhonemes = Object.keys(phonemeCounts)
+    .sort(function(a, b) { return phonemeCounts[b] - phonemeCounts[a]; })
+    .slice(0, 3);
+
+  if (!weakPhonemes.length) return getWordsForDifficulty(difficulty || 'med');
+
+  // Find words that practise weak phonemes, sorted by due date
+  var today = new Date().toISOString().slice(0, 10);
+  var matched = allWords.filter(function(w) {
+    return w.phonemes && w.phonemes.some(function(ph) { return weakPhonemes.indexOf(ph) !== -1; });
+  });
+
+  // Sort: overdue/due-today first, then by phoneme match count descending
+  matched.sort(function(a, b) {
+    var keyA = Object.keys(letterErrors).find(function(k) { return k.startsWith(a.word + ':'); });
+    var keyB = Object.keys(letterErrors).find(function(k) { return k.startsWith(b.word + ':'); });
+    var dueA = keyA ? (letterErrors[keyA].dueDate || '9999') : '9999';
+    var dueB = keyB ? (letterErrors[keyB].dueDate || '9999') : '9999';
+    if (dueA <= today && dueB > today) return -1;
+    if (dueB <= today && dueA > today) return 1;
+    var matchA = (a.phonemes || []).filter(function(ph) { return weakPhonemes.indexOf(ph) !== -1; }).length;
+    var matchB = (b.phonemes || []).filter(function(ph) { return weakPhonemes.indexOf(ph) !== -1; }).length;
+    return matchB - matchA;
+  });
+
+  return matched.length ? matched : getWordsForDifficulty(difficulty || 'med');
+}
+
 window.WORDS_BY_LENGTH = { 3: WORDS_EASY, 4: WORDS_MED, 5: WORDS_HARD };
 
 // Main journey + Code Lab. Chapters unlock in LEVELS order.
 // Modes cycle: click → missing → drag → type → keyboard → missing → drag → boss
 const LEVELS = [
-  // ── Chapter 1: The Word Forest (easy, 3-letter words) ─────────────────────
+  // ── Chapter 1: The Word Forest (easy, 3-letter CVC phonics) ─────────────
   { id: 1,  chapter: 1, mode: 'click',    word: 'CAT',   stars: 0, done: false, current: true  },
-  { id: 2,  chapter: 1, mode: 'missing',  word: 'DOG',   stars: 0, done: false, locked: true  },
-  { id: 3,  chapter: 1, mode: 'drag',     word: 'SUN',   stars: 0, done: false, locked: true  },
-  { id: 4,  chapter: 1, mode: 'type',     word: 'HAT',   stars: 0, done: false, locked: true  },
-  { id: 5,  chapter: 1, mode: 'keyboard', word: 'COW',   stars: 0, done: false, locked: true  },
+  { id: 2,  chapter: 1, mode: 'missing',  word: 'HAT',   stars: 0, done: false, locked: true  },
+  { id: 3,  chapter: 1, mode: 'drag',     word: 'MAP',   stars: 0, done: false, locked: true  },
+  { id: 4,  chapter: 1, mode: 'type',     word: 'PEN',   stars: 0, done: false, locked: true  },
+  { id: 5,  chapter: 1, mode: 'keyboard', word: 'DOG',   stars: 0, done: false, locked: true  },
   { id: 6,  chapter: 1, mode: 'missing',  word: 'PIG',   stars: 0, done: false, locked: true  },
-  { id: 7,  chapter: 1, mode: 'drag',     word: 'OWL',   stars: 0, done: false, locked: true  },
-  { id: 8,  chapter: 1, mode: 'boss',     word: 'ANT',   stars: 0, done: false, locked: true  },
-  // ── Chapter 2: The Word Sea (medium, 4-letter words) ──────────────────────
+  { id: 7,  chapter: 1, mode: 'drag',     word: 'ANT',   stars: 0, done: false, locked: true  },
+  { id: 8,  chapter: 1, mode: 'boss',     word: 'OWL',   stars: 0, done: false, locked: true  },
+  // ── Chapter 2: The Word Sea (4-letter regular) ────────────────────────────
   { id: 9,  chapter: 2, mode: 'click',    word: 'FISH',  stars: 0, done: false, locked: true  },
-  { id: 10, chapter: 2, mode: 'missing',  word: 'MOON',  stars: 0, done: false, locked: true  },
-  { id: 11, chapter: 2, mode: 'drag',     word: 'STAR',  stars: 0, done: false, locked: true  },
-  { id: 12, chapter: 2, mode: 'type',     word: 'FROG',  stars: 0, done: false, locked: true  },
-  { id: 13, chapter: 2, mode: 'keyboard', word: 'BIRD',  stars: 0, done: false, locked: true  },
-  { id: 14, chapter: 2, mode: 'missing',  word: 'BEAR',  stars: 0, done: false, locked: true  },
-  { id: 15, chapter: 2, mode: 'drag',     word: 'DUCK',  stars: 0, done: false, locked: true  },
-  { id: 16, chapter: 2, mode: 'boss',     word: 'KITE',  stars: 0, done: false, locked: true  },
-  // ── Chapter 3: The Word Mountain (hard, 5-letter words) ───────────────────
-  { id: 17, chapter: 3, mode: 'click',    word: 'APPLE', stars: 0, done: false, locked: true  },
-  { id: 18, chapter: 3, mode: 'missing',  word: 'PANDA', stars: 0, done: false, locked: true  },
-  { id: 19, chapter: 3, mode: 'drag',     word: 'HOUSE', stars: 0, done: false, locked: true  },
-  { id: 20, chapter: 3, mode: 'type',     word: 'CLOUD', stars: 0, done: false, locked: true  },
-  { id: 21, chapter: 3, mode: 'keyboard', word: 'PIZZA', stars: 0, done: false, locked: true  },
-  { id: 22, chapter: 3, mode: 'missing',  word: 'SHARK', stars: 0, done: false, locked: true  },
-  { id: 23, chapter: 3, mode: 'drag',     word: 'TIGER', stars: 0, done: false, locked: true  },
-  { id: 24, chapter: 3, mode: 'boss',     word: 'EAGLE', stars: 0, done: false, locked: true  },
-  // ── Chapter 4: The Word Jungle (mixed 3-4 letter, harder modes) ──────────
-  { id: 25, chapter: 4, mode: 'scramble', word: 'BEE',  stars: 0, done: false, locked: true  },
-  { id: 26, chapter: 4, mode: 'type',     word: 'RAIN', stars: 0, done: false, locked: true  },
-  { id: 27, chapter: 4, mode: 'click',    word: 'HEN',  stars: 0, done: false, locked: true  },
-  { id: 28, chapter: 4, mode: 'speed',    word: 'SNOW', stars: 0, done: false, locked: true  },
-  { id: 29, chapter: 4, mode: 'drag',     word: 'CUP',  stars: 0, done: false, locked: true  },
-  { id: 30, chapter: 4, mode: 'missing',  word: 'WOLF', stars: 0, done: false, locked: true  },
-  { id: 31, chapter: 4, mode: 'echo',     word: 'EGG',  stars: 0, done: false, locked: true  },
-  { id: 32, chapter: 4, mode: 'boss',     word: 'DEER', stars: 0, done: false, locked: true  },
-  // ── Chapter 5: The Word Sky (4-5 letter, echo + speed) ───────────────────
-  { id: 33, chapter: 5, mode: 'speed',    word: 'CRAB',  stars: 0, done: false, locked: true  },
-  { id: 34, chapter: 5, mode: 'click',    word: 'HORSE', stars: 0, done: false, locked: true  },
-  { id: 35, chapter: 5, mode: 'scramble', word: 'TREE',  stars: 0, done: false, locked: true  },
-  { id: 36, chapter: 5, mode: 'drag',     word: 'BUNNY', stars: 0, done: false, locked: true  },
-  { id: 37, chapter: 5, mode: 'echo',     word: 'LAKE',  stars: 0, done: false, locked: true  },
-  { id: 38, chapter: 5, mode: 'missing',  word: 'GRAPE', stars: 0, done: false, locked: true  },
+  { id: 10, chapter: 2, mode: 'missing',  word: 'FROG',  stars: 0, done: false, locked: true  },
+  { id: 11, chapter: 2, mode: 'drag',     word: 'DUCK',  stars: 0, done: false, locked: true  },
+  { id: 12, chapter: 2, mode: 'type',     word: 'BIRD',  stars: 0, done: false, locked: true  },
+  { id: 13, chapter: 2, mode: 'keyboard', word: 'RAIN',  stars: 0, done: false, locked: true  },
+  { id: 14, chapter: 2, mode: 'missing',  word: 'SNOW',  stars: 0, done: false, locked: true  },
+  { id: 15, chapter: 2, mode: 'drag',     word: 'CAKE',  stars: 0, done: false, locked: true  },
+  { id: 16, chapter: 2, mode: 'boss',     word: 'MILK',  stars: 0, done: false, locked: true  },
+  // ── Chapter 3: The Word Mountain (4-letter harder) ────────────────────────
+  { id: 17, chapter: 3, mode: 'click',    word: 'BEAR',  stars: 0, done: false, locked: true  },
+  { id: 18, chapter: 3, mode: 'missing',  word: 'WOLF',  stars: 0, done: false, locked: true  },
+  { id: 19, chapter: 3, mode: 'drag',     word: 'DEER',  stars: 0, done: false, locked: true  },
+  { id: 20, chapter: 3, mode: 'type',     word: 'KITE',  stars: 0, done: false, locked: true  },
+  { id: 21, chapter: 3, mode: 'keyboard', word: 'WIND',  stars: 0, done: false, locked: true  },
+  { id: 22, chapter: 3, mode: 'missing',  word: 'LEAF',  stars: 0, done: false, locked: true  },
+  { id: 23, chapter: 3, mode: 'drag',     word: 'HILL',  stars: 0, done: false, locked: true  },
+  { id: 24, chapter: 3, mode: 'boss',     word: 'MOON',  stars: 0, done: false, locked: true  },
+  // ── Chapter 4: The Word Jungle (5-letter, steady step up) ────────────────
+  { id: 25, chapter: 4, mode: 'scramble', word: 'APPLE', stars: 0, done: false, locked: true  },
+  { id: 26, chapter: 4, mode: 'type',     word: 'SHARK', stars: 0, done: false, locked: true  },
+  { id: 27, chapter: 4, mode: 'click',    word: 'TIGER', stars: 0, done: false, locked: true  },
+  { id: 28, chapter: 4, mode: 'speed',    word: 'HORSE', stars: 0, done: false, locked: true  },
+  { id: 29, chapter: 4, mode: 'drag',     word: 'GRAPE', stars: 0, done: false, locked: true  },
+  { id: 30, chapter: 4, mode: 'missing',  word: 'BEACH', stars: 0, done: false, locked: true  },
+  { id: 31, chapter: 4, mode: 'echo',     word: 'PLANT', stars: 0, done: false, locked: true  },
+  { id: 32, chapter: 4, mode: 'boss',     word: 'RIVER', stars: 0, done: false, locked: true  },
+  // ── Chapter 5: The Word Sky (5-letter harder) ────────────────────────────
+  { id: 33, chapter: 5, mode: 'speed',    word: 'PANDA', stars: 0, done: false, locked: true  },
+  { id: 34, chapter: 5, mode: 'click',    word: 'HOUSE', stars: 0, done: false, locked: true  },
+  { id: 35, chapter: 5, mode: 'scramble', word: 'CLOUD', stars: 0, done: false, locked: true  },
+  { id: 36, chapter: 5, mode: 'drag',     word: 'PIZZA', stars: 0, done: false, locked: true  },
+  { id: 37, chapter: 5, mode: 'echo',     word: 'BUNNY', stars: 0, done: false, locked: true  },
+  { id: 38, chapter: 5, mode: 'missing',  word: 'OCEAN', stars: 0, done: false, locked: true  },
   { id: 39, chapter: 5, mode: 'type',     word: 'STORM', stars: 0, done: false, locked: true  },
-  { id: 40, chapter: 5, mode: 'boss',     word: 'OCEAN', stars: 0, done: false, locked: true  },
-  // ── Chapter 6: The Word Castle (5-6 letter, flash introduced) ────────────
+  { id: 40, chapter: 5, mode: 'boss',     word: 'EAGLE', stars: 0, done: false, locked: true  },
+  // ── Chapter 6: The Word Castle (5→6 letter transition) ───────────────────
   { id: 41, chapter: 6, mode: 'flash',    word: 'LEMON',  stars: 0, done: false, locked: true  },
-  { id: 42, chapter: 6, mode: 'click',    word: 'RABBIT', stars: 0, done: false, locked: true  },
-  { id: 43, chapter: 6, mode: 'scramble', word: 'GARDEN', stars: 0, done: false, locked: true  },
-  { id: 44, chapter: 6, mode: 'drag',     word: 'BRIDGE', stars: 0, done: false, locked: true  },
-  { id: 45, chapter: 6, mode: 'echo',     word: 'CANDLE', stars: 0, done: false, locked: true  },
-  { id: 46, chapter: 6, mode: 'type',     word: 'WINTER', stars: 0, done: false, locked: true  },
-  { id: 47, chapter: 6, mode: 'flash',    word: 'CASTLE', stars: 0, done: false, locked: true  },
-  { id: 48, chapter: 6, mode: 'boss',     word: 'CHEESE', stars: 0, done: false, locked: true  },
-  // ── Chapter 7: The Word Galaxy (6-letter, bonus, all modes) ──────────────
+  { id: 42, chapter: 6, mode: 'click',    word: 'MANGO',  stars: 0, done: false, locked: true  },
+  { id: 43, chapter: 6, mode: 'scramble', word: 'FLAME',  stars: 0, done: false, locked: true  },
+  { id: 44, chapter: 6, mode: 'drag',     word: 'GLOBE',  stars: 0, done: false, locked: true  },
+  { id: 45, chapter: 6, mode: 'echo',     word: 'RABBIT', stars: 0, done: false, locked: true  },
+  { id: 46, chapter: 6, mode: 'type',     word: 'CASTLE', stars: 0, done: false, locked: true  },
+  { id: 47, chapter: 6, mode: 'flash',    word: 'GARDEN', stars: 0, done: false, locked: true  },
+  { id: 48, chapter: 6, mode: 'boss',     word: 'BRIDGE', stars: 0, done: false, locked: true  },
+  // ── Chapter 7: The Word Galaxy (6-letter adventure) ──────────────────────
   { id: 49, chapter: 7, mode: 'echo',     word: 'FLOWER', stars: 0, done: false, locked: true  },
   { id: 50, chapter: 7, mode: 'flash',    word: 'SUMMER', stars: 0, done: false, locked: true  },
   { id: 51, chapter: 7, mode: 'scramble', word: 'ORANGE', stars: 0, done: false, locked: true  },
   { id: 52, chapter: 7, mode: 'type',     word: 'BUTTER', stars: 0, done: false, locked: true  },
-  { id: 53, chapter: 7, mode: 'click',    word: 'PLANET', stars: 0, done: false, locked: true  },
-  { id: 54, chapter: 7, mode: 'flash',    word: 'ROCKET', stars: 0, done: false, locked: true  },
-  { id: 55, chapter: 7, mode: 'echo',     word: 'WIZARD', stars: 0, done: false, locked: true  },
-  { id: 56, chapter: 7, mode: 'boss',     word: 'DRAGON', stars: 0, done: false, locked: true  },
-  // ── Chapter 8: The Word Island (advanced adventure words) ────────────────
+  { id: 53, chapter: 7, mode: 'click',    word: 'ROCKET', stars: 0, done: false, locked: true  },
+  { id: 54, chapter: 7, mode: 'flash',    word: 'WIZARD', stars: 0, done: false, locked: true  },
+  { id: 55, chapter: 7, mode: 'echo',     word: 'DRAGON', stars: 0, done: false, locked: true  },
+  { id: 56, chapter: 7, mode: 'boss',     word: 'PLANET', stars: 0, done: false, locked: true  },
+  // ── Chapter 8: The Word Island (6-letter harder) ─────────────────────────
   { id: 57, chapter: 8, mode: 'speed',    word: 'PIRATE', stars: 0, done: false, locked: true  },
   { id: 58, chapter: 8, mode: 'click',    word: 'JUNGLE', stars: 0, done: false, locked: true  },
   { id: 59, chapter: 8, mode: 'scramble', word: 'MONKEY', stars: 0, done: false, locked: true  },
@@ -122,15 +200,15 @@ const LEVELS = [
   { id: 62, chapter: 8, mode: 'missing',  word: 'ISLAND', stars: 0, done: false, locked: true  },
   { id: 63, chapter: 8, mode: 'type',     word: 'SUNSET', stars: 0, done: false, locked: true  },
   { id: 64, chapter: 8, mode: 'boss',     word: 'FOREST', stars: 0, done: false, locked: true  },
-  // ── Chapter 9: The Word Tower (challenge mix) ────────────────────────────
-  { id: 65, chapter: 9, mode: 'flash',    word: 'KITTEN', stars: 0, done: false, locked: true  },
-  { id: 66, chapter: 9, mode: 'click',    word: 'MIRROR', stars: 0, done: false, locked: true  },
-  { id: 67, chapter: 9, mode: 'scramble', word: 'SCHOOL', stars: 0, done: false, locked: true  },
-  { id: 68, chapter: 9, mode: 'drag',     word: 'SPIDER', stars: 0, done: false, locked: true  },
-  { id: 69, chapter: 9, mode: 'echo',     word: 'TOWER',  stars: 0, done: false, locked: true  },
-  { id: 70, chapter: 9, mode: 'missing',  word: 'SNAKE',  stars: 0, done: false, locked: true  },
-  { id: 71, chapter: 9, mode: 'type',     word: 'SWORD',  stars: 0, done: false, locked: true  },
-  { id: 72, chapter: 9, mode: 'boss',     word: 'ZEBRA',  stars: 0, done: false, locked: true  },
+  // ── Chapter 9: The Word Tower (6–7 letter endgame) ───────────────────────
+  { id: 65, chapter: 9, mode: 'flash',    word: 'MIRROR',  stars: 0, done: false, locked: true  },
+  { id: 66, chapter: 9, mode: 'click',    word: 'SPIDER',  stars: 0, done: false, locked: true  },
+  { id: 67, chapter: 9, mode: 'scramble', word: 'SCHOOL',  stars: 0, done: false, locked: true  },
+  { id: 68, chapter: 9, mode: 'drag',     word: 'KITTEN',  stars: 0, done: false, locked: true  },
+  { id: 69, chapter: 9, mode: 'echo',     word: 'PENGUIN', stars: 0, done: false, locked: true  },
+  { id: 70, chapter: 9, mode: 'missing',  word: 'LANTERN', stars: 0, done: false, locked: true  },
+  { id: 71, chapter: 9, mode: 'type',     word: 'THUNDER', stars: 0, done: false, locked: true  },
+  { id: 72, chapter: 9, mode: 'boss',     word: 'CRYSTAL', stars: 0, done: false, locked: true  },
   // ── Chapter 10: The Code Lab (sequence builder) ───────────────────────────
   { id: 73, chapter: 10, mode: 'coding',  word: 'L1',    stars: 0, done: false, locked: true  },
   { id: 74, chapter: 10, mode: 'coding',  word: 'L2',    stars: 0, done: false, locked: true  },
@@ -143,22 +221,41 @@ const LEVELS = [
 ];
 
 var WORDS_XLHARD = [
-  { word: 'RABBIT', theme: 'animal' }, { word: 'GARDEN', theme: 'nature' },
-  { word: 'BRIDGE', theme: 'object' }, { word: 'CANDLE', theme: 'object' },
-  { word: 'WINTER', theme: 'weather' },{ word: 'CASTLE', theme: 'object' },
-  { word: 'CHEESE', theme: 'food' },   { word: 'FLOWER', theme: 'nature' },
-  { word: 'SUMMER', theme: 'weather' },{ word: 'ORANGE', theme: 'fruit' },
-  { word: 'BUTTER', theme: 'food' },   { word: 'PLANET', theme: 'space' },
-  { word: 'ROCKET', theme: 'space' },  { word: 'WIZARD', theme: 'fantasy' },
-  { word: 'DRAGON', theme: 'fantasy' },{ word: 'PIRATE', theme: 'fantasy' },
-  { word: 'JUNGLE', theme: 'nature' }, { word: 'MONKEY', theme: 'animal' },
-  { word: 'TURTLE', theme: 'animal' }, { word: 'PARROT', theme: 'animal' },
-  { word: 'ISLAND', theme: 'nature' }, { word: 'SUNSET', theme: 'nature' },
-  { word: 'FOREST', theme: 'nature' }, { word: 'KITTEN', theme: 'animal' },
-  { word: 'MIRROR', theme: 'object' }, { word: 'SCHOOL', theme: 'object' },
-  { word: 'SPIDER', theme: 'animal' }, { word: 'TOWER', theme: 'object' },
-  { word: 'SNAKE', theme: 'animal' },  { word: 'SWORD', theme: 'fantasy' },
-  { word: 'ZEBRA', theme: 'animal' },
+  { word: 'RABBIT', theme: 'animal',  phonemes: ['short-a', 'double-consonant'] },
+  { word: 'GARDEN', theme: 'nature',  phonemes: ['r-controlled', 'blend-nd'] },
+  { word: 'BRIDGE', theme: 'object',  phonemes: ['blend-br', 'digraph-dge'] },
+  { word: 'CANDLE', theme: 'object',  phonemes: ['blend-nd', 'silent-e'] },
+  { word: 'WINTER', theme: 'weather', phonemes: ['blend-nt', 'r-controlled'] },
+  { word: 'CASTLE', theme: 'object',  phonemes: ['blend-st', 'silent-e'] },
+  { word: 'CHEESE', theme: 'food',    phonemes: ['ch-digraph', 'long-e', 'double-vowel'] },
+  { word: 'FLOWER', theme: 'nature',  phonemes: ['blend-fl', 'ow-diphthong', 'r-controlled'] },
+  { word: 'SUMMER', theme: 'weather', phonemes: ['short-u', 'double-consonant', 'r-controlled'] },
+  { word: 'ORANGE', theme: 'fruit',   phonemes: ['r-controlled', 'long-a', 'silent-e'] },
+  { word: 'BUTTER', theme: 'food',    phonemes: ['short-u', 'double-consonant', 'r-controlled'] },
+  { word: 'PLANET', theme: 'space',   phonemes: ['blend-pl', 'short-a', 'blend-nt'] },
+  { word: 'ROCKET', theme: 'space',   phonemes: ['digraph-ck', 'short-o'] },
+  { word: 'WIZARD', theme: 'fantasy', phonemes: ['short-i', 'r-controlled'] },
+  { word: 'DRAGON', theme: 'fantasy', phonemes: ['blend-dr', 'short-a'] },
+  { word: 'PIRATE', theme: 'fantasy', phonemes: ['long-i', 'r-controlled', 'silent-e'] },
+  { word: 'JUNGLE', theme: 'nature',  phonemes: ['blend-ng', 'silent-e'] },
+  { word: 'MONKEY', theme: 'animal',  phonemes: ['blend-nk', 'long-e', 'silent-y'] },
+  { word: 'TURTLE', theme: 'animal',  phonemes: ['r-controlled', 'silent-e'] },
+  { word: 'PARROT', theme: 'animal',  phonemes: ['r-controlled', 'double-consonant'] },
+  { word: 'ISLAND', theme: 'nature',  phonemes: ['long-i', 'blend-nd'] },
+  { word: 'SUNSET', theme: 'nature',  phonemes: ['short-u', 'blend-nd', 'blend-st'] },
+  { word: 'FOREST', theme: 'nature',  phonemes: ['r-controlled', 'blend-st'] },
+  { word: 'KITTEN', theme: 'animal',  phonemes: ['short-i', 'double-consonant'] },
+  { word: 'MIRROR', theme: 'object',  phonemes: ['short-i', 'double-consonant', 'r-controlled'] },
+  { word: 'SCHOOL', theme: 'object',  phonemes: ['digraph-sch', 'long-oo'] },
+  { word: 'SPIDER', theme: 'animal',  phonemes: ['blend-sp', 'long-i', 'r-controlled'] },
+  { word: 'TOWER',  theme: 'object',  phonemes: ['ow-diphthong', 'r-controlled'] },
+  { word: 'SNAKE',  theme: 'animal',  phonemes: ['blend-sn', 'long-a', 'silent-e'] },
+  { word: 'SWORD',  theme: 'fantasy', phonemes: ['blend-sw', 'r-controlled'] },
+  { word: 'ZEBRA',  theme: 'animal',  phonemes: ['long-e', 'r-controlled'] },
+  { word: 'PENGUIN', theme: 'animal', phonemes: ['blend-ng', 'short-i'] },
+  { word: 'LANTERN', theme: 'object', phonemes: ['blend-nt', 'r-controlled'] },
+  { word: 'THUNDER', theme: 'weather',phonemes: ['digraph-th', 'blend-nd', 'r-controlled'] },
+  { word: 'CRYSTAL', theme: 'object', phonemes: ['blend-cr', 'blend-st', 'short-i'] },
 ];
 
 var PET_SPECIES = [
@@ -384,25 +481,71 @@ window.MODE_META['pizza'] = {
 window.MODE_META['song'] = {
   label: 'Song', color: 'blue', ink: 'var(--blue-ink)', soft: 'var(--blue-soft)', icon: '🎵'
 };
+window.MODE_META['rhyme'] = {
+  label: 'Rhyme', color: 'pink', ink: 'var(--pink-ink)', soft: 'var(--pink-soft)', icon: '🎵'
+};
+window.MODE_META['picture'] = {
+  label: 'Picture', color: 'lilac', ink: 'var(--lilac-ink)', soft: 'var(--lilac-soft)', icon: '🖼️'
+};
+window.MODE_META['wordorder'] = {
+  label: 'Word Order', color: 'mint', ink: 'var(--mint-ink)', soft: 'var(--mint-soft)', icon: '📝'
+};
+window.MODE_META['race'] = {
+  label: 'Race', color: 'coral', ink: 'var(--coral-ink)', soft: 'var(--coral-soft)', icon: '🏁'
+};
+window.MODE_META['volcano'] = {
+  label: 'Volcano', color: 'coral', ink: 'var(--coral-ink)', soft: 'var(--coral-soft)', icon: '🌋'
+};
+window.MODE_META['safari'] = {
+  label: 'Safari', color: 'gold', ink: 'var(--gold-dark)', soft: 'var(--gold-soft)', icon: '🦁'
+};
+window.MODE_META['story'] = {
+  label: 'Story', color: 'violet', ink: 'var(--violet)', soft: 'var(--violet-soft)', icon: '📖'
+};
+window.MODE_META['detective'] = {
+  label: 'Detective', color: 'blue', ink: 'var(--blue-ink)', soft: 'var(--blue-soft)', icon: '🔍'
+};
+window.MODE_META['memory'] = {
+  label: 'Memory', color: 'pink', ink: 'var(--pink-ink)', soft: 'var(--pink-soft)', icon: '🃏'
+};
+window.MODE_META['soup'] = {
+  label: 'Soup', color: 'mint', ink: 'var(--mint-ink)', soft: 'var(--mint-soft)', icon: '🍲'
+};
 
-Object.assign(window, { WORDS_EASY, WORDS_MED, WORDS_HARD, WORDS_XLHARD, getWordsForDifficulty, LEVELS, CHAPTER_META, MODE_META, PRECISION_TASKS, PET_SPECIES, PET_OUTFIT_ITEMS, PET_ROOMS, PET_TOYS, PET_TREATS, AVATAR_ITEMS, POWER_UPS });
+Object.assign(window, { WORDS_EASY, WORDS_MED, WORDS_HARD, WORDS_XLHARD, getWordsForDifficulty, getAdaptiveWordPool, LEVELS, CHAPTER_META, MODE_META, PRECISION_TASKS, PET_SPECIES, PET_OUTFIT_ITEMS, PET_ROOMS, PET_TOYS, PET_TREATS, AVATAR_ITEMS, POWER_UPS });
 
-function getDailyChallenge(dateStr) {
+function getDailyChallenge(dateStr, letterErrors) {
   // Check for parent-injected custom word (clears after reading)
   var profileId = window.__currentProfileId || 'p0';
   var customKey = 'spelloop-custom-word-' + profileId;
   var customWord = localStorage.getItem(customKey);
   if (customWord) {
     localStorage.removeItem(customKey);
-    // Use click mode for custom words (most accessible)
     return { word: customWord, mode: 'click' };
   }
-  // Simple numeric hash of dateStr for a deterministic daily pick
+
+  // If enough error data exists, pick from adaptive pool (due or weak-phoneme word)
+  if (letterErrors && Object.keys(letterErrors).length >= 3) {
+    var adaptive = getAdaptiveWordPool(letterErrors, 'med');
+    var today = new Date().toISOString().slice(0, 10);
+    var overdue = adaptive.filter(function(w) {
+      var key = Object.keys(letterErrors).find(function(k) { return k.startsWith(w.word + ':') && (letterErrors[k].dueDate || '9999') <= today; });
+      return !!key;
+    });
+    var candidate = overdue.length ? overdue[0] : adaptive[0];
+    if (candidate) {
+      var modes = ['click', 'missing', 'type', 'echo', 'flash'];
+      var hash = 0;
+      for (var ci = 0; ci < dateStr.length; ci++) hash = (hash * 31 + dateStr.charCodeAt(ci)) & 0xFFFFFF;
+      return { word: candidate.word, mode: modes[hash % modes.length] };
+    }
+  }
+
+  // Default: deterministic hash pick from level pool
   var hash = 0;
   for (var i = 0; i < dateStr.length; i++) {
     hash = (hash * 31 + dateStr.charCodeAt(i)) & 0xFFFFFF;
   }
-  // Pick from non-boss, non-coding levels only
   var pool = window.LEVELS
     ? window.LEVELS.filter(function(l) { return l.mode !== 'boss' && l.mode !== 'coding'; })
     : [];
@@ -429,5 +572,7 @@ var WORD_HINTS = {
   ISLAND:'🏝️', JUNGLE:'🌴', KITTEN:'🐱', MIRROR:'🪞', PLANET:'🪐', ROCKET:'🚀',
   SCHOOL:'🏫', SPIDER:'🕷️', SUNSET:'🌅', TURTLE:'🐢', WINTER:'❄️',
   DRAGON:'🐲', FLOWER:'🌺', MONKEY:'🐒', PARROT:'🦜', PIRATE:'🏴‍☠️', OCEAN:'🌊',
+  PENGUIN:'🐧', LANTERN:'🏮', THUNDER:'⚡', CRYSTAL:'💎',
+  BEACH:'🏖️', PLANT:'🌱', RIVER:'🏞️',
 };
 window.WORD_HINTS = WORD_HINTS;

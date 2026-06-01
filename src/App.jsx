@@ -15,6 +15,9 @@ var DEFAULT_PROFILE  = {
   petData:       {},
   treats:        {},
   powerups:      {},
+  letterErrors:  {},
+  recentAccuracy: 0.8,
+  petGameCooldowns: {},
 };
 
 function makePetEntry(spec, source) {
@@ -50,7 +53,10 @@ function migrateProfile(p) {
   if (out.feedCount == null) out.feedCount = 0;
   if (!out.petData)   out.petData   = {};
   if (!out.treats)    out.treats    = {};
-  if (!out.powerups)  out.powerups  = {};
+  if (!out.powerups)      out.powerups      = {};
+  if (!out.letterErrors)  out.letterErrors  = {};
+  if (out.recentAccuracy == null) out.recentAccuracy = 0.8;
+  if (!out.petGameCooldowns) out.petGameCooldowns = {};
   if (out.lastStreakDate === undefined) out.lastStreakDate = null;
   // Migrate existing petData entries to include room + toys
   Object.keys(out.petData).forEach(function(id) {

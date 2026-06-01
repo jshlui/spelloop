@@ -464,6 +464,12 @@ function OverviewTab({ profile, levels }) {
         </div>
       </div>
 
+      {/* Phoneme heatmap */}
+      <div style={Object.assign({}, webCard, { marginBottom: 16 })}>
+        <h3 style={{ margin: '0 0 14px', fontSize: 16, fontWeight: 900 }}>Sound pattern map 🔬</h3>
+        <PhonemeMap profile={profile}/>
+      </div>
+
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
         {/* Recent completed levels */}
         <div style={webCard}>
@@ -759,18 +765,95 @@ function Metric({ label, value, delta, tone }) {
     </div>
   );
 }
-function Focus({ word, accuracy, note }) {
-  var tone = accuracy < 50 ? 'var(--danger)' : accuracy < 70 ? 'var(--warn)' : 'var(--success)';
+// Phoneme labels shown in parent heatmap
+var PHONEME_LABELS = {
+  'CVC': 'Short CVC', 'short-a': 'Short A', 'short-e': 'Short E', 'short-i': 'Short I',
+  'short-o': 'Short O', 'short-u': 'Short U', 'long-a': 'Long A', 'long-e': 'Long E',
+  'long-i': 'Long I', 'long-o': 'Long O', 'long-oo': 'Long OO', 'double-vowel': 'Double Vowel',
+  'silent-e': 'Silent E', 'silent-y': 'Silent Y', 'digraph-sh': 'SH sound', 'digraph-th': 'TH sound',
+  'ch-digraph': 'CH sound', 'digraph-ck': 'CK sound', 'digraph-sch': 'SCH sound',
+  'ea-digraph': 'EA vowel', 'ai-digraph': 'AI vowel', 'ou-diphthong': 'OU sound',
+  'ow-diphthong': 'OW sound', 'r-controlled': 'R sounds', 'double-consonant': 'Double Consonant',
+  'blend-st': 'ST blend', 'blend-tr': 'TR blend', 'blend-fr': 'FR blend', 'blend-cr': 'CR blend',
+  'blend-gr': 'GR blend', 'blend-pl': 'PL blend', 'blend-fl': 'FL blend', 'blend-cl': 'CL blend',
+  'blend-br': 'BR blend', 'blend-dr': 'DR blend', 'blend-sn': 'SN blend', 'blend-sp': 'SP blend',
+  'blend-sw': 'SW blend', 'blend-nd': 'ND blend', 'blend-nt': 'NT blend', 'blend-lk': 'LK blend',
+  'blend-lf': 'LF blend', 'blend-rd': 'RD blend', 'blend-ng': 'NG sound', 'blend-nk': 'NK sound',
+  'blend-dge': 'DGE sound', 'digraph-dge': 'DGE ending',
+};
+
+function PhonemeMap({ profile }) {
+  var letterErrors = profile.letterErrors || {};
+  var allWords = typeof window !== 'undefined'
+    ? [].concat(window.WORDS_EASY || [], window.WORDS_MED || [], window.WORDS_HARD || [], window.WORDS_XLHARD || [])
+    : [];
+
+  if (Object.keys(letterErrors).length === 0) {
+    return (
+      <div style={{ fontSize: 13, color: 'var(--ink-mute)', fontWeight: 600, lineHeight: 1.6 }}>
+        No phoneme data yet — play a few levels and the map will fill in automatically.
+      </div>
+    );
+  }
+
+  // Aggregate error counts per phoneme
+  var phonemeCounts = {};
+  var phonemeWords = {};
+  Object.values(letterErrors).forEach(function(e) {
+    var wordEntry = allWords.find(function(w) { return w.word === e.word; });
+    if (!wordEntry || !wordEntry.phonemes) return;
+    wordEntry.phonemes.forEach(function(ph) {
+      phonemeCounts[ph] = (phonemeCounts[ph] || 0) + (e.count || 1);
+      if (!phonemeWords[ph]) phonemeWords[ph] = new Set();
+      phonemeWords[ph].add(e.word);
+    });
+  });
+
+  var sorted = Object.keys(phonemeCounts)
+    .sort(function(a, b) { return phonemeCounts[b] - phonemeCounts[a]; })
+    .slice(0, 12);
+
+  if (!sorted.length) return null;
+
+  // Top weak phoneme for the actionable tip
+  var topWeak = sorted[0];
+  var topWords = phonemeWords[topWeak] ? Array.from(phonemeWords[topWeak]).slice(0, 2) : [];
+  var tipMap = {
+    'digraph-sh': '"sh" as in sheep', 'digraph-th': '"th" as in think',
+    'ch-digraph': '"ch" as in cheese', 'ea-digraph': '"ea" as in leaf',
+    'ai-digraph': '"ai" as in rain', 'long-oo': '"oo" as in moon',
+    'ou-diphthong': '"ou" as in cloud', 'ow-diphthong': '"ow" as in flower',
+    'r-controlled': 'words with R like star and bird', 'silent-e': 'magic-E words like cake and kite',
+    'double-consonant': 'double letters like rabbit and kitten',
+  };
+  var tipPhrase = tipMap[topWeak] || (PHONEME_LABELS[topWeak] || topWeak).toLowerCase();
+  var tipText = profile.name + ' is finding ' + tipPhrase + ' tricky.'
+    + (topWords.length ? ' Words to practise together: ' + topWords.join(', ') + '.' : '');
+
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-        <span style={{ fontSize: 14, fontWeight: 900 }}>{word}</span>
-        <span style={{ fontSize: 12, fontWeight: 800, color: tone }}>{accuracy}%</span>
+      <div style={{ fontSize: 12, color: 'var(--ink-mute)', fontWeight: 700, marginBottom: 12, lineHeight: 1.5 }}>{tipText}</div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
+        {sorted.map(function(ph) {
+          var count = phonemeCounts[ph];
+          var words = phonemeWords[ph] ? Array.from(phonemeWords[ph]).join(', ') : '';
+          var tone = count <= 1 ? 'var(--emerald)' : count <= 4 ? 'var(--gold)' : 'var(--rose)';
+          var bg = count <= 1 ? 'var(--emerald-soft)' : count <= 4 ? 'var(--gold-soft)' : 'var(--rose-soft)';
+          var label = PHONEME_LABELS[ph] || ph;
+          return (
+            <div key={ph} title={words ? 'Words: ' + words : ''} style={{
+              borderRadius: 10, padding: '8px 10px',
+              background: bg, border: '1.5px solid ' + tone,
+              cursor: words ? 'help' : 'default',
+            }}>
+              <div style={{ fontSize: 11, fontWeight: 900, color: tone, marginBottom: 2 }}>{label}</div>
+              <div style={{ fontSize: 10, color: 'var(--ink-mute)', fontWeight: 700 }}>
+                {count <= 1 ? '✓ Mastered' : count <= 4 ? '⚡ Shaky' : '⚠ Struggling'}
+              </div>
+            </div>
+          );
+        })}
       </div>
-      <div style={{ height: 8, borderRadius: 4, background: 'var(--bg)', overflow: 'hidden', marginBottom: 4 }}>
-        <div style={{ height: '100%', width: accuracy + '%', background: tone }}/>
-      </div>
-      <div style={{ fontSize: 11, color: 'var(--ink-mute)', fontWeight: 600 }}>{note}</div>
     </div>
   );
 }

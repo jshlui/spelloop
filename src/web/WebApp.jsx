@@ -2,6 +2,13 @@
 
 function WebApp({ profile, setProfile, levels, setLevels, settings, setSettings, onOpenParent }) {
   window.__currentProfileId = profile.id || 'p0';
+  // Expose active pet state so GameHeader can show the live pet during play
+  var _petId = profile.activePetId;
+  var _petData = (_petId && profile.petData && profile.petData[_petId]) || {};
+  window.__activePetId = _petId || null;
+  window.__activePetMood = _petData.mood != null ? _petData.mood : 80;
+  window.__activePetGrowth = _petData.growthPoints != null ? _petData.growthPoints : 0;
+  window.__activePetChapters = (levels || []).filter(function(l) { return l.done && l.mode === 'boss'; }).length;
   var [tab, setTab] = React.useState(function() { return localStorage.getItem('sl_web_tab') || 'home'; });
   var [route, setRoute] = React.useState({ name: 'screen' });
   var [dailyState, setDailyState] = React.useState(function() {
@@ -34,7 +41,9 @@ function WebApp({ profile, setProfile, levels, setLevels, settings, setSettings,
         if (!lastPlayed) return;
         var diffDays = Math.floor((Date.now() - new Date(lastPlayed).getTime()) / 86400000);
         if (diffDays <= 0) return;
-        var decay = Math.min(diffDays * 15, entry.mood || 80);
+        var recentAcc = prev.recentAccuracy != null ? prev.recentAccuracy : 0.7;
+        var decayRate = Math.round(15 * (1.4 - recentAcc));
+        var decay = Math.min(diffDays * decayRate, entry.mood || 80);
         if (decay <= 0) return;
         pd[sid] = Object.assign({}, entry, { mood: Math.max(0, (entry.mood || 80) - decay) });
         changed = true;
@@ -87,7 +96,7 @@ function WebApp({ profile, setProfile, levels, setLevels, settings, setSettings,
   }
 
   function startMode(mode) {
-    var activityWords = { math: 'MATH', pizza: 'PIZZA', song: 'SONG', coding: 'L1' };
+    var activityWords = { math: 'MATH', pizza: 'PIZZA', song: 'SONG', coding: 'L1', rhyme: 'RHYME', picture: 'PICTURE', wordorder: 'WORDORDER', safari: 'SAFARI', story: 'STORY', detective: 'DETECTIVE', volcano: 'VOLCANO', memory: 'MEMORY', soup: 'SOUP' };
     if (activityWords[mode]) {
       setRoute({ name: 'game', mode: mode, word: activityWords[mode], activity: true });
       return;
@@ -98,10 +107,37 @@ function WebApp({ profile, setProfile, levels, setLevels, settings, setSettings,
   }
 
   function handleStartDaily(daily) {
-    setRoute({ name: 'game', mode: daily.mode, word: daily.word });
+    // Re-derive with latest letterErrors to get adaptive pick
+    var today = new Date().toISOString().slice(0, 10);
+    var freshDaily = typeof getDailyChallenge !== 'undefined'
+      ? getDailyChallenge(today, profile.letterErrors)
+      : daily;
+    setRoute({ name: 'game', mode: (freshDaily || daily).mode, word: (freshDaily || daily).word });
   }
 
-  function finishGame(stars, accuracy) {
+  function upsertLetterErrors(prev, taskHistory, word) {
+    if (!word || !taskHistory) return prev;
+    var today = new Date().toISOString().slice(0, 10);
+    var errors = Object.assign({}, prev || {});
+    taskHistory.forEach(function(entry) {
+      if (entry.correct || !entry.word || entry.word !== word || entry.letterIndex == null) return;
+      var key = entry.word + ':' + entry.letterIndex;
+      var existing = errors[key] || { count: 0 };
+      var count = (existing.count || 0) + 1;
+      var days = Math.pow(2, Math.min(count, 5));
+      var due = new Date(Date.now() + days * 86400000).toISOString().slice(0, 10);
+      errors[key] = { word: entry.word, letterIndex: entry.letterIndex, wrongLetter: entry.wrongLetter, correctLetter: entry.correctLetter, count: count, dueDate: due, lastSeen: today };
+    });
+    // Cap at 200 entries — rotate oldest by lastSeen
+    var keys = Object.keys(errors);
+    if (keys.length > 200) {
+      keys.sort(function(a, b) { return (errors[a].lastSeen || '') < (errors[b].lastSeen || '') ? -1 : 1; });
+      keys.slice(0, keys.length - 200).forEach(function(k) { delete errors[k]; });
+    }
+    return errors;
+  }
+
+  function finishGame(stars, accuracy, taskHistory) {
     var completedId = route.levelId;
     var speciesId = profile.activePetId;
     var capturedRoute = route;
@@ -138,7 +174,9 @@ function WebApp({ profile, setProfile, levels, setLevels, settings, setSettings,
     var codingDone = nextLevels.filter(function(l) { return l.mode === 'coding' && l.done; }).length;
 
     setProfile(function(prev) {
-      var moodBoost = stars === 3 ? 20 : stars === 2 ? 15 : 10;
+      var acc = (accuracy != null && !isNaN(accuracy)) ? accuracy : 0.7;
+      var moodBoost = Math.round(acc * 30);
+      var newLetterErrors = upsertLetterErrors(prev.letterErrors, taskHistory, capturedRoute.word);
       var pd = Object.assign({}, prev.petData || {});
       var activeSpeciesId = prev.activePetId || speciesId;
       var activeSpec = activeSpeciesId && (window.PET_SPECIES || []).find(function(s) { return s.id === activeSpeciesId; });
@@ -220,6 +258,8 @@ function WebApp({ profile, setProfile, levels, setLevels, settings, setSettings,
         coins: (prev.coins || 0) + coinsEarned,
         petData: pd,
         powerups: pu,
+        letterErrors: newLetterErrors,
+        recentAccuracy: acc,
       });
     });
 
@@ -248,7 +288,23 @@ function WebApp({ profile, setProfile, levels, setLevels, settings, setSettings,
       // Show postcard first, then reward
       setRoute({ name: 'chapterComplete', chapter: bossChapter, pending: { name: 'storyBuilder', chapter: bossChapter, reward: { name: 'reward', word: capturedRoute.word, stars: stars, mode: capturedRoute.mode, coins: coinsEarned, isNewRecord: isNewRecord, isActivity: isActivityReward } } });
     } else {
-      setRoute({ name: 'reward', word: capturedRoute.word, stars: stars, mode: capturedRoute.mode, coins: coinsEarned, isNewRecord: isNewRecord, isActivity: isActivityReward });
+      // Collect wrong-letter entries for reflection screen
+      var wrongLetters = (taskHistory || []).filter(function(e) {
+        return !e.correct && e.word === capturedRoute.word && e.letterIndex != null;
+      });
+      // Look up phonemes for the word
+      var allWordData = [].concat(
+        window.WORDS_EASY || [], window.WORDS_MED || [],
+        window.WORDS_HARD || [], window.WORDS_XLHARD || []
+      );
+      var wordEntry = allWordData.find(function(w) { return w.word === capturedRoute.word; });
+      var wordPhonemes = wordEntry ? (wordEntry.phonemes || []) : [];
+      var hasErrors = wrongLetters.length > 0;
+      if (hasErrors) {
+        setRoute({ name: 'reflection', word: capturedRoute.word, wrongLetters: wrongLetters, phonemes: wordPhonemes, pending: { name: 'reward', word: capturedRoute.word, stars: stars, mode: capturedRoute.mode, coins: coinsEarned, isNewRecord: isNewRecord, isActivity: isActivityReward } });
+      } else {
+        setRoute({ name: 'reward', word: capturedRoute.word, stars: stars, mode: capturedRoute.mode, coins: coinsEarned, isNewRecord: isNewRecord, isActivity: isActivityReward });
+      }
     }
   }
 
@@ -323,6 +379,10 @@ function WebApp({ profile, setProfile, levels, setLevels, settings, setSettings,
             chapterWords={(levels || []).filter(function(l) { return l.chapter === route.chapter && l.done && l.stars >= 2 && l.mode !== 'coding'; }).map(function(l) { return l.word; })}
             onDone={function() { setRoute(route.reward); }}
           />
+        )}
+        {route.name === 'reflection' && (
+          <PostLevelReflection word={route.word} wrongLetters={route.wrongLetters} phonemes={route.phonemes}
+            onContinue={function() { setRoute(route.pending); }}/>
         )}
         {route.name === 'reward' && (
           <WebReward word={route.word} stars={route.stars} coins={route.coins} mode={route.mode} isActivity={route.isActivity} isNewRecord={route.isNewRecord}
@@ -701,6 +761,16 @@ function WebHome({ profile, levels, onContinue, onPlayLevel, onPickMode, onTab, 
     { title: 'Pizza Party', mode: 'pizza', kind: 'pizza' },
     { title: 'Song Time', mode: 'song', kind: 'song' },
     { title: 'Puzzle World', mode: 'coding', kind: 'puzzle' },
+    { title: 'Rhyme Time', mode: 'rhyme', kind: 'rhyme' },
+    { title: 'Picture Match', mode: 'picture', kind: 'picture' },
+    { title: 'Word Order', mode: 'wordorder', kind: 'wordorder' },
+    { title: 'Pet Race', mode: 'race', kind: 'race' },
+    { title: 'Vowel Volcano', mode: 'volcano', kind: 'volcano' },
+    { title: 'Spell Safari', mode: 'safari', kind: 'safari' },
+    { title: 'Story Builder', mode: 'story', kind: 'story' },
+    { title: 'Letter Detective', mode: 'detective', kind: 'detective' },
+    { title: 'Memory Match', mode: 'memory', kind: 'memory' },
+    { title: 'Alphabet Soup', mode: 'soup', kind: 'soup' },
   ];
   var query = searchQuery.trim().toLowerCase();
   var searchableLessons = lessons.filter(function(lesson) {
@@ -789,6 +859,8 @@ function WebHome({ profile, levels, onContinue, onPlayLevel, onPickMode, onTab, 
         </section>
       )}
 
+      <DailyChallengeCard dailyState={dailyState} onStartDaily={onStartDaily}/>
+
       <section className="spelloop-section">
         <div className="spelloop-section-head"><h2>Continue Learning</h2><button onClick={function() { onTab('map'); }}>View all</button></div>
         <div className="spelloop-lessons">
@@ -832,14 +904,60 @@ function WebHome({ profile, levels, onContinue, onPlayLevel, onPickMode, onTab, 
         <div className="spelloop-chest" aria-hidden="true">🎁</div>
       </section>
 
-      {(function() {
-        var today = new Date().toISOString().slice(0, 10);
-        var daily = typeof getDailyChallenge !== 'undefined' ? getDailyChallenge(today) : null;
-        if (!daily) return null;
-        var done = dailyState && dailyState.lastDate === today && dailyState.todayDone;
-        return <button className={'spelloop-daily' + (done ? ' is-done' : '')} onClick={done ? undefined : function() { onStartDaily && onStartDaily(daily); }}><span>{done ? '✓' : '⚡'}</span><strong>{done ? 'Daily done!' : "Today's Challenge"}</strong></button>;
-      })()}
     </main>
+  );
+}
+
+function DailyChallengeCard({ dailyState, onStartDaily }) {
+  var today = new Date().toISOString().slice(0, 10);
+  var daily = typeof getDailyChallenge !== 'undefined' ? getDailyChallenge(today) : null;
+  if (!daily) return null;
+  var done = dailyState && dailyState.lastDate === today && dailyState.todayDone;
+  var streak = (dailyState && dailyState.challengeStreak) || 0;
+  var mode = (window.MODE_META && window.MODE_META[daily.mode]) || {};
+
+  // Countdown to midnight
+  var now = new Date();
+  var midnight = new Date(now); midnight.setHours(24, 0, 0, 0);
+  var hoursLeft = Math.floor((midnight - now) / 3600000);
+  var minsLeft = Math.floor(((midnight - now) % 3600000) / 60000);
+  var timeLabel = hoursLeft > 0 ? hoursLeft + 'h left' : minsLeft + 'm left';
+
+  // Partially mask the word: first + last letter, dots in between
+  var w = daily.word || '';
+  var maskedWord = w.length <= 2 ? w : w[0] + '·'.repeat(Math.max(1, w.length - 2)) + w[w.length - 1];
+
+  return (
+    <section style={{ padding: '0 24px 4px' }}>
+      <div style={{
+        background: done ? 'var(--emerald-soft)' : 'linear-gradient(135deg, var(--brand) 0%, #7C3AED 100%)',
+        borderRadius: 20, padding: '18px 22px',
+        display: 'flex', alignItems: 'center', gap: 16,
+        boxShadow: done ? 'none' : '0 4px 24px rgba(37,99,235,0.25)',
+        cursor: done ? 'default' : 'pointer',
+        transition: 'transform 0.15s, box-shadow 0.15s',
+      }}
+      onClick={done ? undefined : function() { onStartDaily && onStartDaily(daily); }}
+      onMouseEnter={done ? undefined : function(e) { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 8px 32px rgba(37,99,235,0.35)'; }}
+      onMouseLeave={done ? undefined : function(e) { e.currentTarget.style.transform = ''; e.currentTarget.style.boxShadow = '0 4px 24px rgba(37,99,235,0.25)'; }}
+      >
+        <div style={{ fontSize: 32, lineHeight: 1 }}>{done ? '✅' : '⚡'}</div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: 1, textTransform: 'uppercase', color: done ? 'var(--emerald-dark)' : 'rgba(255,255,255,0.7)', marginBottom: 2 }}>
+            {done ? 'Completed!' : "Today's Challenge"}
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+            <span style={{ fontFamily: "'Fredoka', 'Nunito', sans-serif", fontSize: 22, fontWeight: 800, color: done ? 'var(--emerald-dark)' : 'white', letterSpacing: 3 }}>{maskedWord}</span>
+            {mode.icon && <span style={{ fontSize: 14, fontWeight: 700, color: done ? 'var(--emerald-dark)' : 'rgba(255,255,255,0.85)', background: done ? 'rgba(16,185,129,0.15)' : 'rgba(255,255,255,0.15)', borderRadius: 8, padding: '2px 8px' }}>{mode.icon} {mode.label}</span>}
+          </div>
+        </div>
+        <div style={{ textAlign: 'right', flexShrink: 0 }}>
+          {streak > 0 && <div style={{ fontSize: 13, fontWeight: 800, color: done ? 'var(--emerald-dark)' : '#FFD166', marginBottom: 2 }}>🔥 {streak} day{streak !== 1 ? 's' : ''}</div>}
+          {!done && <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.65)', fontWeight: 700 }}>{timeLabel}</div>}
+          {done && <div style={{ fontSize: 13, fontWeight: 800, color: 'var(--emerald-dark)' }}>+25 🪙</div>}
+        </div>
+      </div>
+    </section>
   );
 }
 
@@ -1085,7 +1203,7 @@ function WebShop({ profile, setProfile, levels }) {
               style={{
                 width: '100%', padding: '7px 0', borderRadius: 10, border: 'none',
                 background: canAfford ? 'var(--gold)' : 'var(--alpha-sm)',
-                color: canAfford ? '#451A03' : 'var(--ink-mute)',
+                color: canAfford ? 'var(--btn-back-ink)' : 'var(--ink-mute)',
                 fontFamily: "'Fredoka', 'Nunito', sans-serif", fontWeight: 600, fontSize: 12,
                 cursor: canAfford ? 'pointer' : 'default',
                 boxShadow: canAfford ? '0 2px 0 var(--gold-dark)' : 'none',
@@ -1226,7 +1344,7 @@ function WebShop({ profile, setProfile, levels }) {
                     <button onClick={function() { buySpecies(species); }} disabled={!canAfford} style={{
                       width: '100%', padding: '9px 0', borderRadius: 10, border: 'none',
                       background: canAfford ? 'var(--gold)' : 'var(--alpha-sm)',
-                      color: canAfford ? '#451A03' : 'var(--ink-mute)',
+                      color: canAfford ? 'var(--btn-back-ink)' : 'var(--ink-mute)',
                       fontFamily: "'Fredoka', 'Nunito', sans-serif", fontWeight: 600, fontSize: 13,
                       cursor: canAfford ? 'pointer' : 'default',
                       boxShadow: canAfford ? '0 3px 0 var(--gold-dark)' : 'none',
@@ -1815,7 +1933,7 @@ function WebPet({ profile, setProfile, levels }) {
           <div className="pet-progress-card pet-progress-card--shiny">
             <div className="pet-progress-card__label">Shiny progress <span>{shinyProgress.cur}/{shinyProgress.target}</span></div>
             <h3>Special glow</h3>
-            <div className="pet-meter"><span style={{ width: Math.min(100, shinyProgress.cur / shinyProgress.target * 100) + '%', background: '#FFD166' }}/></div>
+            <div className="pet-meter"><span style={{ width: Math.min(100, shinyProgress.cur / shinyProgress.target * 100) + '%', background: 'var(--gold)' }}/></div>
             <p>{shinyProgress.label}</p>
           </div>
         )}
@@ -1843,6 +1961,9 @@ function WebPet({ profile, setProfile, levels }) {
         )}
       </section>
 
+      {/* Pet Mini-Games */}
+      <PetMiniGames profile={profile} setProfile={setProfile} activePetId={activePetId} activePetData={activePetData}/>
+
       <section className="spelloop-section">
         <div className="spelloop-section-head"><h2>Care Tips</h2></div>
         <div className="pet-tips-grid">
@@ -1863,6 +1984,361 @@ function WebPet({ profile, setProfile, levels }) {
         </div>
       </section>
     </div>
+  );
+}
+
+// ── Pet Mini-Games panel ────────────────────────────────────
+function PetMiniGames({ profile, setProfile, activePetId, activePetData }) {
+  var [activeGame, setActiveGame] = React.useState(null); // 'feed'|'play'|'groom'|'train'|'dream'
+  var [trainRound, setTrainRound] = React.useState(0);
+  var [trainScore, setTrainScore] = React.useState(0);
+  var [groomDone, setGroomDone] = React.useState([]);
+  var [dreamRound, setDreamRound] = React.useState(0);
+  var [dreamTyped, setDreamTyped] = React.useState('');
+
+  var cooldowns = profile.petGameCooldowns || {};
+  var now = Date.now();
+
+  function getCooldownMs(key, hours) {
+    var last = cooldowns[key] || 0;
+    return Math.max(0, last + hours * 3600000 - now);
+  }
+  function fmtCooldown(ms) {
+    if (ms <= 0) return null;
+    var mins = Math.round(ms / 60000);
+    if (mins < 60) return mins + 'm';
+    return Math.round(mins / 60) + 'h';
+  }
+
+  function updatePet(moodDelta, coinsDelta, extraFn) {
+    setProfile(function(prev) {
+      var pd = Object.assign({}, prev.petData || {});
+      var entry = Object.assign({}, pd[prev.activePetId] || {});
+      entry.mood = Math.min(100, Math.max(0, (entry.mood || 80) + moodDelta));
+      entry.lastPlayed = new Date().toISOString().slice(0, 10);
+      pd[prev.activePetId] = entry;
+      var next = Object.assign({}, prev, { coins: (prev.coins || 0) + coinsDelta, petData: pd });
+      if (extraFn) next = extraFn(next);
+      return next;
+    });
+  }
+
+  function stampCooldown(key) {
+    setProfile(function(prev) {
+      var cd = Object.assign({}, prev.petGameCooldowns || {});
+      cd[key] = Date.now();
+      return Object.assign({}, prev, { petGameCooldowns: cd });
+    });
+  }
+
+  // Mini-game data
+  var easyWords = React.useMemo(function() {
+    return (window.WORDS_EASY || []).filter(function(w) { return w.word && w.word.length === 3; });
+  }, []);
+  var treats = window.PET_TREATS || [];
+  var equippedToys = React.useMemo(function() {
+    var toys = window.PET_TOYS || [];
+    var petToys = (activePetData.equipped || {}).toys || activePetData.toys || [];
+    if (!petToys.length) {
+      // fallback: first 3 toys
+      return toys.slice(0, 3);
+    }
+    return petToys.slice(0, 3).map(function(id) { return toys.find(function(t) { return t.id === id; }); }).filter(Boolean);
+  }, [activePetData]);
+
+  function btnStyle(disabled) {
+    return {
+      border: 'none', borderRadius: 'var(--r-lg)', padding: '12px 18px',
+      fontFamily: 'inherit', fontWeight: 900, fontSize: 14, cursor: disabled ? 'default' : 'pointer',
+      background: disabled ? 'var(--alpha-sm)' : 'var(--surface)',
+      color: disabled ? 'var(--ink-mute)' : 'var(--ink)',
+      boxShadow: disabled ? 'none' : 'var(--shadow-soft)',
+      display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, minWidth: 90,
+      transition: 'background 150ms',
+    };
+  }
+
+  var gameButtons = [
+    { key: 'feed',   label: 'Feed',   icon: '🍎', cooldownHours: 1 },
+    { key: 'play',   label: 'Play',   icon: '🎾', cooldownHours: 1 },
+    { key: 'groom',  label: 'Groom',  icon: '✨', cooldownHours: 1 },
+    { key: 'train',  label: 'Train',  icon: '📚', cooldownHours: 4 },
+    { key: 'dream',  label: 'Dream',  icon: '😴', cooldownHours: 8 },
+  ];
+
+  function startGame(key) {
+    if (getCooldownMs(key, gameButtons.find(function(b) { return b.key === key; }).cooldownHours) > 0) return;
+    setActiveGame(key);
+    setGroomDone([]);
+    setTrainRound(0); setTrainScore(0);
+    setDreamRound(0); setDreamTyped('');
+  }
+
+  // ── Feed mini-game state ─────────────────────────────────
+  var [feedPicked, setFeedPicked] = React.useState(null);
+  var [feedDone, setFeedDone] = React.useState(false);
+  var feedTreats = React.useMemo(function() {
+    function shuffle(a) { var arr = a.slice(); for (var i = arr.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)); var tmp = arr[i]; arr[i] = arr[j]; arr[j] = tmp; } return arr; }
+    return shuffle(treats).slice(0, 3);
+  }, [activeGame]);
+  var preferredTreat = React.useMemo(function() { return feedTreats[Math.floor(Math.random() * feedTreats.length)] || null; }, [activeGame]);
+
+  function doFeed(treat) {
+    if (feedDone) return;
+    setFeedPicked(treat.id);
+    var isMatch = preferredTreat && treat.id === preferredTreat.id;
+    var moodGain = (treat.moodBoost || 15) + (isMatch ? 15 : 0);
+    var coins = isMatch ? 5 : 0;
+    setFeedDone(true);
+    updatePet(moodGain, coins, null);
+    stampCooldown('feed');
+    setTimeout(function() { setActiveGame(null); setFeedDone(false); setFeedPicked(null); }, 1400);
+  }
+
+  // ── Play mini-game: tap toys ─────────────────────────────
+  var [toysTapped, setToysTapped] = React.useState([]);
+  var playDone = toysTapped.length >= Math.max(equippedToys.length, 1);
+
+  function tapToy(id) {
+    if (toysTapped.indexOf(id) !== -1) return;
+    window.sfx?.tap();
+    var newTapped = toysTapped.concat([id]);
+    setToysTapped(newTapped);
+    updatePet(5, 3, null);
+    if (newTapped.length >= Math.max(equippedToys.length, 1)) {
+      stampCooldown('play');
+      setTimeout(function() { setActiveGame(null); setToysTapped([]); }, 1000);
+    }
+  }
+
+  // ── Groom mini-game: tap sparkles ───────────────────────
+  var sparklePositions = React.useMemo(function() {
+    return [{ x: 30, y: 20 }, { x: 65, y: 45 }, { x: 45, y: 70 }];
+  }, [activeGame]);
+
+  function tapSparkle(i) {
+    if (groomDone.indexOf(i) !== -1) return;
+    window.sfx?.playCorrect();
+    var nd = groomDone.concat([i]);
+    setGroomDone(nd);
+    if (nd.length >= 3) {
+      updatePet(20, 8, null);
+      stampCooldown('groom');
+      setTimeout(function() { setActiveGame(null); setGroomDone([]); }, 900);
+    }
+  }
+
+  // ── Train mini-game: 3 rounds of ClickGame single letter ─
+  var trainWords = React.useMemo(function() {
+    function shuffle(a) { var arr = a.slice(); for (var i = arr.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)); var tmp = arr[i]; arr[i] = arr[j]; arr[j] = tmp; } return arr; }
+    return shuffle(easyWords).slice(0, 3).map(function(w) { return w.word; });
+  }, [activeGame, easyWords]);
+  var curTrainWord = trainWords[trainRound] || '';
+  var trainTarget = curTrainWord[Math.floor(curTrainWord.length / 2)] || '';
+  var trainChoices = React.useMemo(function() {
+    function shuffle(a) { var arr = a.slice(); for (var i = arr.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)); var tmp = arr[i]; arr[i] = arr[j]; arr[j] = tmp; } return arr; }
+    if (!trainTarget) return [];
+    var pool = shuffle('ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').filter(function(c) { return c !== trainTarget; }));
+    return shuffle([trainTarget, ...pool.slice(0, 2)]);
+  }, [trainRound, trainTarget, activeGame]);
+  var [trainPicked, setTrainPicked] = React.useState(null);
+
+  function doTrain(letter) {
+    if (trainPicked) return;
+    setTrainPicked(letter);
+    var correct = letter === trainTarget;
+    if (correct) {
+      window.sfx?.playCorrect();
+      updatePet(10, 5, null);
+      setTrainScore(function(s) { return s + 1; });
+    } else {
+      window.sfx?.playWrong();
+    }
+    setTimeout(function() {
+      var next = trainRound + 1;
+      if (next >= 3) {
+        if (correct && trainScore >= 2) {
+          // Award growthPoint
+          setProfile(function(prev) {
+            var pd = Object.assign({}, prev.petData || {});
+            var entry = Object.assign({}, pd[prev.activePetId] || {});
+            entry.growthPoints = (entry.growthPoints || 0) + 1;
+            pd[prev.activePetId] = entry;
+            return Object.assign({}, prev, { petData: pd });
+          });
+        }
+        stampCooldown('train');
+        setTimeout(function() { setActiveGame(null); }, 600);
+      } else {
+        setTrainRound(next);
+        setTrainPicked(null);
+      }
+    }, 700);
+  }
+
+  // ── Dream mini-game: unscramble 3 dream words ────────────
+  var dreamWords = React.useMemo(function() {
+    function shuffle(a) { var arr = a.slice(); for (var i = arr.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)); var tmp = arr[i]; arr[i] = arr[j]; arr[j] = tmp; } return arr; }
+    return shuffle(easyWords).slice(0, 3).map(function(w) { return { word: w.word, scrambled: shuffle(w.word.split('')).join('') }; });
+  }, [activeGame, easyWords]);
+  var curDream = dreamWords[dreamRound] || { word: '', scrambled: '' };
+
+  function dreamPress(letter) {
+    if (dreamTyped.length >= curDream.word.length) return;
+    var expected = curDream.word[dreamTyped.length];
+    if (letter === expected) {
+      window.sfx?.playCorrect();
+      var nt = dreamTyped + letter;
+      setDreamTyped(nt);
+      if (nt === curDream.word) {
+        var next = dreamRound + 1;
+        if (next >= 3) {
+          updatePet(25, 10, null);
+          stampCooldown('dream');
+          setTimeout(function() { setActiveGame(null); setDreamRound(0); setDreamTyped(''); }, 1000);
+        } else {
+          setTimeout(function() { setDreamRound(next); setDreamTyped(''); }, 600);
+        }
+      }
+    } else {
+      window.sfx?.playWrong();
+    }
+  }
+
+  if (!activePetId) return null;
+
+  return (
+    <section className="spelloop-section">
+      <div className="spelloop-section-head"><h2>Pet Activities</h2></div>
+      <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', padding: '0 0 16px' }}>
+        {gameButtons.map(function(btn) {
+          var cd = getCooldownMs(btn.key, btn.cooldownHours);
+          var cdLabel = fmtCooldown(cd);
+          return (
+            <button key={btn.key} onClick={function() { startGame(btn.key); }} style={btnStyle(cd > 0 || activeGame === btn.key)}>
+              <span style={{ fontSize: 24 }}>{btn.icon}</span>
+              <span>{btn.label}</span>
+              {cdLabel && <span style={{ fontSize: 10, color: 'var(--coral-ink)', fontWeight: 800 }}>{cdLabel}</span>}
+            </button>
+          );
+        })}
+      </div>
+
+      {activeGame === 'feed' && !feedDone && (
+        <div style={{ background: 'var(--gold-soft)', border: '2px solid var(--gold)', borderRadius: 'var(--r-lg)', padding: '16px', marginBottom: 12 }}>
+          <div style={{ fontSize: 13, fontWeight: 800, marginBottom: 8, color: 'var(--gold-dark)' }}>
+            {preferredTreat ? 'Your pet craves ' + preferredTreat.emoji + ' — match it for a bonus!' : 'Pick a treat!'}
+          </div>
+          <div style={{ display: 'flex', gap: 12 }}>
+            {feedTreats.map(function(t) {
+              return (
+                <button key={t.id} onClick={function() { doFeed(t); }} style={{
+                  background: feedPicked === t.id ? 'var(--emerald)' : 'var(--surface)', color: feedPicked === t.id ? 'white' : 'var(--ink)',
+                  border: '2px solid var(--alpha-sm)', borderRadius: 12, padding: '12px 16px',
+                  cursor: 'pointer', fontFamily: 'inherit', fontSize: 28, fontWeight: 900,
+                  boxShadow: 'var(--shadow-soft)', transition: 'background 200ms',
+                }}>{t.emoji}</button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {activeGame === 'play' && (
+        <div style={{ background: 'var(--mint-soft)', border: '2px solid var(--mint)', borderRadius: 'var(--r-lg)', padding: '16px', marginBottom: 12 }}>
+          <div style={{ fontSize: 13, fontWeight: 800, marginBottom: 8, color: 'var(--mint-ink)' }}>Tap all the toys!</div>
+          <div style={{ display: 'flex', gap: 12 }}>
+            {equippedToys.map(function(t) {
+              var done = toysTapped.indexOf(t.id) !== -1;
+              return (
+                <button key={t.id} onClick={function() { tapToy(t.id); }} style={{
+                  background: done ? 'var(--emerald)' : 'var(--surface)', color: done ? 'white' : 'var(--ink)',
+                  border: '2px solid var(--alpha-sm)', borderRadius: 12, padding: '12px 16px',
+                  cursor: done ? 'default' : 'pointer', fontFamily: 'inherit', fontSize: 28, fontWeight: 900,
+                  boxShadow: 'var(--shadow-soft)', opacity: done ? 0.6 : 1,
+                }}>{t.emoji || '🎾'}</button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {activeGame === 'groom' && (
+        <div style={{ background: 'var(--lilac-soft)', border: '2px solid var(--lilac)', borderRadius: 'var(--r-lg)', padding: '16px', marginBottom: 12, position: 'relative', height: 140, overflow: 'hidden' }}>
+          <div style={{ fontSize: 13, fontWeight: 800, marginBottom: 8, color: 'var(--lilac-ink)' }}>Tap the sparkles to groom!</div>
+          {sparklePositions.map(function(pos, i) {
+            var done = groomDone.indexOf(i) !== -1;
+            if (done) return null;
+            return (
+              <button key={i} onClick={function() { tapSparkle(i); }} style={{
+                position: 'absolute', left: pos.x + '%', top: pos.y + '%',
+                background: 'var(--gold)', border: 'none', borderRadius: '50%', width: 36, height: 36,
+                cursor: 'pointer', fontSize: 18, boxShadow: '0 0 12px var(--gold)',
+                animation: 'juiceBounce 1s ease-in-out infinite',
+              }}>✨</button>
+            );
+          })}
+          {groomDone.length >= 3 && <div style={{ fontSize: 28, textAlign: 'center', marginTop: 16, animation: 'juicePop 400ms' }}>All sparkly! ✨</div>}
+        </div>
+      )}
+
+      {activeGame === 'train' && trainRound < 3 && (
+        <div style={{ background: 'var(--blue-soft)', border: '2px solid var(--brand)', borderRadius: 'var(--r-lg)', padding: '16px', marginBottom: 12 }}>
+          <div style={{ fontSize: 13, fontWeight: 800, marginBottom: 4, color: 'var(--blue-ink)' }}>Round {trainRound + 1}/3 — tap the letter in: <strong>{curTrainWord}</strong></div>
+          <div style={{ fontSize: 18, fontWeight: 900, marginBottom: 10, color: 'var(--blue-ink)', letterSpacing: 2 }}>
+            {curTrainWord.split('').map(function(l, i) {
+              var isMid = l === trainTarget && i === Math.floor(curTrainWord.length / 2);
+              return <span key={i} style={{ background: isMid ? 'var(--gold)' : 'transparent', borderRadius: 4, padding: '0 2px' }}>{l}</span>;
+            })}
+          </div>
+          <div style={{ display: 'flex', gap: 10 }}>
+            {trainChoices.map(function(c) {
+              return (
+                <button key={c} onClick={function() { doTrain(c); }} style={{
+                  background: trainPicked === c ? (c === trainTarget ? 'var(--emerald)' : 'var(--coral)') : 'var(--surface)',
+                  color: trainPicked === c ? 'white' : 'var(--ink)',
+                  border: '2px solid var(--alpha-sm)', borderRadius: 10, padding: '10px 20px',
+                  cursor: 'pointer', fontFamily: 'inherit', fontSize: 22, fontWeight: 900,
+                  boxShadow: 'var(--shadow-soft)', transition: 'background 200ms',
+                }}>{c}</button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {activeGame === 'dream' && dreamRound < 3 && (
+        <div style={{ background: 'var(--violet-soft)', border: '2px solid var(--violet)', borderRadius: 'var(--r-lg)', padding: '16px', marginBottom: 12 }}>
+          <div style={{ fontSize: 13, fontWeight: 800, marginBottom: 4, color: 'var(--violet)' }}>Dream {dreamRound + 1}/3 — unscramble: <strong>{curDream.scrambled}</strong></div>
+          <div style={{ display: 'flex', gap: 6, marginBottom: 10 }}>
+            {curDream.word.split('').map(function(l, i) {
+              var filled = i < dreamTyped.length;
+              return (
+                <div key={i} style={{
+                  width: 36, height: 44, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  borderRadius: 8, background: filled ? 'var(--violet)' : 'var(--surface)',
+                  color: filled ? 'white' : 'var(--ink-mute)', fontSize: 20, fontWeight: 900,
+                  boxShadow: 'var(--shadow-soft)',
+                }}>{filled ? dreamTyped[i] : '_'}</div>
+              );
+            })}
+          </div>
+          {typeof KidKeyboard !== 'undefined'
+            ? <KidKeyboard onPress={dreamPress}/>
+            : <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap', maxWidth: 380 }}>
+                {'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').map(function(l) {
+                  return (
+                    <button key={l} onClick={function() { dreamPress(l); }} style={{
+                      background: 'var(--surface)', border: '1px solid var(--alpha-sm)', borderRadius: 6,
+                      padding: '6px 8px', cursor: 'pointer', fontFamily: 'inherit', fontSize: 14, fontWeight: 800,
+                    }}>{l}</button>
+                  );
+                })}
+              </div>
+          }
+        </div>
+      )}
+    </section>
   );
 }
 

@@ -3,6 +3,36 @@
 // ── Shared: header with speak, progress, close ─────────
 function GameHeader({ mode, progress, onClose, word }) {
   const m = MODE_META[mode];
+  const ctx = window.GameContext ? React.useContext(window.GameContext) : null;
+  const streak = ctx ? ctx.streak : 0;
+  const accuracy = ctx ? ctx.accuracy : 1;
+  const totalClicks = ctx ? ctx.totalClicks : 0;
+
+  // Derive pet reaction from live session state
+  const prevStreakRef = React.useRef(0);
+  const [reaction, setReaction] = React.useState(null);
+  React.useEffect(function() {
+    if (streak >= 3 && streak > prevStreakRef.current) {
+      setReaction('bounce');
+      var t = setTimeout(function() { setReaction(null); }, 800);
+      prevStreakRef.current = streak;
+      return function() { clearTimeout(t); };
+    }
+    if (totalClicks >= 3 && accuracy < 0.4 && streak === 0) {
+      setReaction('droop');
+      var t2 = setTimeout(function() { setReaction(null); }, 1000);
+      return function() { clearTimeout(t2); };
+    }
+    prevStreakRef.current = streak;
+  }, [streak, accuracy, totalClicks]);
+
+  // Read active pet from profile exposed on window
+  var petId = window.__activePetId || null;
+  var petMood = window.__activePetMood != null ? window.__activePetMood : 80;
+  var petGrowth = window.__activePetGrowth != null ? window.__activePetGrowth : 0;
+  var petChapters = window.__activePetChapters != null ? window.__activePetChapters : 0;
+  var PetSprite = typeof window.PetSprite !== 'undefined' ? window.PetSprite : null;
+
   return (
     <div className="game-mission-bar">
       <button className="game-close-btn" onClick={onClose} aria-label="Close">✕</button>
@@ -12,7 +42,13 @@ function GameHeader({ mode, progress, onClose, word }) {
           <div className="progress-fill" style={{ width: `${progress*100}%`, background: `var(--${m.color})` }}/>
         </div>
       </div>
-      <ModeBadge mode={mode}/>
+      {PetSprite && petId && (
+        <div aria-hidden="true" style={{ width: 36, height: 36, flexShrink: 0 }}>
+          <PetSprite speciesId={petId} completedChapters={petChapters} growthPoints={petGrowth}
+            mood={petMood} size={36} reaction={reaction} animate={false}/>
+        </div>
+      )}
+      {(!PetSprite || !petId) && <ModeBadge mode={mode}/>}
     </div>
   );
 }
@@ -150,7 +186,7 @@ function ClickGame({ word, onDone, onClose }) {
         }
       }, 500);
     } else {
-      recordClick(false, 'click', Date.now() - taskStartRef.current);
+      recordClick(false, 'click', Date.now() - taskStartRef.current, { word: word, letterIndex: idx, wrongLetter: letter, correctLetter: target });
       window.sfx?.playWrong();
       window.Juice?.emit('wrong');
       streakRef.current = 0;
@@ -548,7 +584,7 @@ function MissingGame({ word, onDone, onClose }) {
       recordTaskComplete('missing', Date.now() - taskStartRef.current);
       setTimeout(() => onDone(wrongCount === 0 ? 3 : wrongCount <= 2 ? 2 : 1), 1000);
     } else {
-      recordClick(false, 'missing', Date.now() - taskStartRef.current);
+      recordClick(false, 'missing', Date.now() - taskStartRef.current, { word: word, letterIndex: missingIdx, wrongLetter: c, correctLetter: target });
       window.sfx?.playWrong();
       window.Juice?.emit('wrong');
       setWrongCount(w => w + 1);
@@ -1811,4 +1847,1540 @@ function CodingGame({ word, onDone, onClose }) {
   );
 }
 
-Object.assign(window, { ClickGame, DragGame, TypeGame, MissingGame, KeyboardGame, PrecisionGame, ScrambleGame, SpeedGame, EchoGame, FlashGame, MathMatchGame, PizzaPartyGame, SongTimeGame, CodingGame });
+// ── POST-LEVEL PHONEME REFLECTION ──────────────────────────────────────
+var DIGRAPH_MAP = { SH: '/sh/', CH: '/ch/', TH: '/th/', EA: '/ee/', OO: '/oo/', AI: '/ay/', OU: '/ow/', CK: '/k/', NG: '/ng/', PH: '/f/' };
+
+function PostLevelReflection({ word, wrongLetters, phonemes, onContinue }) {
+  var letters = (word || '').split('');
+  var timerRef = React.useRef(null);
+
+  // Build a set of letter indices that had at least one wrong attempt
+  var wrongSet = {};
+  (wrongLetters || []).forEach(function(e) { wrongSet[e.letterIndex] = true; });
+
+  // Detect digraph trouble spots: adjacent pairs where either letter was wrong
+  var digraphHits = [];
+  for (var di = 0; di < letters.length - 1; di++) {
+    var pair = letters[di] + letters[di + 1];
+    if (DIGRAPH_MAP[pair] && (wrongSet[di] || wrongSet[di + 1])) {
+      digraphHits.push({ start: di, label: DIGRAPH_MAP[pair], pair: pair });
+    }
+  }
+
+  // Auto-advance after 4s
+  React.useEffect(function() {
+    timerRef.current = setTimeout(onContinue, 4000);
+    return function() { clearTimeout(timerRef.current); };
+  }, []);
+
+  // Speak the first digraph sound if any
+  React.useEffect(function() {
+    if (digraphHits.length && window.speechSynthesis) {
+      var u = new SpeechSynthesisUtterance(digraphHits[0].label.replace(/\//g, ''));
+      u.rate = 0.7; u.lang = 'en-AU';
+      var t = setTimeout(function() { window.speechSynthesis.speak(u); }, 600);
+      return function() { clearTimeout(t); window.speechSynthesis.cancel(); };
+    }
+  }, []);
+
+  var anyWrong = Object.keys(wrongSet).length > 0;
+
+  return (
+    <div onClick={function() { clearTimeout(timerRef.current); onContinue(); }} style={{
+      minHeight: '100%', display: 'flex', flexDirection: 'column',
+      alignItems: 'center', justifyContent: 'center',
+      background: 'linear-gradient(180deg, var(--surface) 0%, var(--bg) 100%)',
+      padding: 32, gap: 28, cursor: 'pointer',
+    }}>
+      <div style={{ fontSize: 13, fontWeight: 800, letterSpacing: 1, textTransform: 'uppercase', color: 'var(--ink-mute)' }}>
+        {anyWrong ? 'Let\'s review' : 'Perfect spelling!'}
+      </div>
+
+      {/* Letter tiles with colour coding */}
+      <div style={{ position: 'relative', display: 'flex', gap: 10, justifyContent: 'center', paddingBottom: digraphHits.length ? 36 : 0 }}>
+        {letters.map(function(l, i) {
+          var isWrong = wrongSet[i];
+          var bg = isWrong ? 'var(--gold-soft)' : 'var(--emerald-soft)';
+          var color = isWrong ? 'var(--gold-dark)' : 'var(--emerald-dark)';
+          var border = isWrong ? '2px solid var(--gold)' : '2px solid var(--emerald)';
+          return (
+            <div key={i} style={{
+              width: 56, height: 68, borderRadius: 14,
+              background: bg, color: color, border: border,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: 34, fontWeight: 900, fontFamily: "'Fredoka', 'Nunito', sans-serif",
+              boxShadow: '0 2px 8px rgba(0,0,0,0.07)',
+              animation: 'tile-entry 0.3s cubic-bezier(0.34,1.3,0.64,1) both',
+              animationDelay: (i * 60) + 'ms',
+            }}>{l}</div>
+          );
+        })}
+        {/* Digraph arcs */}
+        {digraphHits.map(function(hit) {
+          var tileW = 56; var gap = 10;
+          var startX = hit.start * (tileW + gap) + tileW / 2;
+          var endX = (hit.start + 1) * (tileW + gap) + tileW / 2;
+          var midX = (startX + endX) / 2;
+          return (
+            <svg key={hit.pair} style={{ position: 'absolute', bottom: -4, left: 0, overflow: 'visible', pointerEvents: 'none' }} width={letters.length * (tileW + gap)} height={32}>
+              <path d={'M ' + startX + ' 4 Q ' + midX + ' 30 ' + endX + ' 4'} fill="none" stroke="var(--gold)" strokeWidth="2.5" strokeLinecap="round"/>
+              <text x={midX} y={29} textAnchor="middle" fontSize="11" fontWeight="800" fill="var(--gold-dark)">{hit.label}</text>
+            </svg>
+          );
+        })}
+      </div>
+
+      {/* Phoneme chips */}
+      {phonemes && phonemes.length > 0 && (
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, justifyContent: 'center', maxWidth: 360 }}>
+          {phonemes.slice(0, 4).map(function(ph) {
+            return (
+              <span key={ph} style={{
+                background: 'var(--brand-light)', color: 'var(--brand-dark)',
+                borderRadius: 20, padding: '4px 14px', fontSize: 12, fontWeight: 800,
+              }}>{ph}</span>
+            );
+          })}
+        </div>
+      )}
+
+      <div style={{ fontSize: 12, color: 'var(--ink-mute)', fontWeight: 700 }}>Tap to continue</div>
+    </div>
+  );
+}
+
+// ── WORD_ORDER_SENTENCES — easy / medium / hard tiers ──────
+var WORD_ORDER_SENTENCES = [
+  // Easy (3 words)
+  { words: ['CAT', 'HAT'], tiles: ['THE', 'CAT', 'SAT'], tier: 'easy' },
+  { words: ['DOG'],        tiles: ['THE', 'DOG', 'RAN'], tier: 'easy' },
+  { words: ['PIG'],        tiles: ['THE', 'BIG', 'PIG'], tier: 'easy' },
+  { words: ['SUN'],        tiles: ['THE', 'SUN', 'SHONE'], tier: 'easy' },
+  { words: ['BEE'],        tiles: ['A', 'BEE', 'FLEW'], tier: 'easy' },
+  { words: ['FOX'],        tiles: ['A', 'FOX', 'RAN'], tier: 'easy' },
+  { words: ['CAT'],        tiles: ['THE', 'CAT', 'ATE'], tier: 'easy' },
+  { words: ['MAP'],        tiles: ['THE', 'MAP', 'FELL'], tier: 'easy' },
+  { words: ['PEN'],        tiles: ['A', 'PEN', 'FELL'], tier: 'easy' },
+  { words: ['CUP'],        tiles: ['THE', 'CUP', 'FELL'], tier: 'easy' },
+  { words: ['PIG'],        tiles: ['A', 'PIG', 'ATE'], tier: 'easy' },
+  { words: ['DOG'],        tiles: ['THE', 'DOG', 'SAT'], tier: 'easy' },
+  // Medium (4 words)
+  { words: ['HEN'],        tiles: ['THE', 'HEN', 'HAS', 'EGGS'], tier: 'med' },
+  { words: ['SUN'],        tiles: ['THE', 'SUN', 'IS', 'HOT'], tier: 'med' },
+  { words: ['ANT'],        tiles: ['AN', 'ANT', 'CAN', 'DIG'], tier: 'med' },
+  { words: ['FISH'],       tiles: ['A', 'FISH', 'CAN', 'SWIM'], tier: 'med' },
+  { words: ['FROG'],       tiles: ['THE', 'FROG', 'CAN', 'HOP'], tier: 'med' },
+  { words: ['DUCK'],       tiles: ['A', 'DUCK', 'IS', 'WET'], tier: 'med' },
+  { words: ['FISH'],       tiles: ['THE', 'FISH', 'CAN', 'JUMP'], tier: 'med' },
+  { words: ['FROG'],       tiles: ['A', 'FROG', 'IS', 'GREEN'], tier: 'med' },
+  { words: ['BIRD'],       tiles: ['THE', 'BIRD', 'CAN', 'FLY'], tier: 'med' },
+  { words: ['CAKE'],       tiles: ['I', 'LIKE', 'THE', 'CAKE'], tier: 'med' },
+  // Hard (5 words)
+  { words: ['CAT', 'FISH'], tiles: ['THE', 'BIG', 'CAT', 'ATE', 'FISH'], tier: 'hard' },
+  { words: ['DUCK'],       tiles: ['A', 'FAST', 'DUCK', 'CAN', 'SWIM'], tier: 'hard' },
+  { words: ['FROG'],       tiles: ['THE', 'LITTLE', 'FROG', 'CAN', 'HOP'], tier: 'hard' },
+  { words: ['DOG'],        tiles: ['MY', 'BIG', 'DOG', 'LIKES', 'RUNNING'], tier: 'hard' },
+  { words: ['BIRD'],       tiles: ['A', 'SMALL', 'BIRD', 'CAN', 'SING'], tier: 'hard' },
+];
+
+// ── STORY_TEMPLATES — fill-the-blank story cards ────────────
+var STORY_TEMPLATES = [
+  { blank: 'CAT',  story: 'The ___ sat on the mat.',       distractors: ['BAT', 'RAT'] },
+  { blank: 'DOG',  story: 'The ___ ran to the park.',      distractors: ['LOG', 'HOG'] },
+  { blank: 'SUN',  story: 'The ___ is hot today.',         distractors: ['BUN', 'RUN'] },
+  { blank: 'FISH', story: 'A ___ swam in the pond.',       distractors: ['DISH', 'WISH'] },
+  { blank: 'FROG', story: 'The ___ can jump really high.', distractors: ['LOG', 'HOG'] },
+  { blank: 'DUCK', story: 'A ___ waddled down the lane.',  distractors: ['LUCK', 'MUCK'] },
+  { blank: 'BEE',  story: 'A ___ buzzed past the tree.',   distractors: ['SEE', 'TEE'] },
+  { blank: 'ANT',  story: 'An ___ can carry big things.',  distractors: ['PANT', 'RANT'] },
+  { blank: 'BIRD', story: 'The ___ sang a sweet song.',    distractors: ['WORD', 'HERD'] },
+  { blank: 'CAKE', story: 'She ate a big piece of ___.',   distractors: ['LAKE', 'BAKE'] },
+  { blank: 'STAR', story: 'I saw a bright ___ last night.', distractors: ['CAR', 'BAR'] },
+  { blank: 'RAIN', story: 'The ___ fell on the flowers.',  distractors: ['MAIN', 'PAIN'] },
+];
+
+// ── Shared speak helper ──────────────────────────────────────
+function speakWord(text) {
+  try {
+    window.speechSynthesis.cancel();
+    var u = new SpeechSynthesisUtterance(text.toLowerCase());
+    u.lang = 'en-AU'; u.rate = 0.7; u.pitch = 1.05;
+    var voices = window.speechSynthesis.getVoices();
+    var v = voices.find(function(vx) { return vx.lang === 'en-AU'; })
+      || voices.find(function(vx) { return vx.lang.startsWith('en-'); }) || null;
+    if (v) u.voice = v;
+    window.speechSynthesis.speak(u);
+  } catch(e) {}
+}
+
+// ── MODE A: RHYME TIME (expanded) ─────────────────────────
+function RhymeGame({ word, onDone, onClose }) {
+  const { recordClick, recordTaskComplete } = React.useContext(window.GameContext);
+  const taskStartRef = React.useRef(Date.now());
+  const isMounted = React.useRef(true);
+  React.useEffect(function() { return function() { isMounted.current = false; }; }, []);
+
+  var pool = React.useMemo(function() { return window.WORDS_EASY || []; }, []);
+
+  var baseWord = React.useMemo(function() {
+    if (word !== 'RHYME') return word;
+    var p = pool.filter(function(w) { return w.word && w.word !== 'RHYME'; });
+    return p.length ? p[Math.floor(Math.random() * p.length)].word : 'CAT';
+  }, [word, pool]);
+
+  const [chainIdx, setChainIdx] = React.useState(0);
+  const [usedWords, setUsedWords] = React.useState(function() { return [baseWord]; });
+  const [wrongCount, setWrongCount] = React.useState(0);
+  const [picked, setPicked] = React.useState(null);
+  const [burst, setBurst] = React.useState(false);
+  const [chainBursts, setChainBursts] = React.useState(0);
+
+  var promptWord = usedWords[usedWords.length - 1] || baseWord;
+
+  function getRhymesFor(target) {
+    var targetEntry = pool.find(function(w) { return w.word === target; });
+    var targetPhonemes = targetEntry && targetEntry.phonemes ? targetEntry.phonemes : [];
+    var vowelPhonemes = targetPhonemes.filter(function(p) { return /^(short-|long-|vowel)/.test(p); });
+    var tLast2 = target.slice(-2).toLowerCase();
+    return pool.filter(function(w) {
+      if (!w.word || usedWords.indexOf(w.word) !== -1) return false;
+      var wLast2 = w.word.slice(-2).toLowerCase();
+      if (wLast2 === tLast2) return true;
+      if (vowelPhonemes.length && w.phonemes) {
+        var shared = vowelPhonemes.some(function(vp) { return w.phonemes.indexOf(vp) !== -1; });
+        if (shared && target.slice(-1).toLowerCase() === w.word.slice(-1).toLowerCase()) return true;
+      }
+      return false;
+    }).map(function(w) { return w.word; });
+  }
+
+  function shuffle(arr) {
+    var a = arr.slice();
+    for (var i = a.length - 1; i > 0; i--) {
+      var j = Math.floor(Math.random() * (i + 1));
+      var tmp = a[i]; a[i] = a[j]; a[j] = tmp;
+    }
+    return a;
+  }
+
+  var rhymes = React.useMemo(function() { return getRhymesFor(promptWord); }, [promptWord, usedWords]);
+
+  var choices = React.useMemo(function() {
+    var correct = rhymes[Math.floor(Math.random() * Math.max(rhymes.length, 1))] || null;
+    if (!correct) {
+      var others = pool.filter(function(w) { return w.word && usedWords.indexOf(w.word) === -1; });
+      correct = others.length ? others[Math.floor(Math.random() * others.length)].word : 'HAT';
+    }
+    var distractors = pool.filter(function(w) { return w.word && usedWords.indexOf(w.word) === -1 && w.word !== correct && rhymes.indexOf(w.word) === -1; });
+    return shuffle([correct, ...shuffle(distractors).slice(0, 3).map(function(w) { return w.word; })]);
+  }, [promptWord, usedWords, pool]);
+
+  var correctAnswer = React.useMemo(function() {
+    var rh = choices.filter(function(c) {
+      var tLast2 = promptWord.slice(-2).toLowerCase();
+      if (c.slice(-2).toLowerCase() === tLast2) return true;
+      var te = pool.find(function(w) { return w.word === promptWord; });
+      var ce = pool.find(function(w) { return w.word === c; });
+      if (te && te.phonemes && ce && ce.phonemes) {
+        var vps = te.phonemes.filter(function(p) { return /^(short-|long-)/.test(p); });
+        return vps.some(function(vp) { return ce.phonemes.indexOf(vp) !== -1; }) && promptWord.slice(-1) === c.slice(-1);
+      }
+      return false;
+    });
+    return rh.length > 0 ? rh[0] : choices[0];
+  }, [choices, promptWord, pool]);
+
+  var hints = window.WORD_HINTS || {};
+
+  function pick(c) {
+    if (picked) return;
+    var ms = Date.now() - taskStartRef.current;
+    var isCorrect = c === correctAnswer;
+    recordClick(isCorrect, 'rhyme', ms);
+    setPicked(c);
+    if (isCorrect) {
+      window.sfx?.playCorrect();
+      window.Juice?.emit('correct');
+      // Chain: up to 3 links, then finish
+      var nextChain = chainIdx + 1;
+      if (nextChain >= 3 || rhymes.length <= 1) {
+        recordTaskComplete('rhyme', ms);
+        window.Juice?.emit('wordComplete');
+        setBurst(true); window.sfx?.complete();
+        setTimeout(function() { if (isMounted.current) onDone(wrongCount === 0 ? 3 : wrongCount <= 2 ? 2 : 1); }, 1100);
+      } else {
+        setChainBursts(function(n) { return n + 1; });
+        setTimeout(function() {
+          if (!isMounted.current) return;
+          setChainIdx(nextChain);
+          setUsedWords(function(prev) { return prev.concat([c]); });
+          setPicked(null);
+        }, 900);
+      }
+    } else {
+      window.sfx?.playWrong();
+      window.Juice?.emit('wrong');
+      setWrongCount(function(w) { return w + 1; });
+      setTimeout(function() { if (isMounted.current) setPicked(null); }, 700);
+    }
+  }
+
+  var SpeakBtn = typeof window.SpeakButton !== 'undefined' ? window.SpeakButton : null;
+  var progress = burst ? 1 : chainIdx / 3;
+
+  return (
+    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: 'var(--bg)' }}>
+      <GameHeader mode="rhyme" progress={progress} onClose={onClose} word={null}/>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '16px 16px 24px', gap: 20 }}>
+        {chainIdx > 0 && (
+          <div style={{ fontSize: 12, color: 'var(--pink-ink)', fontWeight: 900, background: 'var(--pink-soft)', borderRadius: 999, padding: '4px 14px' }}>
+            🔗 Chain {chainIdx}/3 — keep going!
+          </div>
+        )}
+        <div style={{ fontSize: 13, color: 'var(--ink-mute)', fontWeight: 800, letterSpacing: 1, textTransform: 'uppercase' }}>
+          Which word rhymes with…
+        </div>
+        <div style={{ background: 'var(--pink-soft)', border: '3px solid var(--pink)', borderRadius: 'var(--r-lg)', padding: '20px 36px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, boxShadow: 'var(--shadow-toy)' }}>
+          <div style={{ fontSize: 48 }}>{hints[promptWord] || '🔤'}</div>
+          <div style={{ fontSize: 28, fontWeight: 900, color: 'var(--pink-ink)', letterSpacing: 2 }}>{promptWord}</div>
+          {SpeakBtn
+            ? <SpeakBtn word={promptWord} size={32}/>
+            : <button onClick={function() { speakWord(promptWord); }} style={{ fontSize: 11, color: 'var(--pink-ink)', fontWeight: 800, background: 'none', border: 'none', cursor: 'pointer' }}>🔊 Tap to hear</button>
+          }
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, width: '100%', maxWidth: 380 }}>
+          {choices.map(function(c) {
+            var isCorrect = c === correctAnswer;
+            var bg = picked === c ? (isCorrect ? 'var(--emerald)' : 'var(--coral)') : 'var(--surface)';
+            return (
+              <button key={c} onClick={function() { pick(c); }} style={{
+                background: bg, color: picked === c ? 'white' : 'var(--ink)',
+                border: '3px solid ' + (picked === c ? 'transparent' : 'var(--alpha-sm)'),
+                borderRadius: 'var(--r-lg)', padding: '14px 12px', cursor: 'pointer', fontFamily: 'inherit',
+                display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
+                boxShadow: 'var(--shadow-soft)', transition: 'background 200ms',
+              }}>
+                <div style={{ fontSize: 32 }}>{hints[c] || '🔤'}</div>
+                <div style={{ fontSize: 18, fontWeight: 900 }}>{c}</div>
+              </button>
+            );
+          })}
+        </div>
+        {(burst || chainBursts > 0) && <div style={{ fontSize: 44, animation: 'juicePop 400ms cubic-bezier(0.34,1.1,0.64,1)' }}>{'⭐'.repeat(Math.min(chainBursts + (burst ? 1 : 0), 3))}</div>}
+        <HintSystem word={promptWord} wrongCount={wrongCount}/>
+      </div>
+    </div>
+  );
+}
+
+// ── MODE B: PICTURE MATCH (expanded — 3 phases) ────────────
+function PictureMatchGame({ word, onDone, onClose }) {
+  const { recordClick, recordTaskComplete } = React.useContext(window.GameContext);
+  const taskStartRef = React.useRef(Date.now());
+  const isMounted = React.useRef(true);
+  React.useEffect(function() { return function() { isMounted.current = false; }; }, []);
+
+  var promptWord = React.useMemo(function() {
+    if (word !== 'PICTURE') return word;
+    var hints = window.WORD_HINTS || {};
+    var pool = (window.WORDS_EASY || []).filter(function(w) { return w.word && hints[w.word]; });
+    return pool.length ? pool[Math.floor(Math.random() * pool.length)].word : 'CAT';
+  }, [word]);
+
+  var choices = React.useMemo(function() {
+    function shuffle(arr) { var a = arr.slice(); for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)); var tmp = a[i]; a[i] = a[j]; a[j] = tmp; } return a; }
+    var hints = window.WORD_HINTS || {};
+    var pool = Object.keys(hints).filter(function(k) { return k !== promptWord; });
+    return shuffle([promptWord, ...shuffle(pool).slice(0, 3)]);
+  }, [promptWord]);
+
+  // Derive category: animal or thing (animal = emoji from animal unicode block heuristic)
+  var ANIMAL_WORDS = ['CAT','DOG','BEE','BIRD','FISH','FROG','DUCK','ANT','HEN','PIG','FOX','OWL','LION','BEAR','WOLF','DEER','COW','HEN','LAMB','CRAB','SNAIL'];
+  function isAnimal(w) { return ANIMAL_WORDS.indexOf(w) !== -1; }
+
+  const [phase, setPhase] = React.useState('picture'); // 'picture'|'spell'|'sort'
+  const [wrongCount, setWrongCount] = React.useState(0);
+  const [picPicked, setPicPicked] = React.useState(null);
+  const [typed, setTyped] = React.useState('');
+  const [shake, setShake] = React.useState(false);
+  const [burst, setBurst] = React.useState(false);
+
+  React.useEffect(function() {
+    var t = setTimeout(function() { speakWord(promptWord); }, 500);
+    return function() { clearTimeout(t); };
+  }, [promptWord]);
+
+  var hints = window.WORD_HINTS || {};
+  var progress = phase === 'picture' ? (picPicked ? 0.4 : 0) : phase === 'spell' ? 0.4 + (typed.length / promptWord.length) * 0.3 : 0.7 + (burst ? 0.3 : 0);
+
+  function pickPicture(c) {
+    if (picPicked) return;
+    var ms = Date.now() - taskStartRef.current;
+    var isCorrect = c === promptWord;
+    recordClick(isCorrect, 'picture', ms);
+    setPicPicked(c);
+    if (isCorrect) {
+      window.sfx?.playCorrect();
+      window.Juice?.emit('correct');
+      setTimeout(function() { if (isMounted.current) setPhase('spell'); }, 600);
+    } else {
+      window.sfx?.playWrong();
+      window.Juice?.emit('wrong');
+      setWrongCount(function(w) { return w + 1; });
+      setTimeout(function() { if (isMounted.current) setPicPicked(null); }, 700);
+    }
+  }
+
+  function press(letter) {
+    if (typed.length >= promptWord.length) return;
+    var expected = promptWord[typed.length];
+    var ms = Date.now() - taskStartRef.current;
+    if (letter === expected) {
+      window.sfx?.playCorrect();
+      window.Juice?.emit('correct');
+      recordClick(true, 'picture', ms);
+      var nt = typed + letter;
+      setTyped(nt);
+      if (nt === promptWord) {
+        window.sfx?.playCorrect();
+        setTimeout(function() { if (isMounted.current) setPhase('sort'); }, 500);
+      }
+    } else {
+      window.sfx?.playWrong();
+      window.Juice?.emit('wrong');
+      recordClick(false, 'picture', ms);
+      setWrongCount(function(w) { return w + 1; });
+      setShake(true);
+      setTimeout(function() { if (isMounted.current) setShake(false); }, 300);
+    }
+  }
+
+  function pickSort(isAnimalBin) {
+    var ms = Date.now() - taskStartRef.current;
+    var correct = isAnimalBin === isAnimal(promptWord);
+    recordClick(correct, 'picture', ms);
+    if (correct) {
+      recordTaskComplete('picture', ms);
+      window.Juice?.emit('wordComplete');
+      setBurst(true); window.sfx?.complete();
+      setTimeout(function() { if (isMounted.current) onDone(wrongCount === 0 ? 3 : wrongCount <= 2 ? 2 : 1); }, 1000);
+    } else {
+      window.sfx?.playWrong();
+      setWrongCount(function(w) { return w + 1; });
+      setTimeout(function() { if (isMounted.current) setShake(false); }, 400);
+    }
+  }
+
+  React.useEffect(function() {
+    if (phase !== 'spell') return;
+    function onKey(e) {
+      if (e.key.length === 1 && /[a-zA-Z]/.test(e.key)) press(e.key.toUpperCase());
+    }
+    window.addEventListener('keydown', onKey);
+    return function() { window.removeEventListener('keydown', onKey); };
+  }, [phase, typed, wrongCount, promptWord]);
+
+  return (
+    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: 'var(--bg)' }}>
+      <GameHeader mode="picture" progress={progress} onClose={onClose} word={null}/>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '16px 16px 24px', gap: 20 }}>
+        {phase === 'picture' && (
+          <>
+            <div style={{ fontSize: 13, color: 'var(--ink-mute)', fontWeight: 800, letterSpacing: 1, textTransform: 'uppercase' }}>Tap the picture you heard!</div>
+            <button onClick={function() { speakWord(promptWord); }} style={{ background: 'var(--lilac-soft)', border: '2px solid var(--lilac)', borderRadius: 999, padding: '6px 16px', fontSize: 13, fontWeight: 800, cursor: 'pointer', color: 'var(--lilac-ink)', fontFamily: 'inherit' }}>🔊 Hear again</button>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, width: '100%', maxWidth: 340 }}>
+              {choices.map(function(c) {
+                var isCorrect = c === promptWord;
+                return (
+                  <button key={c} onClick={function() { pickPicture(c); }} style={{
+                    background: picPicked === c ? (isCorrect ? 'var(--emerald-soft)' : 'var(--coral-soft)') : 'var(--surface)',
+                    border: '3px solid ' + (picPicked === c && isCorrect ? 'var(--emerald)' : picPicked === c ? 'var(--coral)' : 'var(--alpha-sm)'),
+                    borderRadius: 'var(--r-lg)', padding: '20px 16px', cursor: 'pointer', fontFamily: 'inherit',
+                    display: 'flex', flexDirection: 'column', alignItems: 'center',
+                    boxShadow: 'var(--shadow-soft)', transition: 'background 200ms', fontSize: 52,
+                  }}>{hints[c] || '❓'}</button>
+                );
+              })}
+            </div>
+            <HintSystem word={promptWord} wrongCount={wrongCount}/>
+          </>
+        )}
+        {phase === 'spell' && (
+          <>
+            <div style={{ fontSize: 13, color: 'var(--ink-mute)', fontWeight: 800, letterSpacing: 1, textTransform: 'uppercase' }}>Now spell it!</div>
+            <div style={{ fontSize: 56 }}>{hints[promptWord] || '🔤'}</div>
+            <div style={{ display: 'flex', gap: 8 }}>
+              {promptWord.split('').map(function(letter, i) {
+                var filled = i < typed.length;
+                return (
+                  <div key={i} style={{
+                    width: 44, height: 52, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    borderRadius: 10, background: filled ? 'var(--brand)' : 'var(--surface)',
+                    color: filled ? 'white' : 'var(--ink-mute)', fontSize: 26, fontWeight: 900,
+                    boxShadow: 'var(--shadow-soft)',
+                    animation: shake && i === typed.length ? 'gameShake 300ms' : 'none',
+                  }}>{filled ? typed[i] : '_'}</div>
+                );
+              })}
+            </div>
+            <KidKeyboard onPress={press}/>
+            <HintSystem word={promptWord} wrongCount={wrongCount}/>
+          </>
+        )}
+        {phase === 'sort' && (
+          <>
+            <div style={{ fontSize: 13, color: 'var(--ink-mute)', fontWeight: 800, letterSpacing: 1, textTransform: 'uppercase' }}>Sort it — is it an animal or a thing?</div>
+            <div style={{ fontSize: 56 }}>{hints[promptWord] || '🔤'}</div>
+            <div style={{ fontSize: 22, fontWeight: 900, letterSpacing: 2 }}>{promptWord}</div>
+            <div style={{ display: 'flex', gap: 16 }}>
+              <button onClick={function() { pickSort(true); }} style={{ background: 'var(--emerald-soft)', border: '3px solid var(--emerald)', borderRadius: 'var(--r-lg)', padding: '18px 28px', cursor: 'pointer', fontFamily: 'inherit', fontSize: 28, fontWeight: 900 }}>🐾 Animal</button>
+              <button onClick={function() { pickSort(false); }} style={{ background: 'var(--blue-soft)', border: '3px solid var(--brand)', borderRadius: 'var(--r-lg)', padding: '18px 28px', cursor: 'pointer', fontFamily: 'inherit', fontSize: 28, fontWeight: 900 }}>🪑 Thing</button>
+            </div>
+            {burst && <div style={{ fontSize: 48, animation: 'juicePop 400ms cubic-bezier(0.34,1.1,0.64,1)' }}>⭐</div>}
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── MODE C: WORD ORDER (expanded — 25 sentences, tiered) ───
+function WordOrderGame({ word, onDone, onClose }) {
+  const { recordClick, recordTaskComplete } = React.useContext(window.GameContext);
+  const taskStartRef = React.useRef(Date.now());
+  const isMounted = React.useRef(true);
+  React.useEffect(function() { return function() { isMounted.current = false; }; }, []);
+
+  var sentence = React.useMemo(function() {
+    if (word === 'WORDORDER') {
+      // Pick from easy tier by default for free-play
+      var easy = WORD_ORDER_SENTENCES.filter(function(s) { return s.tier === 'easy'; });
+      var pool = easy.length ? easy : WORD_ORDER_SENTENCES;
+      return pool[Math.floor(Math.random() * pool.length)];
+    }
+    var match = WORD_ORDER_SENTENCES.find(function(s) { return s.words.indexOf(word) !== -1; });
+    return match || WORD_ORDER_SENTENCES[Math.floor(Math.random() * WORD_ORDER_SENTENCES.length)];
+  }, [word]);
+
+  var shuffled = React.useMemo(function() {
+    var arr = sentence.tiles.slice();
+    var attempts = 0;
+    function shuffle(a) {
+      for (var i = a.length - 1; i > 0; i--) {
+        var j = Math.floor(Math.random() * (i + 1));
+        var tmp = a[i]; a[i] = a[j]; a[j] = tmp;
+      }
+      return a;
+    }
+    do {
+      shuffle(arr);
+      attempts++;
+    } while (arr.join() === sentence.tiles.join() && attempts < 20);
+    return arr;
+  }, [sentence]);
+
+  const [placed, setPlaced] = React.useState([]);
+  const [remaining, setRemaining] = React.useState(function() { return shuffled.slice(); });
+  const [wrongCount, setWrongCount] = React.useState(0);
+  const [shake, setShake] = React.useState(false);
+  const [burst, setBurst] = React.useState(false);
+
+  function speak() {
+    try {
+      window.speechSynthesis.cancel();
+      var text = sentence.tiles.join(' ').toLowerCase();
+      var u = new SpeechSynthesisUtterance(text);
+      u.lang = 'en-AU'; u.rate = 0.7; u.pitch = 1.05;
+      var voices = window.speechSynthesis.getVoices();
+      var v = voices.find(function(vx) { return vx.lang === 'en-AU'; })
+        || voices.find(function(vx) { return vx.lang.startsWith('en-'); }) || null;
+      if (v) u.voice = v;
+      window.speechSynthesis.speak(u);
+    } catch(e) {}
+  }
+
+  function tapTile(tileWord, fromRemaining) {
+    if (burst) return;
+    var ms = Date.now() - taskStartRef.current;
+    if (fromRemaining) {
+      var expected = sentence.tiles[placed.length];
+      var isCorrect = tileWord === expected;
+      recordClick(isCorrect, 'wordorder', ms);
+      if (isCorrect) {
+        window.sfx?.playCorrect();
+        window.Juice?.emit('correct');
+        var newPlaced = placed.concat([tileWord]);
+        setPlaced(newPlaced);
+        setRemaining(function(r) {
+          var idx = r.indexOf(tileWord);
+          return r.slice(0, idx).concat(r.slice(idx + 1));
+        });
+        if (newPlaced.length === sentence.tiles.length) {
+          recordTaskComplete('wordorder', ms);
+          window.Juice?.emit('wordComplete');
+          setBurst(true); window.sfx?.complete();
+          setTimeout(function() { if (isMounted.current) onDone(wrongCount === 0 ? 3 : wrongCount <= 2 ? 2 : 1); }, 1100);
+        }
+      } else {
+        window.sfx?.playWrong();
+        window.Juice?.emit('wrong');
+        setWrongCount(function(w) { return w + 1; });
+        setShake(true);
+        setTimeout(function() { if (isMounted.current) setShake(false); }, 350);
+      }
+    } else {
+      // tap a placed tile → remove it and all after it
+      var placedIdx = placed.indexOf(tileWord);
+      if (placedIdx === -1) return;
+      var removed = placed.slice(placedIdx);
+      setPlaced(placed.slice(0, placedIdx));
+      setRemaining(function(r) { return r.concat(removed); });
+    }
+  }
+
+  var progress = placed.length / sentence.tiles.length;
+
+  return (
+    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: 'var(--bg)' }}>
+      <GameHeader mode="wordorder" progress={progress} onClose={onClose} word={null}/>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '16px 16px 32px', gap: 24 }}>
+        <div style={{ fontSize: 13, color: 'var(--ink-mute)', fontWeight: 800, letterSpacing: 1, textTransform: 'uppercase' }}>
+          Tap the words in order!
+        </div>
+
+        {/* Sentence building area */}
+        <div style={{
+          minHeight: 70, width: '100%', maxWidth: 420,
+          background: 'var(--surface)', borderRadius: 'var(--r-lg)',
+          border: '3px dashed var(--alpha-md)',
+          display: 'flex', flexWrap: 'wrap', gap: 8, padding: '12px 14px',
+          alignItems: 'center',
+        }}>
+          {placed.length === 0 && (
+            <div style={{ color: 'var(--ink-mute)', fontSize: 14, fontWeight: 700 }}>Build the sentence…</div>
+          )}
+          {placed.map(function(t, i) {
+            return (
+              <button key={i + '-' + t} onClick={function() { tapTile(t, false); }} style={{
+                background: 'var(--mint)', color: 'var(--mint-ink)', border: 'none',
+                borderRadius: 10, padding: '8px 14px', fontSize: 16, fontWeight: 900,
+                cursor: 'pointer', fontFamily: 'inherit',
+                boxShadow: '0 2px 0 rgba(0,0,0,0.15)',
+                animation: burst ? 'juicePop 300ms cubic-bezier(0.34,1.1,0.64,1)' : 'none',
+              }}>{t}</button>
+            );
+          })}
+        </div>
+
+        {/* Available tiles */}
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, justifyContent: 'center', maxWidth: 420 }}>
+          {remaining.map(function(t, i) {
+            return (
+              <button key={i + '-' + t} onClick={function() { tapTile(t, true); }} style={{
+                background: 'var(--surface)', color: 'var(--ink)', border: '3px solid var(--alpha-sm)',
+                borderRadius: 10, padding: '10px 16px', fontSize: 18, fontWeight: 900,
+                cursor: 'pointer', fontFamily: 'inherit',
+                boxShadow: 'var(--shadow-soft)',
+                animation: shake ? 'gameShake 350ms' : 'none',
+              }}>{t}</button>
+            );
+          })}
+        </div>
+
+        <button onClick={speak} style={{
+          background: 'none', border: '2px solid var(--alpha-sm)', borderRadius: 999,
+          padding: '8px 20px', fontSize: 13, fontWeight: 800, color: 'var(--ink-mute)',
+          cursor: 'pointer', fontFamily: 'inherit',
+        }}>🔊 {burst ? 'Hear your sentence!' : 'Hear sentence'}</button>
+
+        {burst && <div style={{ fontSize: 48, animation: 'juicePop 400ms cubic-bezier(0.34,1.1,0.64,1)' }}>⭐</div>}
+        {burst && <div style={{ fontSize: 13, color: 'var(--ink-mute)', fontWeight: 700 }}>Tier: {sentence.tier}</div>}
+        <HintSystem word={sentence.words[0]} wrongCount={wrongCount}/>
+      </div>
+    </div>
+  );
+}
+
+// ── MODE D: PET RACE (expanded — speed scaling, personality, taunt) ──
+function RaceGame({ word, onDone, onClose }) {
+  const { recordClick, recordTaskComplete } = React.useContext(window.GameContext);
+  const taskStartRef = React.useRef(Date.now());
+  const isMounted = React.useRef(true);
+  const intervalRef = React.useRef(null);
+  React.useEffect(function() { return function() { isMounted.current = false; clearInterval(intervalRef.current); }; }, []);
+
+  const [typed, setTyped] = React.useState('');
+  const [petProgress, setPetProgress] = React.useState(0);
+  const [wrongCount, setWrongCount] = React.useState(0);
+  const [shake, setShake] = React.useState(false);
+  const [burst, setBurst] = React.useState(false);
+  const [finished, setFinished] = React.useState(false);
+  const [showTaunt, setShowTaunt] = React.useState(false);
+  const finishedRef = React.useRef(false);
+  const tauntShownRef = React.useRef(false);
+
+  // Speed scales: longer words → slower pet (fairer)
+  var petInterval = 1200 + (word.length - 4) * 150;
+
+  // Pet personality: look up species emoji
+  var petSpeciesEmoji = React.useMemo(function() {
+    var pid = window.__activePetId;
+    if (!pid) return '🐱';
+    var spec = (window.PET_SPECIES || []).find(function(s) { return s.id === pid; });
+    return spec && spec.typeIcon ? spec.typeIcon : '🐾';
+  }, []);
+
+  React.useEffect(function() {
+    intervalRef.current = setInterval(function() {
+      if (finishedRef.current) return;
+      setPetProgress(function(p) {
+        var next = p + 1;
+        // Taunt at 50%
+        if (!tauntShownRef.current && next / word.length >= 0.5) {
+          tauntShownRef.current = true;
+          setShowTaunt(true);
+          setTimeout(function() { if (isMounted.current) setShowTaunt(false); }, 1500);
+        }
+        if (next >= word.length) {
+          clearInterval(intervalRef.current);
+          if (!finishedRef.current) {
+            finishedRef.current = true;
+            setFinished(true);
+            if (isMounted.current) {
+              var ms2 = Date.now() - taskStartRef.current;
+              recordTaskComplete('race', ms2);
+              setTimeout(function() { if (isMounted.current) onDone(1); }, 1200);
+            }
+          }
+        }
+        return next;
+      });
+    }, petInterval);
+    return function() { clearInterval(intervalRef.current); };
+  }, [word]);
+
+  function press(letter) {
+    if (finishedRef.current) return;
+    if (typed.length >= word.length) return;
+    var expected = word[typed.length];
+    var ms = Date.now() - taskStartRef.current;
+    if (letter === expected) {
+      window.sfx?.playCorrect();
+      window.Juice?.emit('correct');
+      recordClick(true, 'race', ms);
+      var nt = typed + letter;
+      setTyped(nt);
+      if (nt.length >= word.length) {
+        clearInterval(intervalRef.current);
+        finishedRef.current = true;
+        setFinished(true);
+        recordTaskComplete('race', ms);
+        window.Juice?.emit('wordComplete');
+        setBurst(true); window.sfx?.complete();
+        setTimeout(function() { if (isMounted.current) onDone(wrongCount === 0 ? 3 : 2); }, 1100);
+      }
+    } else {
+      window.sfx?.playWrong();
+      window.Juice?.emit('wrong');
+      recordClick(false, 'race', ms);
+      setWrongCount(function(w) { return w + 1; });
+      setShake(true);
+      setTimeout(function() { if (isMounted.current) setShake(false); }, 300);
+    }
+  }
+
+  React.useEffect(function() {
+    function onKey(e) {
+      if (e.key.length === 1 && /[a-zA-Z]/.test(e.key)) press(e.key.toUpperCase());
+    }
+    window.addEventListener('keydown', onKey);
+    return function() { window.removeEventListener('keydown', onKey); };
+  }, [typed, wrongCount, word]);
+
+  var playerProgress = typed.length / word.length;
+  var petFraction = Math.min(petProgress / word.length, 1);
+
+  return (
+    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: 'var(--bg)' }}>
+      <GameHeader mode="race" progress={playerProgress} onClose={onClose} word={null}/>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '16px 16px 24px', gap: 20 }}>
+        <div style={{ fontSize: 13, color: 'var(--ink-mute)', fontWeight: 800, letterSpacing: 1, textTransform: 'uppercase' }}>Race to spell the word!</div>
+
+        {/* Taunt bubble */}
+        {showTaunt && (
+          <div style={{ background: 'var(--coral-soft)', border: '2px solid var(--coral)', borderRadius: 16, padding: '8px 18px', fontSize: 14, fontWeight: 900, color: 'var(--coral-ink)', animation: 'juicePop 300ms cubic-bezier(0.34,1.1,0.64,1)' }}>
+            {petSpeciesEmoji} Mreow! 😏
+          </div>
+        )}
+
+        {/* Tracks */}
+        <div style={{ width: '100%', maxWidth: 420, display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <div style={{ fontSize: 13, fontWeight: 900, width: 52, color: 'var(--brand)' }}>YOU</div>
+            <div style={{ flex: 1, height: 28, background: 'var(--brand-light)', borderRadius: 999, position: 'relative', overflow: 'hidden' }}>
+              <div style={{ height: '100%', width: (playerProgress * 100) + '%', background: 'var(--brand)', borderRadius: 999, transition: 'width 150ms' }}/>
+              <div style={{ position: 'absolute', right: 6, top: '50%', transform: 'translateY(-50%)', fontSize: 18 }}>🏁</div>
+            </div>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <div style={{ fontSize: 18, width: 52, textAlign: 'center' }}>{petSpeciesEmoji}</div>
+            <div style={{ flex: 1, height: 28, background: 'var(--coral-soft)', borderRadius: 999, position: 'relative', overflow: 'hidden' }}>
+              <div style={{ height: '100%', width: (petFraction * 100) + '%', background: 'var(--coral)', borderRadius: 999, transition: 'width 200ms' }}/>
+              <div style={{ position: 'absolute', right: 6, top: '50%', transform: 'translateY(-50%)', fontSize: 18 }}>🏁</div>
+            </div>
+          </div>
+        </div>
+
+        {/* Pet dots (no peeking!) */}
+        <div style={{ display: 'flex', gap: 6 }}>
+          {word.split('').map(function(_, i) {
+            return <div key={i} style={{ width: 20, height: 20, borderRadius: '50%', background: i < petProgress ? 'var(--coral)' : 'var(--alpha-sm)' }}/>;
+          })}
+        </div>
+
+        {/* Player letters */}
+        <div style={{ display: 'flex', gap: 8 }}>
+          {word.split('').map(function(letter, i) {
+            var filled = i < typed.length;
+            return (
+              <div key={i} style={{
+                width: 44, height: 52, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                borderRadius: 10, background: filled ? 'var(--brand)' : 'var(--surface)',
+                color: filled ? 'white' : 'var(--ink-mute)', fontSize: 26, fontWeight: 900,
+                boxShadow: 'var(--shadow-soft)',
+                animation: shake && i === typed.length ? 'gameShake 300ms' : 'none',
+              }}>{filled ? typed[i] : '_'}</div>
+            );
+          })}
+        </div>
+
+        {burst && <div style={{ fontSize: 48, animation: 'juicePop 400ms cubic-bezier(0.34,1.1,0.64,1)' }}>🏆</div>}
+        {finished && !burst && <div style={{ fontSize: 36 }}>{petSpeciesEmoji} The pet won this time!</div>}
+
+        <KidKeyboard onPress={press}/>
+        <HintSystem word={word} wrongCount={wrongCount}/>
+      </div>
+    </div>
+  );
+}
+
+// ── MODE E: SPELL SAFARI ──────────────────────────────────
+function SafariGame({ word, onDone, onClose }) {
+  const { recordClick, recordTaskComplete } = React.useContext(window.GameContext);
+  const taskStartRef = React.useRef(Date.now());
+  const isMounted = React.useRef(true);
+  React.useEffect(function() { return function() { isMounted.current = false; }; }, []);
+
+  var promptWord = React.useMemo(function() {
+    if (word !== 'SAFARI') return word;
+    var p = window.WORDS_EASY || [];
+    return p.length ? p[Math.floor(Math.random() * p.length)].word : 'CAT';
+  }, [word]);
+
+  const [letterIdx, setLetterIdx] = React.useState(0);
+  const [wrongCount, setWrongCount] = React.useState(0);
+  const [missed, setMissed] = React.useState(0);
+  const [burst, setBurst] = React.useState(false);
+  const [wave, setWave] = React.useState(0); // increment to re-trigger animation
+
+  var target = promptWord[letterIdx] || '';
+
+  function shuffle(arr) {
+    var a = arr.slice();
+    for (var i = a.length - 1; i > 0; i--) {
+      var j = Math.floor(Math.random() * (i + 1));
+      var tmp = a[i]; a[i] = a[j]; a[j] = tmp;
+    }
+    return a;
+  }
+
+  var tiles = React.useMemo(function() {
+    if (!target) return [];
+    var pool = shuffle('ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').filter(function(c) { return c !== target; }));
+    var distractors = pool.slice(0, 5);
+    return shuffle([target, ...distractors]).map(function(letter, i) {
+      return { letter: letter, delay: (i * 250), id: wave + '-' + i };
+    });
+  }, [target, wave]);
+
+  function tapTile(letter) {
+    if (burst) return;
+    var ms = Date.now() - taskStartRef.current;
+    var isCorrect = letter === target;
+    recordClick(isCorrect, 'safari', ms);
+    if (isCorrect) {
+      window.sfx?.playCorrect();
+      window.Juice?.emit('correct');
+      var nextIdx = letterIdx + 1;
+      if (nextIdx >= promptWord.length) {
+        recordTaskComplete('safari', ms);
+        window.Juice?.emit('wordComplete');
+        setBurst(true); window.sfx?.complete();
+        setTimeout(function() { if (isMounted.current) onDone(wrongCount === 0 ? 3 : missed === 0 ? 2 : 1); }, 1000);
+      } else {
+        setLetterIdx(nextIdx);
+        setWave(function(w) { return w + 1; });
+      }
+    } else {
+      window.sfx?.playWrong();
+      window.Juice?.emit('wrong');
+      setWrongCount(function(w) { return w + 1; });
+    }
+  }
+
+  // Miss detection: if all tiles exit without correct tap → count as missed
+  React.useEffect(function() {
+    if (burst) return;
+    var t = setTimeout(function() {
+      if (!isMounted.current) return;
+      setMissed(function(m) { return m + 1; });
+      setWave(function(w) { return w + 1; }); // replay wave
+    }, 4000); // 3s animation + 1s buffer
+    return function() { clearTimeout(t); };
+  }, [wave, burst]);
+
+  var progress = promptWord.length > 0 ? letterIdx / promptWord.length : 0;
+
+  return (
+    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: 'linear-gradient(180deg, #1B4D1E 0%, #2D7A32 40%, #3AAA42 100%)' }}>
+      <GameHeader mode="safari" progress={progress} onClose={onClose} word={null}/>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '16px', gap: 16, position: 'relative', overflow: 'hidden' }}>
+        <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.85)', fontWeight: 800, letterSpacing: 1, textTransform: 'uppercase' }}>
+          Catch the letter: <span style={{ fontSize: 24, fontWeight: 900, color: 'white' }}>{target}</span>
+        </div>
+        <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.7)', fontWeight: 700 }}>
+          Spelling: {promptWord.split('').map(function(l, i) { return i < letterIdx ? l : '_'; }).join(' ')}
+        </div>
+
+        {/* Floating tiles */}
+        <div style={{ position: 'relative', width: '100%', height: 120, overflow: 'hidden' }}>
+          {tiles.map(function(tile) {
+            var isTop = tile.id.endsWith('0') || tile.id.endsWith('2') || tile.id.endsWith('4');
+            return (
+              <button key={tile.id} onClick={function() { tapTile(tile.letter); }} style={{
+                position: 'absolute',
+                top: isTop ? '15%' : '55%',
+                left: 0,
+                background: 'var(--gold-soft)', color: 'var(--ink)', border: '3px solid var(--gold)',
+                borderRadius: 12, width: 52, height: 52,
+                fontSize: 22, fontWeight: 900, cursor: 'pointer', fontFamily: 'inherit',
+                boxShadow: '0 4px 12px rgba(0,0,0,0.4)',
+                animation: 'safariFloat 3.2s linear ' + tile.delay + 'ms 1 forwards',
+              }}>{tile.letter}</button>
+            );
+          })}
+        </div>
+
+        <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.6)', fontWeight: 700 }}>
+          {missed > 0 ? 'Missed ' + missed + ' — try again!' : 'Tap the letter before it escapes!'}
+        </div>
+        {burst && <div style={{ fontSize: 52, animation: 'juicePop 400ms cubic-bezier(0.34,1.1,0.64,1)' }}>⭐</div>}
+        <HintSystem word={promptWord} wrongCount={wrongCount}/>
+      </div>
+      <style>{`@keyframes safariFloat { from { transform: translateX(-80px); opacity: 0; } 10% { opacity: 1; } 90% { opacity: 1; } to { transform: translateX(110vw); opacity: 0; } }`}</style>
+    </div>
+  );
+}
+
+// ── MODE F: STORY BUILDER ──────────────────────────────────
+function StoryGame({ word, onDone, onClose }) {
+  const { recordClick, recordTaskComplete } = React.useContext(window.GameContext);
+  const taskStartRef = React.useRef(Date.now());
+  const isMounted = React.useRef(true);
+  React.useEffect(function() { return function() { isMounted.current = false; }; }, []);
+
+  var template = React.useMemo(function() {
+    if (word === 'STORY') {
+      return STORY_TEMPLATES[Math.floor(Math.random() * STORY_TEMPLATES.length)];
+    }
+    var match = STORY_TEMPLATES.find(function(t) { return t.blank === word; });
+    return match || STORY_TEMPLATES[Math.floor(Math.random() * STORY_TEMPLATES.length)];
+  }, [word]);
+
+  var choices = React.useMemo(function() {
+    function shuffle(arr) { var a = arr.slice(); for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)); var tmp = a[i]; a[i] = a[j]; a[j] = tmp; } return a; }
+    return shuffle([template.blank, ...template.distractors]);
+  }, [template]);
+
+  const [wrongCount, setWrongCount] = React.useState(0);
+  const [picked, setPicked] = React.useState(null);
+  const [burst, setBurst] = React.useState(false);
+
+  var hints = window.WORD_HINTS || {};
+  var parts = template.story.split('___');
+
+  function pick(c) {
+    if (picked) return;
+    var ms = Date.now() - taskStartRef.current;
+    var isCorrect = c === template.blank;
+    recordClick(isCorrect, 'story', ms);
+    setPicked(c);
+    if (isCorrect) {
+      window.sfx?.complete();
+      window.Juice?.emit('wordComplete');
+      recordTaskComplete('story', ms);
+      setBurst(true);
+      // Read complete sentence aloud
+      setTimeout(function() { speakWord(template.story.replace('___', template.blank)); }, 400);
+      setTimeout(function() { if (isMounted.current) onDone(wrongCount === 0 ? 3 : wrongCount === 1 ? 2 : 1); }, 1500);
+    } else {
+      window.sfx?.playWrong();
+      window.Juice?.emit('wrong');
+      setWrongCount(function(w) { return w + 1; });
+      setTimeout(function() { if (isMounted.current) setPicked(null); }, 750);
+    }
+  }
+
+  return (
+    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: 'var(--bg)' }}>
+      <GameHeader mode="story" progress={burst ? 1 : 0} onClose={onClose} word={null}/>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '24px 20px', gap: 24 }}>
+        <div style={{ fontSize: 13, color: 'var(--ink-mute)', fontWeight: 800, letterSpacing: 1, textTransform: 'uppercase' }}>Complete the story!</div>
+
+        {/* Story card */}
+        <div style={{ background: 'var(--violet-soft)', border: '3px solid var(--violet)', borderRadius: 'var(--r-lg)', padding: '24px 28px', maxWidth: 400, textAlign: 'center', boxShadow: 'var(--shadow-toy)' }}>
+          <div style={{ fontSize: 20, fontWeight: 800, lineHeight: 1.6, color: 'var(--violet)' }}>
+            {parts[0]}
+            <span style={{ background: picked && picked === template.blank ? 'var(--emerald)' : picked ? 'var(--coral)' : 'var(--surface)', color: picked && picked === template.blank ? 'white' : 'var(--ink)', borderRadius: 8, padding: '2px 12px', fontWeight: 900, border: '2px dashed var(--violet)', minWidth: 80, display: 'inline-block', transition: 'background 200ms' }}>
+              {picked || '___'}
+            </span>
+            {parts[1]}
+          </div>
+        </div>
+
+        {/* Choices */}
+        <div style={{ display: 'flex', gap: 12 }}>
+          {choices.map(function(c) {
+            var isCorrect = c === template.blank;
+            return (
+              <button key={c} onClick={function() { pick(c); }} style={{
+                background: picked === c ? (isCorrect ? 'var(--emerald)' : 'var(--coral)') : 'var(--surface)',
+                color: picked === c ? 'white' : 'var(--ink)',
+                border: '3px solid var(--alpha-sm)', borderRadius: 'var(--r-lg)',
+                padding: '14px 20px', cursor: 'pointer', fontFamily: 'inherit',
+                fontSize: 20, fontWeight: 900, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
+                boxShadow: 'var(--shadow-soft)', transition: 'background 200ms',
+              }}>
+                <span style={{ fontSize: 28 }}>{hints[c] || '🔤'}</span>
+                {c}
+              </button>
+            );
+          })}
+        </div>
+
+        {burst && <div style={{ fontSize: 48, animation: 'juicePop 400ms cubic-bezier(0.34,1.1,0.64,1)' }}>📖✨</div>}
+        <HintSystem word={template.blank} wrongCount={wrongCount}/>
+      </div>
+    </div>
+  );
+}
+
+// ── MODE G: LETTER DETECTIVE ────────────────────────────────
+function DetectiveGame({ word, onDone, onClose }) {
+  const { recordClick, recordTaskComplete } = React.useContext(window.GameContext);
+  const taskStartRef = React.useRef(Date.now());
+  const isMounted = React.useRef(true);
+  React.useEffect(function() { return function() { isMounted.current = false; }; }, []);
+
+  var pool = React.useMemo(function() { return (window.WORDS_EASY || []).concat(window.WORDS_MED || []); }, []);
+
+  var promptWord = React.useMemo(function() {
+    if (word !== 'DETECTIVE') return word;
+    var p = pool.filter(function(w) { return w.word && w.phonemes && w.phonemes.length > 0; });
+    return p.length ? p[Math.floor(Math.random() * p.length)].word : 'FISH';
+  }, [word, pool]);
+
+  // Pick a highlighted letter/digraph
+  var highlight = React.useMemo(function() {
+    for (var dg of Object.keys(DIGRAPH_MAP)) {
+      if (promptWord.includes(dg)) return { str: dg, phoneme: DIGRAPH_MAP[dg] };
+    }
+    var idx = Math.floor(Math.random() * promptWord.length);
+    return { str: promptWord[idx], phoneme: promptWord[idx].toLowerCase() };
+  }, [promptWord]);
+
+  // Find words that share the same sound
+  var sharedPhoneme = highlight.phoneme;
+  var correctWord = React.useMemo(function() {
+    function shuffle(arr) { var a = arr.slice(); for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)); var tmp = a[i]; a[i] = a[j]; a[j] = tmp; } return a; }
+    var matches = pool.filter(function(w) {
+      if (!w.word || w.word === promptWord) return false;
+      // Check if word contains the digraph string or has matching phoneme tag
+      if (Object.keys(DIGRAPH_MAP).indexOf(highlight.str) !== -1) {
+        return w.word.includes(highlight.str);
+      }
+      return w.word.toLowerCase().includes(highlight.str.toLowerCase());
+    });
+    shuffle(matches);
+    return matches[0] ? matches[0].word : null;
+  }, [promptWord, highlight, pool]);
+
+  var choices = React.useMemo(function() {
+    function shuffle(arr) { var a = arr.slice(); for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)); var tmp = a[i]; a[i] = a[j]; a[j] = tmp; } return a; }
+    if (!correctWord) return [];
+    var distractors = pool.filter(function(w) {
+      return w.word && w.word !== promptWord && w.word !== correctWord && !w.word.includes(highlight.str);
+    });
+    shuffle(distractors);
+    return shuffle([correctWord, ...distractors.slice(0, 3).map(function(w) { return w.word; })]);
+  }, [correctWord, promptWord, highlight, pool]);
+
+  const [wrongCount, setWrongCount] = React.useState(0);
+  const [picked, setPicked] = React.useState(null);
+  const [burst, setBurst] = React.useState(false);
+
+  // Fallback: if no valid choices, skip with 2 stars (hooks must run unconditionally)
+  var noData = !correctWord || choices.length < 2;
+  React.useEffect(function() {
+    if (noData) {
+      var t = setTimeout(function() { if (isMounted.current) onDone(2); }, 100);
+      return function() { clearTimeout(t); };
+    }
+  }, [noData]);
+
+  if (noData) return null;
+
+  function pick(c) {
+    if (picked) return;
+    var ms = Date.now() - taskStartRef.current;
+    var isCorrect = c === correctWord;
+    recordClick(isCorrect, 'detective', ms);
+    setPicked(c);
+    if (isCorrect) {
+      window.sfx?.complete();
+      window.Juice?.emit('wordComplete');
+      recordTaskComplete('detective', ms);
+      setBurst(true);
+      setTimeout(function() { if (isMounted.current) onDone(wrongCount === 0 ? 3 : wrongCount <= 2 ? 2 : 1); }, 1000);
+    } else {
+      window.sfx?.playWrong();
+      window.Juice?.emit('wrong');
+      setWrongCount(function(w) { return w + 1; });
+      setTimeout(function() { if (isMounted.current) setPicked(null); }, 750);
+    }
+  }
+
+  var hints = window.WORD_HINTS || {};
+
+  // Render prompt word with highlighted digraph/letter
+  function renderHighlighted() {
+    var idx = promptWord.indexOf(highlight.str);
+    if (idx === -1) return <span style={{ fontWeight: 900, fontSize: 32 }}>{promptWord}</span>;
+    return (
+      <span style={{ fontWeight: 900, fontSize: 32 }}>
+        {promptWord.slice(0, idx)}
+        <span style={{ background: 'var(--gold)', color: 'white', borderRadius: 8, padding: '0 4px' }}>{highlight.str}</span>
+        {promptWord.slice(idx + highlight.str.length)}
+      </span>
+    );
+  }
+
+  return (
+    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: 'var(--bg)' }}>
+      <GameHeader mode="detective" progress={burst ? 1 : 0} onClose={onClose} word={null}/>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '16px 16px 24px', gap: 20 }}>
+        <div style={{ fontSize: 13, color: 'var(--ink-mute)', fontWeight: 800, letterSpacing: 1, textTransform: 'uppercase' }}>Which word has the same sound?</div>
+
+        <div style={{ background: 'var(--blue-soft)', border: '3px solid var(--brand)', borderRadius: 'var(--r-lg)', padding: '20px 32px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, boxShadow: 'var(--shadow-toy)' }}>
+          <div style={{ fontSize: 32 }}>🔍</div>
+          {renderHighlighted()}
+          <div style={{ fontSize: 13, color: 'var(--ink-mute)', fontWeight: 800 }}>Sound: <strong>{highlight.phoneme}</strong></div>
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, width: '100%', maxWidth: 380 }}>
+          {choices.map(function(c) {
+            var isCorrect = c === correctWord;
+            return (
+              <button key={c} onClick={function() { pick(c); }} style={{
+                background: picked === c ? (isCorrect ? 'var(--emerald)' : 'var(--coral)') : 'var(--surface)',
+                color: picked === c ? 'white' : 'var(--ink)',
+                border: '3px solid var(--alpha-sm)', borderRadius: 'var(--r-lg)', padding: '14px 12px',
+                cursor: 'pointer', fontFamily: 'inherit',
+                display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
+                boxShadow: 'var(--shadow-soft)', transition: 'background 200ms', fontSize: 18, fontWeight: 900,
+              }}>
+                <span style={{ fontSize: 28 }}>{hints[c] || '🔤'}</span>
+                {c}
+              </button>
+            );
+          })}
+        </div>
+        {burst && <div style={{ fontSize: 48, animation: 'juicePop 400ms cubic-bezier(0.34,1.1,0.64,1)' }}>🔍⭐</div>}
+        <HintSystem word={promptWord} wrongCount={wrongCount}/>
+      </div>
+    </div>
+  );
+}
+
+// ── MODE H: MEMORY MATCH ────────────────────────────────────
+function MemoryGame({ word, onDone, onClose }) {
+  const { recordClick, recordTaskComplete } = React.useContext(window.GameContext);
+  const taskStartRef = React.useRef(Date.now());
+  const isMounted = React.useRef(true);
+  React.useEffect(function() { return function() { isMounted.current = false; }; }, []);
+
+  var pairs = React.useMemo(function() {
+    function shuffle(arr) { var a = arr.slice(); for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)); var tmp = a[i]; a[i] = a[j]; a[j] = tmp; } return a; }
+    var hints = window.WORD_HINTS || {};
+    var wordList = Object.keys(hints).filter(function(k) { return k !== 'MEMORY'; });
+    shuffle(wordList);
+    var chosen = wordList.slice(0, 4);
+    // Build 8 cards: word + emoji for each pair
+    var cards = [];
+    chosen.forEach(function(w, i) {
+      cards.push({ id: 'w' + i, type: 'word', value: w, pairId: i });
+      cards.push({ id: 'e' + i, type: 'emoji', value: hints[w], pairId: i });
+    });
+    return shuffle(cards);
+  }, [word]);
+
+  const [flipped, setFlipped] = React.useState([]); // card ids currently face-up (max 2)
+  const [matched, setMatched] = React.useState([]); // card ids matched
+  const [flips, setFlips] = React.useState(0);
+  const [canFlip, setCanFlip] = React.useState(true);
+  const [burst, setBurst] = React.useState(false);
+
+  function flipCard(card) {
+    if (!canFlip) return;
+    if (matched.indexOf(card.id) !== -1) return;
+    if (flipped.indexOf(card.id) !== -1) return;
+    if (flipped.length >= 2) return;
+
+    var ms = Date.now() - taskStartRef.current;
+    var newFlipped = flipped.concat([card.id]);
+    setFlipped(newFlipped);
+    setFlips(function(f) { return f + 1; });
+
+    if (newFlipped.length === 2) {
+      var c1 = pairs.find(function(p) { return p.id === newFlipped[0]; });
+      var c2 = pairs.find(function(p) { return p.id === newFlipped[1]; });
+      var isMatch = c1 && c2 && c1.pairId === c2.pairId && c1.type !== c2.type;
+      recordClick(isMatch, 'memory', ms);
+      setCanFlip(false);
+      setTimeout(function() {
+        if (!isMounted.current) return;
+        if (isMatch) {
+          window.sfx?.playCorrect();
+          window.Juice?.emit('correct');
+          var newMatched = matched.concat(newFlipped);
+          setMatched(newMatched);
+          setFlipped([]);
+          setCanFlip(true);
+          if (newMatched.length >= pairs.length) {
+            // All matched
+            var fCount = flips + 1;
+            recordTaskComplete('memory', ms);
+            window.Juice?.emit('wordComplete');
+            setBurst(true); window.sfx?.complete();
+            var stars = fCount <= 10 ? 3 : fCount <= 14 ? 2 : 1;
+            setTimeout(function() { if (isMounted.current) onDone(stars); }, 1000);
+          }
+        } else {
+          window.sfx?.playWrong();
+          setFlipped([]);
+          setCanFlip(true);
+        }
+      }, 800);
+    }
+  }
+
+  var progress = matched.length / pairs.length;
+
+  return (
+    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: 'var(--bg)' }}>
+      <GameHeader mode="memory" progress={progress} onClose={onClose} word={null}/>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '16px', gap: 16 }}>
+        <div style={{ fontSize: 13, color: 'var(--ink-mute)', fontWeight: 800, letterSpacing: 1, textTransform: 'uppercase' }}>Match each word to its picture!</div>
+        <div style={{ fontSize: 13, color: 'var(--brand)', fontWeight: 800 }}>Flips: {flips}</div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10, width: '100%', maxWidth: 380 }}>
+          {pairs.map(function(card) {
+            var isFaceUp = flipped.indexOf(card.id) !== -1 || matched.indexOf(card.id) !== -1;
+            var isMatchedCard = matched.indexOf(card.id) !== -1;
+            return (
+              <button key={card.id} onClick={function() { flipCard(card); }} style={{
+                height: 72, borderRadius: 12, border: '3px solid ' + (isMatchedCard ? 'var(--emerald)' : 'var(--alpha-sm)'),
+                background: isFaceUp ? (isMatchedCard ? 'var(--emerald-soft)' : 'var(--surface)') : 'var(--brand)',
+                cursor: isFaceUp ? 'default' : 'pointer', fontFamily: 'inherit',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: card.type === 'emoji' ? 28 : 14, fontWeight: 900, color: 'var(--ink)',
+                boxShadow: 'var(--shadow-soft)',
+                transition: 'background 200ms, transform 200ms',
+                transform: isFaceUp ? 'rotateY(0deg)' : 'rotateY(90deg)',
+              }}>{isFaceUp ? card.value : '?'}</button>
+            );
+          })}
+        </div>
+        {burst && <div style={{ fontSize: 48, animation: 'juicePop 400ms cubic-bezier(0.34,1.1,0.64,1)' }}>🃏⭐</div>}
+      </div>
+    </div>
+  );
+}
+
+// ── MODE I: ALPHABET SOUP ───────────────────────────────────
+function SoupGame({ word, onDone, onClose }) {
+  const { recordClick, recordTaskComplete } = React.useContext(window.GameContext);
+  const taskStartRef = React.useRef(Date.now());
+  const isMounted = React.useRef(true);
+  React.useEffect(function() { return function() { isMounted.current = false; }; }, []);
+
+  var promptWord = React.useMemo(function() {
+    if (word !== 'SOUP') return word;
+    var p = window.WORDS_EASY || [];
+    return p.length ? p[Math.floor(Math.random() * p.length)].word : 'CAT';
+  }, [word]);
+
+  var bowlLetters = React.useMemo(function() {
+    function shuffle(arr) { var a = arr.slice(); for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)); var tmp = a[i]; a[i] = a[j]; a[j] = tmp; } return a; }
+    var extras = shuffle('ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('')).slice(0, 20 - promptWord.length);
+    var all = shuffle(promptWord.split('').concat(extras));
+    return all.map(function(l, i) {
+      return {
+        id: i, letter: l,
+        x: 10 + Math.random() * 75, // % positions within bowl
+        y: 10 + Math.random() * 70,
+        delay: Math.random() * 1000,
+      };
+    });
+  }, [promptWord]);
+
+  const [letterIdx, setLetterIdx] = React.useState(0);
+  const [found, setFound] = React.useState([]); // tile ids found
+  const [wrongCount, setWrongCount] = React.useState(0);
+  const [shake, setShake] = React.useState(false);
+  const [burst, setBurst] = React.useState(false);
+
+  var target = promptWord[letterIdx] || '';
+
+  function tapLetter(tile) {
+    if (burst) return;
+    var ms = Date.now() - taskStartRef.current;
+    var isCorrect = tile.letter === target;
+    recordClick(isCorrect, 'soup', ms);
+    if (isCorrect) {
+      window.sfx?.playCorrect();
+      window.Juice?.emit('correct');
+      setFound(function(f) { return f.concat([tile.id]); });
+      var nextIdx = letterIdx + 1;
+      if (nextIdx >= promptWord.length) {
+        recordTaskComplete('soup', ms);
+        window.Juice?.emit('wordComplete');
+        setBurst(true); window.sfx?.complete();
+        setTimeout(function() { if (isMounted.current) onDone(wrongCount === 0 ? 3 : wrongCount <= 2 ? 2 : 1); }, 1000);
+      } else {
+        setLetterIdx(nextIdx);
+      }
+    } else {
+      window.sfx?.playWrong();
+      window.Juice?.emit('wrong');
+      setWrongCount(function(w) { return w + 1; });
+      setShake(true);
+      setTimeout(function() { if (isMounted.current) setShake(false); }, 350);
+    }
+  }
+
+  var progress = promptWord.length > 0 ? letterIdx / promptWord.length : 0;
+
+  return (
+    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: 'var(--bg)' }}>
+      <GameHeader mode="soup" progress={progress} onClose={onClose} word={null}/>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '16px', gap: 16 }}>
+        <div style={{ fontSize: 13, color: 'var(--ink-mute)', fontWeight: 800, letterSpacing: 1, textTransform: 'uppercase' }}>
+          Find: <span style={{ color: 'var(--brand)', fontSize: 18 }}>{target}</span>
+        </div>
+        <div style={{ display: 'flex', gap: 6 }}>
+          {promptWord.split('').map(function(l, i) {
+            return (
+              <div key={i} style={{
+                width: 38, height: 44, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                borderRadius: 8, background: i < letterIdx ? 'var(--brand)' : (i === letterIdx ? 'var(--gold-soft)' : 'var(--surface)'),
+                color: i < letterIdx ? 'white' : 'var(--ink)', fontSize: 20, fontWeight: 900,
+                border: i === letterIdx ? '2px solid var(--gold)' : 'none',
+                boxShadow: 'var(--shadow-soft)',
+              }}>{i < letterIdx ? l : '_'}</div>
+            );
+          })}
+        </div>
+
+        {/* Soup bowl */}
+        <div style={{
+          width: 300, height: 240, borderRadius: '50% 50% 45% 45%',
+          background: 'linear-gradient(180deg, #F9A825 0%, #F57F17 100%)',
+          border: '6px solid #E65100', position: 'relative', overflow: 'hidden',
+          boxShadow: '0 8px 24px rgba(0,0,0,0.2)',
+          animation: shake ? 'gameShake 350ms' : 'none',
+        }}>
+          {bowlLetters.map(function(tile) {
+            if (found.indexOf(tile.id) !== -1) return null;
+            return (
+              <button key={tile.id} onClick={function() { tapLetter(tile); }} style={{
+                position: 'absolute',
+                left: tile.x + '%', top: tile.y + '%',
+                background: 'rgba(255,255,255,0.9)', border: 'none',
+                borderRadius: 8, width: 34, height: 34,
+                fontSize: 16, fontWeight: 900, cursor: 'pointer', fontFamily: 'inherit',
+                boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
+                animation: 'soupBob 2s ease-in-out ' + tile.delay + 'ms infinite alternate',
+              }}>{tile.letter}</button>
+            );
+          })}
+        </div>
+
+        {burst && <div style={{ fontSize: 48, animation: 'juicePop 400ms cubic-bezier(0.34,1.1,0.64,1)' }}>🍲⭐</div>}
+        <HintSystem word={promptWord} wrongCount={wrongCount}/>
+      </div>
+      <style>{`@keyframes soupBob { from { transform: translateY(0); } to { transform: translateY(-6px); } }`}</style>
+    </div>
+  );
+}
+
+// ── MODE: VOWEL VOLCANO ─────────────────────────────────────
+function VowelGame({ word, onDone, onClose }) {
+  const { recordClick, recordTaskComplete } = React.useContext(window.GameContext);
+  const taskStartRef = React.useRef(Date.now());
+  const isMounted = React.useRef(true);
+  React.useEffect(function() { return function() { isMounted.current = false; }; }, []);
+
+  var SHORT_VOWEL_PHONEMES = ['short-a', 'short-e', 'short-i', 'short-o', 'short-u'];
+
+  // Build a queue of words with short-vowel phonemes
+  var wordQueue = React.useMemo(function() {
+    function shuffle(arr) { var a = arr.slice(); for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)); var tmp = a[i]; a[i] = a[j]; a[j] = tmp; } return a; }
+    var pool = (window.WORDS_EASY || []).filter(function(w) {
+      return w.phonemes && w.phonemes.some(function(p) { return SHORT_VOWEL_PHONEMES.indexOf(p) !== -1; });
+    });
+    if (!pool.length) pool = window.WORDS_EASY || [];
+    return shuffle(pool).slice(0, 8);
+  }, []);
+
+  const [queueIdx, setQueueIdx] = React.useState(0);
+  const [falling, setFalling] = React.useState([]); // { id, letter, x, isShort, delay }
+  const [caught, setCaught] = React.useState(0);
+  const [total, setTotal] = React.useState(0);
+  const [wrongCount, setWrongCount] = React.useState(0);
+  const [burst, setBurst] = React.useState(false);
+  const waveRef = React.useRef(0);
+  const VOWELS = ['A', 'E', 'I', 'O', 'U'];
+
+  function launchWave(entry) {
+    if (!entry) return;
+    var isShort = entry.phonemes && entry.phonemes.some(function(p) { return SHORT_VOWEL_PHONEMES.indexOf(p) !== -1; });
+    // Pick the vowel from the word
+    var vowelChar = entry.word.split('').find(function(c) { return VOWELS.indexOf(c) !== -1; }) || 'A';
+    // 3 tiles: the vowel (correct) + 2 other vowels as distractors
+    var others = VOWELS.filter(function(v) { return v !== vowelChar; });
+    function shuffle(arr) { var a = arr.slice(); for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)); var tmp = a[i]; a[i] = a[j]; a[j] = tmp; } return a; }
+    shuffle(others);
+    var tiles = shuffle([
+      { id: waveRef.current + '-0', letter: vowelChar, isShort: isShort, x: 15 + Math.random() * 20 },
+      { id: waveRef.current + '-1', letter: others[0], isShort: false, x: 40 + Math.random() * 20 },
+      { id: waveRef.current + '-2', letter: others[1], isShort: false, x: 65 + Math.random() * 20 },
+    ]);
+    waveRef.current += 1;
+    setFalling(tiles);
+    setTotal(function(t) { return t + 1; });
+  }
+
+  // Launch first wave on mount, then each wave after 2.5s
+  React.useEffect(function() {
+    if (wordQueue.length === 0) return;
+    launchWave(wordQueue[0]);
+  }, []);
+
+  React.useEffect(function() {
+    if (burst) return;
+    var t = setTimeout(function() {
+      if (!isMounted.current) return;
+      var nextIdx = queueIdx + 1;
+      if (nextIdx >= wordQueue.length) {
+        // All waves done — finish
+        var ms = Date.now() - taskStartRef.current;
+        recordTaskComplete('volcano', ms);
+        window.Juice?.emit('wordComplete');
+        setBurst(true); window.sfx?.complete();
+        var acc = total > 0 ? caught / total : 1;
+        setTimeout(function() { if (isMounted.current) onDone(acc >= 0.9 ? 3 : acc >= 0.7 ? 2 : 1); }, 1000);
+      } else {
+        setQueueIdx(nextIdx);
+        setFalling([]);
+        setTimeout(function() { if (isMounted.current) launchWave(wordQueue[nextIdx]); }, 300);
+      }
+    }, 2600);
+    return function() { clearTimeout(t); };
+  }, [queueIdx, burst]);
+
+  function catchTile(tile) {
+    if (burst) return;
+    setFalling(function(f) { return f.filter(function(t) { return t.id !== tile.id; }); });
+    var ms = Date.now() - taskStartRef.current;
+    if (tile.isShort) {
+      window.sfx?.playCorrect();
+      window.Juice?.emit('correct');
+      recordClick(true, 'volcano', ms);
+      setCaught(function(c) { return c + 1; });
+    } else {
+      window.sfx?.playWrong();
+      window.Juice?.emit('wrong');
+      recordClick(false, 'volcano', ms);
+      setWrongCount(function(w) { return w + 1; });
+    }
+  }
+
+  var curEntry = wordQueue[queueIdx] || null;
+  var curWord = curEntry ? curEntry.word : '';
+  var progress = wordQueue.length > 0 ? queueIdx / wordQueue.length : 0;
+
+  return (
+    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: 'linear-gradient(180deg, #1a0000 0%, #7f1d1d 50%, #dc2626 100%)' }}>
+      <GameHeader mode="volcano" progress={burst ? 1 : progress} onClose={onClose} word={null}/>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-start', padding: '12px 16px 24px', gap: 12, position: 'relative', overflow: 'hidden' }}>
+        <div style={{ fontSize: 13, color: 'rgba(255,200,150,0.9)', fontWeight: 800, letterSpacing: 1, textTransform: 'uppercase' }}>
+          Catch the SHORT vowels! Let long ones fall 🌋
+        </div>
+        {curWord && (
+          <div style={{ fontSize: 16, color: 'rgba(255,220,180,0.8)', fontWeight: 800 }}>
+            Word: <strong style={{ color: 'white', fontSize: 20 }}>{curWord}</strong>
+          </div>
+        )}
+        <div style={{ fontSize: 13, color: 'rgba(255,200,150,0.7)', fontWeight: 700 }}>
+          Caught: {caught} / {total}
+        </div>
+
+        {/* Falling tiles area */}
+        <div style={{ position: 'relative', width: '100%', maxWidth: 400, height: 160, overflow: 'hidden' }}>
+          {falling.map(function(tile) {
+            return (
+              <button key={tile.id} onClick={function() { catchTile(tile); }} style={{
+                position: 'absolute',
+                left: tile.x + '%',
+                top: 0,
+                background: 'rgba(255,255,255,0.95)', color: 'var(--ink)',
+                border: '3px solid ' + (tile.isShort ? 'var(--emerald)' : 'var(--coral)'),
+                borderRadius: 12, width: 54, height: 54,
+                fontSize: 22, fontWeight: 900, cursor: 'pointer', fontFamily: 'inherit',
+                boxShadow: '0 4px 12px rgba(0,0,0,0.4)',
+                animation: 'volcanoFall 2.4s linear 1 forwards',
+              }}>{tile.letter}</button>
+            );
+          })}
+        </div>
+
+        {/* Volcano visual */}
+        <div style={{ marginTop: 'auto', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+          <div style={{
+            width: 0, height: 0,
+            borderLeft: '80px solid transparent',
+            borderRight: '80px solid transparent',
+            borderBottom: '100px solid #7f1d1d',
+          }}/>
+          <div style={{ width: 160, height: 40, background: 'linear-gradient(90deg, #dc2626, #f97316, #dc2626)', borderRadius: '0 0 80px 80px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>🌋</div>
+        </div>
+
+        {burst && <div style={{ position: 'absolute', top: '40%', fontSize: 52, animation: 'juicePop 400ms cubic-bezier(0.34,1.1,0.64,1)' }}>⭐</div>}
+        <HintSystem word={curWord} wrongCount={wrongCount}/>
+      </div>
+      <style>{`@keyframes volcanoFall { from { transform: translateY(0); opacity: 1; } to { transform: translateY(160px); opacity: 0.3; } }`}</style>
+    </div>
+  );
+}
+
+Object.assign(window, { ClickGame, DragGame, TypeGame, MissingGame, KeyboardGame, PrecisionGame, ScrambleGame, SpeedGame, EchoGame, FlashGame, MathMatchGame, PizzaPartyGame, SongTimeGame, CodingGame, PostLevelReflection, RhymeGame, PictureMatchGame, WordOrderGame, RaceGame, SafariGame, StoryGame, DetectiveGame, VowelGame, MemoryGame, SoupGame });

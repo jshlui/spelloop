@@ -25,7 +25,8 @@ function GameContextProvider(props) {
     }
   }, [tasksCompleted, accuracy]);
 
-  var recordClick = React.useCallback(function(correct, mode, ms) {
+  // letterMeta: optional { word, letterIndex, wrongLetter, correctLetter } for incorrect taps
+  var recordClick = React.useCallback(function(correct, mode, ms, letterMeta) {
     setTotalClicks(function(t) { return t + 1; });
     if (correct) {
       setCorrectClicks(function(c) { return c + 1; });
@@ -33,7 +34,9 @@ function GameContextProvider(props) {
       setTaskHistory(function(h) { return h.concat([{ mode: mode, correct: true, ms: ms }]); });
     } else {
       setStreak(0);
-      setTaskHistory(function(h) { return h.concat([{ mode: mode, correct: false, ms: ms }]); });
+      var entry = { mode: mode, correct: false, ms: ms };
+      if (letterMeta) Object.assign(entry, letterMeta);
+      setTaskHistory(function(h) { return h.concat([entry]); });
     }
   }, []);
 
