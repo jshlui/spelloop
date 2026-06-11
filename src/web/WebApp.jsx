@@ -15,7 +15,7 @@ function WebApp({ profile, setProfile, levels, setLevels, settings, setSettings,
     try { return JSON.parse(localStorage.getItem('spelloop-daily-' + (profile.id || 'p0')) || 'null') || {}; } catch(e) { return {}; }
   });
 
-  React.useEffect(function() { localStorage.setItem('sl_web_tab', tab); }, [tab]);
+  React.useEffect(function() { window.slSet('sl_web_tab', tab); }, [tab]);
 
   // On mount: mood decay per pet + Pebble happyDays check
   React.useEffect(function() {
@@ -104,6 +104,14 @@ function WebApp({ profile, setProfile, levels, setLevels, settings, setSettings,
     var pool = getWordsForDifficulty(settings.difficulty || 'med');
     var w = pool[Math.floor(Math.random() * pool.length)].word;
     setRoute({ name: 'game', mode: mode, word: w });
+  }
+
+  // "Spell my name" — a kid's own name is the highest-motivation word
+  // they'll ever spell. Runs as an activity so it earns coins + pet growth.
+  function startNameLevel() {
+    var letters = (profile.name || '').toUpperCase().replace(/[^A-Z]/g, '').slice(0, 10);
+    if (letters.length < 2) return;
+    setRoute({ name: 'game', mode: 'drag', word: letters, activity: true });
   }
 
   function handleStartDaily(daily) {
@@ -273,7 +281,7 @@ function WebApp({ profile, setProfile, levels, setLevels, settings, setSettings,
         : 0;
       var newDailyState = { lastDate: today, todayDone: true, challengeStreak: prevStreak + 1 };
       setDailyState(newDailyState);
-      localStorage.setItem('spelloop-daily-' + (profile.id || 'p0'), JSON.stringify(newDailyState));
+      window.slSet('spelloop-daily-' + (profile.id || 'p0'), JSON.stringify(newDailyState));
       // Bonus 25 coins already handled by coinsEarned — add 25 more
       setProfile(function(prev) {
         return Object.assign({}, prev, { coins: (prev.coins || 0) + 25 });
@@ -350,7 +358,7 @@ function WebApp({ profile, setProfile, levels, setLevels, settings, setSettings,
         {route.name === 'screen' && tab === 'map'  && <WebMap levels={levels} onPlayLevel={startLevel} onBack={function() { setTab('home'); }}/>}
         {route.name === 'screen' && tab === 'me'   && (
           <DashboardSubPage icon="⭐" eyebrow="Profile" title="My Stuff" onBack={function() { setTab('home'); }}>
-            <WebMe profile={profile} setProfile={setProfile} levels={levels} onOpenParent={onOpenParent}/>
+            <WebMe profile={profile} setProfile={setProfile} levels={levels} onOpenParent={onOpenParent} onSpellName={startNameLevel}/>
           </DashboardSubPage>
         )}
         {route.name === 'screen' && tab === 'code' && (

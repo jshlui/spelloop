@@ -30,7 +30,7 @@ function PinGate({ onSuccess, onCancel }) {
           setDigits([]);
         } else if (step === 'confirm') {
           if (pin === firstPin) {
-            localStorage.setItem('spelloop-pin', pin);
+            window.slSet('spelloop-pin', pin);
             onSuccess();
           } else {
             triggerError("PINs don't match — try again");
@@ -396,7 +396,7 @@ function OverviewTab({ profile, levels }) {
     var w = customWord.trim().toUpperCase();
     if (!w || w.length < 2) return;
     var key = 'spelloop-custom-word-' + (profile.id || 'p0');
-    localStorage.setItem(key, w);
+    window.slSet(key, w);
     setInjected(true);
     setTimeout(function() { setInjected(false); }, 3000);
   }
@@ -683,8 +683,10 @@ function SettingsTab({ profile, setProfile, settings, setSettings }) {
           onChange={function() { updateSetting('difficulty', s.difficulty === 'easy' ? 'med' : s.difficulty === 'med' ? 'hard' : 'easy'); }}/>
         <WebSettingRow label="Colour theme" value={themeLabel} chev
           onChange={function() { var themes = ['blue','sunny','berry','mint']; updateSetting('theme', themes[(themes.indexOf(s.theme||'blue')+1)%themes.length]); }}/>
-        <WebSettingRow label="Avatar style" value={s.avatarStyle === 'geo' ? 'Geometric' : 'Animal'} chev last
+        <WebSettingRow label="Avatar style" value={s.avatarStyle === 'geo' ? 'Geometric' : 'Animal'} chev
           onChange={function() { updateSetting('avatarStyle', s.avatarStyle === 'geo' ? 'animal' : 'geo'); }}/>
+        <WebSettingRow label="Letter case" value={s.letterCase === 'lower' ? 'abc — lowercase' : 'ABC — capitals'} chev last
+          onChange={function() { updateSetting('letterCase', s.letterCase === 'lower' ? 'upper' : 'lower'); }}/>
       </div>
       <div style={Object.assign({}, webCard, { marginBottom: 14 })}>
         <WebToggleRow label="Sound effects" sub="Chimes and taps" value={s.sounds !== false} onChange={function(v) { updateSetting('sounds', v); window.sfx && window.sfx.setEnabled && window.sfx.setEnabled(v); }} last/>

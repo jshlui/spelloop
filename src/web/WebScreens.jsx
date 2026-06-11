@@ -241,7 +241,8 @@ function WebLevelNode({ level }) {
 }
 
 // ─── ME ────────────────────────────────────────────────
-function WebMe({ profile, setProfile, levels, onOpenParent }) {
+function WebMe({ profile, setProfile, levels, onOpenParent, onSpellName }) {
+  var nameLetters = (profile.name || '').toUpperCase().replace(/[^A-Z]/g, '');
   var avatarStyle = (window.__tweaks && window.__tweaks.avatarStyle) || 'animal';
   var [avatarOpen, setAvatarOpen] = React.useState(false);
   var [editingName, setEditingName] = React.useState(false);
@@ -371,6 +372,16 @@ function WebMe({ profile, setProfile, levels, onOpenParent }) {
             border: '1.5px solid rgba(255,255,255,0.35)', padding: '10px 18px', borderRadius: 'var(--r-pill)',
             minHeight: 44, fontWeight: 700, fontSize: 13, cursor: 'pointer', fontFamily: "'Fredoka', 'Nunito', sans-serif",
           }}>Change avatar</button>
+          {onSpellName && nameLetters.length >= 2 && (
+            <button className="btn-3d" onClick={function() { window.sfx && window.sfx.tap && window.sfx.tap(); onSpellName(); }} style={{
+              display: 'block', width: '100%', marginTop: 12,
+              background: 'var(--gold)', color: '#451A03',
+              border: 'none', padding: '12px 18px', borderRadius: 'var(--r-pill)',
+              minHeight: 48, fontWeight: 900, fontSize: 15, cursor: 'pointer',
+              fontFamily: "'Fredoka', 'Nunito', sans-serif",
+              boxShadow: '0 4px 0 var(--gold-dark)',
+            }}>✨ Spell my name!</button>
+          )}
         </div>
 
         {/* right — XP + badges */}
@@ -571,6 +582,25 @@ function WebGame({ mode, word, onClose, onDone }) {
 
 // ─── REWARD ────────────────────────────────────────────
 function WebReward({ word, stars, coins, mode, isActivity, returnLabel, nextLabel, onNext, onHome }) {
+  // Speak the word in a sentence — context turns spelling into vocabulary.
+  // Delayed past the star fanfare; cancelled if the kid taps continue early.
+  React.useEffect(function() {
+    var sentence = window.WORD_SENTENCES && WORD_SENTENCES[word];
+    if (!sentence || !window.speechSynthesis) return;
+    var t = setTimeout(function() {
+      try {
+        window.speechSynthesis.cancel();
+        var u = new SpeechSynthesisUtterance(word.toLowerCase() + '. ' + sentence);
+        u.lang = 'en-AU'; u.rate = 0.85; u.pitch = 1.05;
+        window.speechSynthesis.speak(u);
+      } catch (e) {}
+    }, 1200);
+    return function() {
+      clearTimeout(t);
+      try { window.speechSynthesis.cancel(); } catch (e) {}
+    };
+  }, [word]);
+
   return (
     <div style={{
       minHeight: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center',

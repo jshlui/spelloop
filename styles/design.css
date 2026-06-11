@@ -3631,3 +3631,11 @@ html, body {
 @media (pointer: coarse) {
   #cursor-root { display: none !important; }
 }
+
+/* Lowercase letters mode — early readers learn lowercase shapes first;
+   word data stays uppercase internally, only the rendering changes. */
+:root[data-case="lower"] .tile,
+:root[data-case="lower"] .kid-key,
+:root[data-case="lower"] .word-display {
+  text-transform: lowercase;
+}

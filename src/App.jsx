@@ -118,7 +118,7 @@ function App() {
       var id = makeId();
       var p = op ? migrateProfile(Object.assign({}, JSON.parse(op), { id: id })) : Object.assign({}, DEFAULT_PROFILE, { id: id });
       var arr = [p];
-      localStorage.setItem('spelloop-profiles', JSON.stringify(arr));
+      window.slSet('spelloop-profiles', JSON.stringify(arr));
       return arr;
     } catch(e) {
       var id = makeId();
@@ -134,7 +134,7 @@ function App() {
   var profile = profiles.find(function(p) { return p.id === activeId; }) || profiles[0];
 
   function saveProfiles(next) {
-    localStorage.setItem('spelloop-profiles', JSON.stringify(next));
+    window.slSet('spelloop-profiles', JSON.stringify(next));
     setProfilesRaw(next);
   }
 
@@ -147,7 +147,7 @@ function App() {
   }
 
   function switchProfile(id) {
-    localStorage.setItem('spelloop-active-profile', id);
+    window.slSet('spelloop-active-profile', id);
     setActiveIdRaw(id);
   }
 
@@ -156,7 +156,7 @@ function App() {
     var p = Object.assign({}, DEFAULT_PROFILE, { id: id, name: name, age: parseInt(age) || 7, avatar: avatar || 'fox' });
     var next = profiles.concat([p]);
     saveProfiles(next);
-    localStorage.setItem('spelloop-levels-' + id, JSON.stringify(LEVELS.slice()));
+    window.slSet('spelloop-levels-' + id, JSON.stringify(LEVELS.slice()));
     return id;
   }
 
@@ -169,7 +169,7 @@ function App() {
   }
 
   function resetProgress(id) {
-    localStorage.setItem('spelloop-levels-' + id, JSON.stringify(LEVELS.slice()));
+    window.slSet('spelloop-levels-' + id, JSON.stringify(LEVELS.slice()));
     var next = profiles.map(function(p) {
       if (p.id !== id) return p;
       return Object.assign({}, p, { level: 1, streak: 0, totalStars: 0, words: 0 });
@@ -237,14 +237,15 @@ function App() {
   }, [activeId]);
 
   React.useEffect(function() {
-    try { localStorage.setItem('spelloop-levels-' + activeId, JSON.stringify(levels)); } catch(e) {}
+    window.slSet('spelloop-levels-' + activeId, JSON.stringify(levels));
   }, [levels, activeId]);
 
   // ── Settings effects ───────────────────────────────────────────────
   React.useEffect(function() {
-    try { localStorage.setItem('spelloop-settings', JSON.stringify(settings)); } catch(e) {}
+    window.slSet('spelloop-settings', JSON.stringify(settings));
     document.documentElement.setAttribute('data-theme', settings.theme || 'blue');
     document.documentElement.setAttribute('data-age', settings.ageSkew || '');
+    document.documentElement.setAttribute('data-case', settings.letterCase === 'lower' ? 'lower' : 'upper');
     window.__tweaks = { avatarStyle: settings.avatarStyle, difficulty: settings.difficulty };
     window.sfx && window.sfx.setEnabled && window.sfx.setEnabled(settings.sounds);
   }, [settings]);
@@ -254,7 +255,7 @@ function App() {
     return localStorage.getItem('spelloop-tutorial') === '1';
   });
   var handleTutorialComplete = React.useCallback(function() {
-    localStorage.setItem('spelloop-tutorial', '1');
+    window.slSet('spelloop-tutorial', '1');
     setTutorialDone(true);
   }, []);
 
