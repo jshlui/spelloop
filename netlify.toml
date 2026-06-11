@@ -1,7 +1,11 @@
 [build]
-  publish = "."
-  command = ""
+  publish = "dist"
+  command = "npm run build"
   functions = "netlify/functions"
+
+[build.environment]
+  # playwright is a local dev/QA dependency — don't download browsers on Netlify
+  PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD = "1"
 
 [[headers]]
   for = "/*"

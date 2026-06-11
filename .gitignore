@@ -10,3 +10,6 @@ src/.DS_Store
 # Local Netlify folder
 .netlify
 .gstack/
+
+# Build output — Netlify runs `npm run build` on deploy
+dist/
