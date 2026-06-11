@@ -105,7 +105,7 @@ function StoryBuilder({ chapter, chapterWords, onDone }) {
     var stories = [];
     try { stories = JSON.parse(localStorage.getItem(key) || '[]'); } catch(e) {}
     stories.unshift({ chapter: chapter, slots: slots, template: template.chapter, createdAt: new Date().toISOString() });
-    localStorage.setItem(key, JSON.stringify(stories.slice(0, 20)));
+    window.slSet(key, JSON.stringify(stories.slice(0, 20)));
     setSaved(true);
   }
 

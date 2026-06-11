@@ -175,7 +175,11 @@ function speakWord(word, onStart, onEnd) {
   // 1. Check cache
   try {
     var cached = localStorage.getItem(cacheKey);
-    if (cached) { playDataUrl(cached); return; }
+    if (cached) {
+      window.SLStore && SLStore.touchAudio(cacheKey);
+      playDataUrl(cached);
+      return;
+    }
   } catch(e) {}
 
   // 2. Try server-side TTS proxy (key lives in Netlify env, never exposed to browser)
@@ -196,7 +200,7 @@ function speakWord(word, onStart, onEnd) {
     var reader = new FileReader();
     reader.onload = function() {
       var dataUrl = reader.result;
-      try { localStorage.setItem(cacheKey, dataUrl); } catch(e) {}
+      if (window.SLStore) SLStore.cacheAudio(cacheKey, dataUrl);
       playDataUrl(dataUrl);
     };
     reader.readAsDataURL(blob);
