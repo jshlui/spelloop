@@ -446,6 +446,9 @@ const MODE_META = {
   keyboard: { label: 'Sequence', color: 'lilac', ink: 'var(--lilac-ink)', soft: 'var(--lilac-soft)', icon: '⌘' },
   boss:     { label: 'Boss',     color: 'coral', ink: 'var(--coral-ink)', soft: 'var(--coral-soft)', icon: '★' },
 };
+// Must be on window before the per-mode extensions below — without Babel's
+// const→var downleveling, a top-level const is not a window property.
+window.MODE_META = MODE_META;
 
 var PRECISION_TASKS = [
   { id: 'p1', mode: 'precision', word: 'GO',  stars: 0, done: false },
