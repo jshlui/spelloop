@@ -227,7 +227,7 @@ function SpeakButton({ word, size = 56, big = false }) {
 
   var s = big ? 88 : size;
   return (
-    <button onClick={speak} style={{
+    <button onClick={speak} aria-label="Hear the word out loud" style={{
       width: s, height: s, borderRadius: '50%',
       background: loading ? 'var(--blue-ink, #3F5FE2)' : 'var(--blue)',
       border: 'none', cursor: loading ? 'wait' : 'pointer',

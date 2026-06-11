@@ -198,13 +198,11 @@ function ClickGame({ word, onDone, onClose }) {
 
   return (
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: 'var(--bg)' }}>
-      <div role="status" aria-live="polite" aria-atomic="true" style={{ position: 'absolute', width: 1, height: 1, overflow: 'hidden', clip: 'rect(0,0,0,0)' }}>
-        {feedback ? (feedback.correct ? 'Correct!' : 'Try again') : ''}
-      </div>
+      {/* Correct/Try again announcements come from the shared sfx live region */}
       <GameHeader mode="click" progress={idx / word.length} onClose={onClose} word={word}/>
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'space-between', padding: '20px 16px 32px' }}>
         <div style={{ textAlign: 'center' }}>
-          <div style={{ fontSize: 12, color: 'var(--ink-mute)', fontWeight: 800, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 8 }}>Tap the next letter</div>
+          <div style={{ fontSize: 14, color: 'var(--ink-soft)', fontWeight: 800, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 8 }}>Tap the next letter</div>
           <SpeakButton word={word} big/>
         </div>
 
@@ -372,7 +370,7 @@ function DragGame({ word, onDone, onClose }) {
       <GameHeader mode="drag" progress={progress} onClose={onClose} word={word}/>
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'space-between', padding: '20px 16px 32px' }}>
         <div style={{ textAlign: 'center' }}>
-          <div style={{ fontSize: 12, color: 'var(--ink-mute)', fontWeight: 800, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 8 }}>Drop letters in order</div>
+          <div style={{ fontSize: 14, color: 'var(--ink-soft)', fontWeight: 800, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 8 }}>Drop letters in order</div>
           <SpeakButton word={word} big/>
         </div>
 
@@ -488,7 +486,7 @@ function TypeGame({ word, onDone, onClose, device }) {
       <GameHeader mode="type" progress={progress} onClose={onClose} word={word}/>
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '16px 16px 12px', gap: 20 }}>
         <div className="typing-prompt" style={{ textAlign: 'center' }}>
-          <div style={{ fontSize: 12, color: 'var(--ink-mute)', fontWeight: 800, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 8 }}>Type the word</div>
+          <div style={{ fontSize: 14, color: 'var(--ink-soft)', fontWeight: 800, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 8 }}>Type the word</div>
           <SpeakButton word={word}/>
         </div>
         <div className={'type-word-slots ' + (shake ? 'shake-wrap' : '')} style={{
@@ -608,7 +606,7 @@ function MissingGame({ word, onDone, onClose }) {
       <GameHeader mode="missing" progress={picked === target ? 1 : 0.5} onClose={onClose} word={word}/>
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'space-between', padding: '20px 16px 32px' }}>
         <div style={{ textAlign: 'center' }}>
-          <div style={{ fontSize: 12, color: 'var(--ink-mute)', fontWeight: 800, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 8 }}>Which letter is missing?</div>
+          <div style={{ fontSize: 14, color: 'var(--ink-soft)', fontWeight: 800, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 8 }}>Which letter is missing?</div>
           <SpeakButton word={word} big/>
         </div>
 
@@ -690,7 +688,7 @@ function KeyboardGame({ word, onDone, onClose }) {
       <GameHeader mode="keyboard" progress={idx / word.length} onClose={onClose} word={word}/>
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '16px 16px 12px', gap: 16 }}>
         <div style={{ textAlign: 'center' }}>
-          <div style={{ fontSize: 12, color: 'var(--ink-mute)', fontWeight: 800, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 8 }}>Find this letter on the keyboard</div>
+          <div style={{ fontSize: 14, color: 'var(--ink-soft)', fontWeight: 800, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 8 }}>Find this letter on the keyboard</div>
         </div>
 
         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
@@ -903,7 +901,7 @@ function ScrambleGame({ word, onDone, onClose }) {
       <GameHeader mode="scramble" progress={progress} onClose={onClose} word={word}/>
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'space-between', padding: '20px 16px 32px' }}>
         <div style={{ textAlign: 'center' }}>
-          <div style={{ fontSize: 12, color: 'var(--ink-mute)', fontWeight: 800, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 8 }}>Tap letters in the right order</div>
+          <div style={{ fontSize: 14, color: 'var(--ink-soft)', fontWeight: 800, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 8 }}>Tap letters in the right order</div>
           <SpeakButton word={word} big/>
         </div>
         <div style={{ display: 'flex', gap: 10, justifyContent: 'center' }}>
@@ -1011,7 +1009,7 @@ function SpeedGame({ word, onDone, onClose }) {
         </div>
         <div style={{ fontSize: 32, fontWeight: 900, color: timerColor, lineHeight: 1 }}>{timeLeft}s</div>
         <div style={{ textAlign: 'center' }}>
-          <div style={{ fontSize: 12, color: 'var(--ink-mute)', fontWeight: 800, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 8 }}>Type before time runs out!</div>
+          <div style={{ fontSize: 14, color: 'var(--ink-soft)', fontWeight: 800, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 8 }}>Type before time runs out!</div>
           <SpeakButton word={word}/>
         </div>
         <div style={{ display: 'flex', gap: 10, justifyContent: 'center', animation: shake ? 'shake 300ms' : 'none' }}>
@@ -1101,7 +1099,7 @@ function EchoGame({ word, onDone, onClose }) {
       <GameHeader mode="echo" progress={typed.length / word.length} onClose={onClose} word={null}/>
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'space-between', padding: '24px 16px 32px' }}>
         <div style={{ textAlign: 'center' }}>
-          <div style={{ fontSize: 12, color: 'var(--ink-mute)', fontWeight: 800, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 20 }}>
+          <div style={{ fontSize: 14, color: 'var(--ink-soft)', fontWeight: 800, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 20 }}>
             Tap to hear, then spell!
           </div>
           <button onClick={speak} aria-label="Hear the word" style={{
@@ -1230,7 +1228,7 @@ function FlashGame({ word, onDone, onClose }) {
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'space-between', padding: '24px 16px 32px' }}>
 
         <div style={{ textAlign: 'center' }}>
-          <div style={{ fontSize: 12, color: 'var(--ink-mute)', fontWeight: 800, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 16 }}>
+          <div style={{ fontSize: 14, color: 'var(--ink-soft)', fontWeight: 800, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 16 }}>
             {showWord ? 'Remember it!' : 'Now spell it!'}
           </div>
           <div style={{ position: 'relative', display: 'inline-block', padding: '16px 24px' }}>
@@ -1710,7 +1708,7 @@ function CodingGame({ word, onDone, onClose }) {
       <GameHeader mode="coding" progress={progress} onClose={onClose} word={word}/>
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'space-between', padding: '10px 16px 20px', overflowY: 'auto' }}>
 
-        <div style={{ fontSize: 12, color: 'var(--ink-mute)', fontWeight: 800, letterSpacing: 1, textTransform: 'uppercase' }}>
+        <div style={{ fontSize: 14, color: 'var(--ink-soft)', fontWeight: 800, letterSpacing: 1, textTransform: 'uppercase' }}>
           Build the path to the ⭐
         </div>
 
@@ -1944,7 +1942,7 @@ function PostLevelReflection({ word, wrongLetters, phonemes, onContinue }) {
         </div>
       )}
 
-      <div style={{ fontSize: 12, color: 'var(--ink-mute)', fontWeight: 700 }}>Tap to continue</div>
+      <div style={{ fontSize: 14, color: 'var(--ink-soft)', fontWeight: 700 }}>Tap to continue</div>
     </div>
   );
 }

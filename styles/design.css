@@ -861,8 +861,9 @@ html, body {
 @keyframes confettiFly4 { from{opacity:1;transform:translate(0,0) rotate(0deg)} to{opacity:0;transform:translate(var(--tx),var(--ty)) rotate(calc(var(--rot) + 270deg))} }
 
 /* == Focus rings (keyboard nav) == */
+/* gold-dark: gold fails the 3:1 indicator contrast on light surfaces */
 :focus-visible {
-  outline: 3px solid var(--gold);
+  outline: 3px solid var(--gold-dark);
   outline-offset: 3px;
   border-radius: 4px;
 }

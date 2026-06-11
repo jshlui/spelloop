@@ -5,6 +5,26 @@
   function c() { if (!ctx) ctx = new (window.AudioContext || window.webkitAudioContext)(); return ctx; }
   let enabled = true;
 
+  // Screen-reader announcements ride the same chokepoints as the sounds —
+  // every game mode calls playCorrect/playWrong/complete, so one live
+  // region covers them all. Fires even when sounds are muted.
+  let liveRegion = null;
+  function announce(text) {
+    try {
+      if (!liveRegion) {
+        liveRegion = document.createElement('div');
+        liveRegion.setAttribute('role', 'status');
+        liveRegion.setAttribute('aria-live', 'polite');
+        liveRegion.setAttribute('aria-atomic', 'true');
+        liveRegion.style.cssText = 'position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);';
+        document.body.appendChild(liveRegion);
+      }
+      // Clear first so repeating the same text re-announces
+      liveRegion.textContent = '';
+      setTimeout(function() { liveRegion.textContent = text; }, 30);
+    } catch (e) {}
+  }
+
   function tone(freq, dur = 0.12, type = 'sine', gain = 0.12, when = 0, slideTo = null) {
     if (!enabled) return;
     try {
@@ -36,9 +56,11 @@
     wrong() { tone(220, 0.18, 'square', 0.08, 0, 140); },
     star() { tone(1600, 0.08, 'triangle', 0.10, 0, 2200); },
     complete() {
+      announce('Word complete!');
       [523, 659, 784, 1047].forEach((f, i) => tone(f, 0.14, 'sine', 0.12, i * 0.09));
     },
     playCorrect() {
+      announce('Correct!');
       if (!window.sfx.isEnabled()) return;
       try {
         const a = c();
@@ -56,6 +78,7 @@
       } catch(e) {}
     },
     playWrong() {
+      announce('Try again');
       if (!window.sfx.isEnabled()) return;
       try {
         const a = c();
@@ -88,6 +111,7 @@
       } catch(e) {}
     },
     playComplete() {
+      announce('Word complete!');
       if (!window.sfx.isEnabled()) return;
       try {
         const a = c();
@@ -117,6 +141,7 @@
         o.start(); o.stop(a.currentTime + 0.07);
       } catch(e) {}
     },
+    announce: announce,
     speak(word, rate) {
       if (!window.speechSynthesis) return;
       window.speechSynthesis.cancel();
