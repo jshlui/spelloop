@@ -4,7 +4,7 @@ var CHAPTER_STORIES = [
   {
     chapter: 1,
     title: "The Forest Gate",
-    blurb: "Deep in the Word Forest, you found an ancient gate covered in glowing letters. You spelled the magic word and the gate creaked open!",
+    blurb: "Deep in the Short Vowel Forest, you found an ancient gate covered in glowing letters. You sounded out a, e, i, o and u — and the gate creaked open!",
     bg: "#2D6A4F", sky: "#52B788", accent: "#F59E0B",
     scene: function() {
       return React.createElement('svg', { viewBox: '0 0 320 180', width: '100%' },
@@ -31,8 +31,8 @@ var CHAPTER_STORIES = [
   },
   {
     chapter: 2,
-    title: "The Word Sea",
-    blurb: "You dove beneath the sparkling Word Sea and discovered a sunken library full of spell-books. A magical kite led you safely to shore!",
+    title: "The Double-Letter Sea",
+    blurb: "You dove beneath the sparkling sea and discovered a sunken library full of spell-books. Double letters like EGG and HILL glowed bright and led you safely to shore!",
     bg: "#1E3A5F", sky: "#0EA5E9", accent: "#38BDF8",
     scene: function() {
       return React.createElement('svg', { viewBox: '0 0 320 180', width: '100%' },
@@ -56,8 +56,8 @@ var CHAPTER_STORIES = [
   },
   {
     chapter: 3,
-    title: "The Mountain Peak",
-    blurb: "You climbed the tallest mountain in the land of words, where an eagle soared above ancient stone carvings. You read every one!",
+    title: "Blend Mountain Peak",
+    blurb: "You climbed Blend Mountain, where letters hold hands to make new sounds — fr, cr, st, pl! An eagle soared above as you spelled every carved word.",
     bg: "#374151", sky: "#6B7280", accent: "#E5E7EB",
     scene: function() {
       return React.createElement('svg', { viewBox: '0 0 320 180', width: '100%' },
@@ -78,8 +78,8 @@ var CHAPTER_STORIES = [
   },
   {
     chapter: 4,
-    title: "The Jungle Path",
-    blurb: "Through the tangled jungle, a clever deer showed you a hidden path made entirely of letters. You followed every twist and turn!",
+    title: "The Digraph Jungle",
+    blurb: "Through the tangled jungle, two letters kept teaming up to make one sound — sh! ch! th! A clever deer showed you the hidden path, and you followed every twist and turn!",
     bg: "#14532D", sky: "#16A34A", accent: "#86EFAC",
     scene: function() {
       return React.createElement('svg', { viewBox: '0 0 320 180', width: '100%' },
@@ -112,7 +112,7 @@ var CHAPTER_STORIES = [
   {
     chapter: 5,
     title: "Beyond the Ocean",
-    blurb: "You sailed across the great Word Ocean on a boat made of letters, guided by the stars. The distant shore held an incredible secret!",
+    blurb: "You sailed across the great ocean guided by the stars, while Magic E cast its spell — turning KIT into KITE and CAP into CAPE. What a trick!",
     bg: "#1E3A5F", sky: "#0C4A6E", accent: "#38BDF8",
     scene: function() {
       return React.createElement('svg', { viewBox: '0 0 320 180', width: '100%' },
@@ -142,8 +142,8 @@ var CHAPTER_STORIES = [
   },
   {
     chapter: 6,
-    title: "The Word Castle",
-    blurb: "You reached the magnificent Word Castle, where every tower was built from a different letter. You unlocked the great hall with your spelling!",
+    title: "The Vowel Team Castle",
+    blurb: "You reached the magnificent castle where vowels work in teams — ee, ea, ai, oo! You unlocked the great hall by spelling every team word.",
     bg: "#3730A3", sky: "#4338CA", accent: "#818CF8",
     scene: function() {
       return React.createElement('svg', { viewBox: '0 0 320 180', width: '100%' },
@@ -182,8 +182,8 @@ var CHAPTER_STORIES = [
   },
   {
     chapter: 7,
-    title: "The Word Galaxy",
-    blurb: "You soared through the Word Galaxy, where planets were made of letters and dragons flew between the stars. You spelled your way home!",
+    title: "The Owl Galaxy",
+    blurb: "You soared through the night galaxy where owls glide between the stars. Ow! and Ou! sounds echoed past the planets as you spelled your way home!",
     bg: "#0F172A", sky: "#1E1B4B", accent: "#818CF8",
     scene: function() {
       return React.createElement('svg', { viewBox: '0 0 320 180', width: '100%' },

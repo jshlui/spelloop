@@ -39,7 +39,7 @@ var STORY_TEMPLATES = [
   ]},
   // Chapter 7 — Galaxy
   { chapter: 7, bg: '#1A1A3E', dark: true, panels: [
-    { text: 'A [word0] zoomed through the Word Galaxy in a rocket.', slots: ['word0'] },
+    { text: 'A [word0] zoomed through the Owl Galaxy in a rocket.', slots: ['word0'] },
     { text: 'It crashed into a planet made of [word1].', slots: ['word1'] },
     { text: 'The [word0] used [word2] to fix the rocket and fly home!', slots: ['word0', 'word2'] },
   ]},

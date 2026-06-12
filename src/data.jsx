@@ -67,6 +67,7 @@ const WORDS_HARD = [
   { word: 'MANGO', theme: 'fruit',   phonemes: ['short-a', 'long-o'] },
   { word: 'FLAME', theme: 'nature',  phonemes: ['blend-fl', 'long-a', 'silent-e'] },
   { word: 'GLOBE', theme: 'object',  phonemes: ['blend-gl', 'long-o', 'silent-e'] },
+  { word: 'CROWN', theme: 'fantasy', phonemes: ['blend-cr', 'ow-diphthong'] },
 ];
 
 function getWordsForDifficulty(d) {
@@ -126,88 +127,90 @@ function getAdaptiveWordPool(letterErrors, difficulty) {
 window.WORDS_BY_LENGTH = { 3: WORDS_EASY, 4: WORDS_MED, 5: WORDS_HARD };
 
 // Main journey + Code Lab. Chapters unlock in LEVELS order.
-// Modes cycle: click → missing → drag → type → keyboard → missing → drag → boss
+// Chapters follow the synthetic-phonics teaching sequence: short vowels →
+// double letters → blends → digraphs → magic e → vowel teams → ow/ou →
+// r-controlled → big-word mastery. Words come from the phoneme-tagged pools.
 const LEVELS = [
-  // ── Chapter 1: The Word Forest (easy, 3-letter CVC phonics) ─────────────
+  // ── Chapter 1: Short Vowel Meadow (CVC short vowels) ─────────────────────
   { id: 1,  chapter: 1, mode: 'click',    word: 'CAT',   stars: 0, done: false, current: true  },
   { id: 2,  chapter: 1, mode: 'missing',  word: 'HAT',   stars: 0, done: false, locked: true  },
   { id: 3,  chapter: 1, mode: 'drag',     word: 'MAP',   stars: 0, done: false, locked: true  },
   { id: 4,  chapter: 1, mode: 'type',     word: 'PEN',   stars: 0, done: false, locked: true  },
   { id: 5,  chapter: 1, mode: 'keyboard', word: 'DOG',   stars: 0, done: false, locked: true  },
   { id: 6,  chapter: 1, mode: 'missing',  word: 'PIG',   stars: 0, done: false, locked: true  },
-  { id: 7,  chapter: 1, mode: 'drag',     word: 'ANT',   stars: 0, done: false, locked: true  },
-  { id: 8,  chapter: 1, mode: 'boss',     word: 'OWL',   stars: 0, done: false, locked: true  },
-  // ── Chapter 2: The Word Sea (4-letter regular) ────────────────────────────
-  { id: 9,  chapter: 2, mode: 'click',    word: 'FISH',  stars: 0, done: false, locked: true  },
-  { id: 10, chapter: 2, mode: 'missing',  word: 'FROG',  stars: 0, done: false, locked: true  },
-  { id: 11, chapter: 2, mode: 'drag',     word: 'DUCK',  stars: 0, done: false, locked: true  },
-  { id: 12, chapter: 2, mode: 'type',     word: 'BIRD',  stars: 0, done: false, locked: true  },
-  { id: 13, chapter: 2, mode: 'keyboard', word: 'RAIN',  stars: 0, done: false, locked: true  },
-  { id: 14, chapter: 2, mode: 'missing',  word: 'SNOW',  stars: 0, done: false, locked: true  },
-  { id: 15, chapter: 2, mode: 'drag',     word: 'CAKE',  stars: 0, done: false, locked: true  },
-  { id: 16, chapter: 2, mode: 'boss',     word: 'MILK',  stars: 0, done: false, locked: true  },
-  // ── Chapter 3: The Word Mountain (4-letter harder) ────────────────────────
-  { id: 17, chapter: 3, mode: 'click',    word: 'BEAR',  stars: 0, done: false, locked: true  },
-  { id: 18, chapter: 3, mode: 'missing',  word: 'WOLF',  stars: 0, done: false, locked: true  },
-  { id: 19, chapter: 3, mode: 'drag',     word: 'DEER',  stars: 0, done: false, locked: true  },
-  { id: 20, chapter: 3, mode: 'type',     word: 'KITE',  stars: 0, done: false, locked: true  },
-  { id: 21, chapter: 3, mode: 'keyboard', word: 'WIND',  stars: 0, done: false, locked: true  },
-  { id: 22, chapter: 3, mode: 'missing',  word: 'LEAF',  stars: 0, done: false, locked: true  },
-  { id: 23, chapter: 3, mode: 'drag',     word: 'HILL',  stars: 0, done: false, locked: true  },
-  { id: 24, chapter: 3, mode: 'boss',     word: 'MOON',  stars: 0, done: false, locked: true  },
-  // ── Chapter 4: The Word Jungle (5-letter, steady step up) ────────────────
-  { id: 25, chapter: 4, mode: 'scramble', word: 'APPLE', stars: 0, done: false, locked: true  },
-  { id: 26, chapter: 4, mode: 'type',     word: 'SHARK', stars: 0, done: false, locked: true  },
-  { id: 27, chapter: 4, mode: 'click',    word: 'TIGER', stars: 0, done: false, locked: true  },
-  { id: 28, chapter: 4, mode: 'speed',    word: 'HORSE', stars: 0, done: false, locked: true  },
-  { id: 29, chapter: 4, mode: 'drag',     word: 'GRAPE', stars: 0, done: false, locked: true  },
-  { id: 30, chapter: 4, mode: 'missing',  word: 'BEACH', stars: 0, done: false, locked: true  },
-  { id: 31, chapter: 4, mode: 'echo',     word: 'PLANT', stars: 0, done: false, locked: true  },
-  { id: 32, chapter: 4, mode: 'boss',     word: 'RIVER', stars: 0, done: false, locked: true  },
-  // ── Chapter 5: The Word Sky (5-letter harder) ────────────────────────────
-  { id: 33, chapter: 5, mode: 'speed',    word: 'PANDA', stars: 0, done: false, locked: true  },
-  { id: 34, chapter: 5, mode: 'click',    word: 'HOUSE', stars: 0, done: false, locked: true  },
-  { id: 35, chapter: 5, mode: 'scramble', word: 'CLOUD', stars: 0, done: false, locked: true  },
-  { id: 36, chapter: 5, mode: 'drag',     word: 'PIZZA', stars: 0, done: false, locked: true  },
-  { id: 37, chapter: 5, mode: 'echo',     word: 'BUNNY', stars: 0, done: false, locked: true  },
-  { id: 38, chapter: 5, mode: 'missing',  word: 'OCEAN', stars: 0, done: false, locked: true  },
-  { id: 39, chapter: 5, mode: 'type',     word: 'STORM', stars: 0, done: false, locked: true  },
-  { id: 40, chapter: 5, mode: 'boss',     word: 'EAGLE', stars: 0, done: false, locked: true  },
-  // ── Chapter 6: The Word Castle (5→6 letter transition) ───────────────────
-  { id: 41, chapter: 6, mode: 'flash',    word: 'LEMON',  stars: 0, done: false, locked: true  },
-  { id: 42, chapter: 6, mode: 'click',    word: 'MANGO',  stars: 0, done: false, locked: true  },
-  { id: 43, chapter: 6, mode: 'scramble', word: 'FLAME',  stars: 0, done: false, locked: true  },
-  { id: 44, chapter: 6, mode: 'drag',     word: 'GLOBE',  stars: 0, done: false, locked: true  },
-  { id: 45, chapter: 6, mode: 'echo',     word: 'RABBIT', stars: 0, done: false, locked: true  },
-  { id: 46, chapter: 6, mode: 'type',     word: 'CASTLE', stars: 0, done: false, locked: true  },
-  { id: 47, chapter: 6, mode: 'flash',    word: 'GARDEN', stars: 0, done: false, locked: true  },
-  { id: 48, chapter: 6, mode: 'boss',     word: 'BRIDGE', stars: 0, done: false, locked: true  },
-  // ── Chapter 7: The Word Galaxy (6-letter adventure) ──────────────────────
-  { id: 49, chapter: 7, mode: 'echo',     word: 'FLOWER', stars: 0, done: false, locked: true  },
-  { id: 50, chapter: 7, mode: 'flash',    word: 'SUMMER', stars: 0, done: false, locked: true  },
-  { id: 51, chapter: 7, mode: 'scramble', word: 'ORANGE', stars: 0, done: false, locked: true  },
-  { id: 52, chapter: 7, mode: 'type',     word: 'BUTTER', stars: 0, done: false, locked: true  },
-  { id: 53, chapter: 7, mode: 'click',    word: 'ROCKET', stars: 0, done: false, locked: true  },
-  { id: 54, chapter: 7, mode: 'flash',    word: 'WIZARD', stars: 0, done: false, locked: true  },
-  { id: 55, chapter: 7, mode: 'echo',     word: 'DRAGON', stars: 0, done: false, locked: true  },
-  { id: 56, chapter: 7, mode: 'boss',     word: 'PLANET', stars: 0, done: false, locked: true  },
-  // ── Chapter 8: The Word Island (6-letter harder) ─────────────────────────
-  { id: 57, chapter: 8, mode: 'speed',    word: 'PIRATE', stars: 0, done: false, locked: true  },
-  { id: 58, chapter: 8, mode: 'click',    word: 'JUNGLE', stars: 0, done: false, locked: true  },
-  { id: 59, chapter: 8, mode: 'scramble', word: 'MONKEY', stars: 0, done: false, locked: true  },
-  { id: 60, chapter: 8, mode: 'drag',     word: 'TURTLE', stars: 0, done: false, locked: true  },
-  { id: 61, chapter: 8, mode: 'echo',     word: 'PARROT', stars: 0, done: false, locked: true  },
-  { id: 62, chapter: 8, mode: 'missing',  word: 'ISLAND', stars: 0, done: false, locked: true  },
-  { id: 63, chapter: 8, mode: 'type',     word: 'SUNSET', stars: 0, done: false, locked: true  },
-  { id: 64, chapter: 8, mode: 'boss',     word: 'FOREST', stars: 0, done: false, locked: true  },
-  // ── Chapter 9: The Word Tower (6–7 letter endgame) ───────────────────────
-  { id: 65, chapter: 9, mode: 'flash',    word: 'MIRROR',  stars: 0, done: false, locked: true  },
-  { id: 66, chapter: 9, mode: 'click',    word: 'SPIDER',  stars: 0, done: false, locked: true  },
-  { id: 67, chapter: 9, mode: 'scramble', word: 'SCHOOL',  stars: 0, done: false, locked: true  },
-  { id: 68, chapter: 9, mode: 'drag',     word: 'KITTEN',  stars: 0, done: false, locked: true  },
+  { id: 7,  chapter: 1, mode: 'drag',     word: 'SUN',   stars: 0, done: false, locked: true  },
+  { id: 8,  chapter: 1, mode: 'boss',     word: 'POT',   stars: 0, done: false, locked: true  },
+  // ── Chapter 2: Double-Letter Den (CVC + double letters, first endings) ───
+  { id: 9,  chapter: 2, mode: 'click',    word: 'HEN',   stars: 0, done: false, locked: true  },
+  { id: 10, chapter: 2, mode: 'missing',  word: 'JAM',   stars: 0, done: false, locked: true  },
+  { id: 11, chapter: 2, mode: 'drag',     word: 'CUP',   stars: 0, done: false, locked: true  },
+  { id: 12, chapter: 2, mode: 'type',     word: 'BOX',   stars: 0, done: false, locked: true  },
+  { id: 13, chapter: 2, mode: 'keyboard', word: 'NET',   stars: 0, done: false, locked: true  },
+  { id: 14, chapter: 2, mode: 'missing',  word: 'EGG',   stars: 0, done: false, locked: true  },
+  { id: 15, chapter: 2, mode: 'drag',     word: 'HILL',  stars: 0, done: false, locked: true  },
+  { id: 16, chapter: 2, mode: 'boss',     word: 'ANT',   stars: 0, done: false, locked: true  },
+  // ── Chapter 3: Blend Bridge (consonant blends: fr, cr, st, pl, lk) ───────
+  { id: 17, chapter: 3, mode: 'click',    word: 'FROG',  stars: 0, done: false, locked: true  },
+  { id: 18, chapter: 3, mode: 'missing',  word: 'CRAB',  stars: 0, done: false, locked: true  },
+  { id: 19, chapter: 3, mode: 'drag',     word: 'WIND',  stars: 0, done: false, locked: true  },
+  { id: 20, chapter: 3, mode: 'type',     word: 'MILK',  stars: 0, done: false, locked: true  },
+  { id: 21, chapter: 3, mode: 'keyboard', word: 'WOLF',  stars: 0, done: false, locked: true  },
+  { id: 22, chapter: 3, mode: 'missing',  word: 'PLANT', stars: 0, done: false, locked: true  },
+  { id: 23, chapter: 3, mode: 'drag',     word: 'STAR',  stars: 0, done: false, locked: true  },
+  { id: 24, chapter: 3, mode: 'boss',     word: 'STORM', stars: 0, done: false, locked: true  },
+  // ── Chapter 4: Digraph Jungle (sh, ch, th, ck, ng) ───────────────────────
+  { id: 25, chapter: 4, mode: 'scramble', word: 'FISH',    stars: 0, done: false, locked: true  },
+  { id: 26, chapter: 4, mode: 'type',     word: 'DUCK',    stars: 0, done: false, locked: true  },
+  { id: 27, chapter: 4, mode: 'click',    word: 'SHARK',   stars: 0, done: false, locked: true  },
+  { id: 28, chapter: 4, mode: 'speed',    word: 'ROCKET',  stars: 0, done: false, locked: true  },
+  { id: 29, chapter: 4, mode: 'drag',     word: 'CHEESE',  stars: 0, done: false, locked: true  },
+  { id: 30, chapter: 4, mode: 'missing',  word: 'BEACH',   stars: 0, done: false, locked: true  },
+  { id: 31, chapter: 4, mode: 'echo',     word: 'JUNGLE',  stars: 0, done: false, locked: true  },
+  { id: 32, chapter: 4, mode: 'boss',     word: 'THUNDER', stars: 0, done: false, locked: true  },
+  // ── Chapter 5: Magic E Mountain (silent e) ───────────────────────────────
+  { id: 33, chapter: 5, mode: 'speed',    word: 'KITE',   stars: 0, done: false, locked: true  },
+  { id: 34, chapter: 5, mode: 'click',    word: 'CAKE',   stars: 0, done: false, locked: true  },
+  { id: 35, chapter: 5, mode: 'scramble', word: 'LAKE',   stars: 0, done: false, locked: true  },
+  { id: 36, chapter: 5, mode: 'drag',     word: 'GRAPE',  stars: 0, done: false, locked: true  },
+  { id: 37, chapter: 5, mode: 'echo',     word: 'FLAME',  stars: 0, done: false, locked: true  },
+  { id: 38, chapter: 5, mode: 'missing',  word: 'GLOBE',  stars: 0, done: false, locked: true  },
+  { id: 39, chapter: 5, mode: 'type',     word: 'SNAKE',  stars: 0, done: false, locked: true  },
+  { id: 40, chapter: 5, mode: 'boss',     word: 'CASTLE', stars: 0, done: false, locked: true  },
+  // ── Chapter 6: Vowel Team Valley (ee, ea, ai, oo) ────────────────────────
+  { id: 41, chapter: 6, mode: 'flash',    word: 'BEE',    stars: 0, done: false, locked: true  },
+  { id: 42, chapter: 6, mode: 'click',    word: 'MOON',   stars: 0, done: false, locked: true  },
+  { id: 43, chapter: 6, mode: 'scramble', word: 'RAIN',   stars: 0, done: false, locked: true  },
+  { id: 44, chapter: 6, mode: 'drag',     word: 'TREE',   stars: 0, done: false, locked: true  },
+  { id: 45, chapter: 6, mode: 'echo',     word: 'LEAF',   stars: 0, done: false, locked: true  },
+  { id: 46, chapter: 6, mode: 'type',     word: 'EAGLE',  stars: 0, done: false, locked: true  },
+  { id: 47, chapter: 6, mode: 'flash',    word: 'KEY',    stars: 0, done: false, locked: true  },
+  { id: 48, chapter: 6, mode: 'boss',     word: 'SCHOOL', stars: 0, done: false, locked: true  },
+  // ── Chapter 7: The Owl Night Sky (ow / ou diphthongs) ────────────────────
+  { id: 49, chapter: 7, mode: 'echo',     word: 'COW',    stars: 0, done: false, locked: true  },
+  { id: 50, chapter: 7, mode: 'flash',    word: 'OWL',    stars: 0, done: false, locked: true  },
+  { id: 51, chapter: 7, mode: 'scramble', word: 'SNOW',   stars: 0, done: false, locked: true  },
+  { id: 52, chapter: 7, mode: 'type',     word: 'CLOUD',  stars: 0, done: false, locked: true  },
+  { id: 53, chapter: 7, mode: 'click',    word: 'HOUSE',  stars: 0, done: false, locked: true  },
+  { id: 54, chapter: 7, mode: 'flash',    word: 'CROWN',  stars: 0, done: false, locked: true  },
+  { id: 55, chapter: 7, mode: 'echo',     word: 'TOWER',  stars: 0, done: false, locked: true  },
+  { id: 56, chapter: 7, mode: 'boss',     word: 'FLOWER', stars: 0, done: false, locked: true  },
+  // ── Chapter 8: Bossy R Ridge (r-controlled vowels) ───────────────────────
+  { id: 57, chapter: 8, mode: 'speed',    word: 'BIRD',   stars: 0, done: false, locked: true  },
+  { id: 58, chapter: 8, mode: 'click',    word: 'BEAR',   stars: 0, done: false, locked: true  },
+  { id: 59, chapter: 8, mode: 'scramble', word: 'HORSE',  stars: 0, done: false, locked: true  },
+  { id: 60, chapter: 8, mode: 'drag',     word: 'TIGER',  stars: 0, done: false, locked: true  },
+  { id: 61, chapter: 8, mode: 'echo',     word: 'RIVER',  stars: 0, done: false, locked: true  },
+  { id: 62, chapter: 8, mode: 'missing',  word: 'WINTER', stars: 0, done: false, locked: true  },
+  { id: 63, chapter: 8, mode: 'type',     word: 'GARDEN', stars: 0, done: false, locked: true  },
+  { id: 64, chapter: 8, mode: 'boss',     word: 'PIRATE', stars: 0, done: false, locked: true  },
+  // ── Chapter 9: Word Wizard Tower (big words, mixed mastery) ──────────────
+  { id: 65, chapter: 9, mode: 'flash',    word: 'RABBIT',  stars: 0, done: false, locked: true  },
+  { id: 66, chapter: 9, mode: 'click',    word: 'MONKEY',  stars: 0, done: false, locked: true  },
+  { id: 67, chapter: 9, mode: 'scramble', word: 'CANDLE',  stars: 0, done: false, locked: true  },
+  { id: 68, chapter: 9, mode: 'drag',     word: 'TURTLE',  stars: 0, done: false, locked: true  },
   { id: 69, chapter: 9, mode: 'echo',     word: 'PENGUIN', stars: 0, done: false, locked: true  },
   { id: 70, chapter: 9, mode: 'missing',  word: 'LANTERN', stars: 0, done: false, locked: true  },
-  { id: 71, chapter: 9, mode: 'type',     word: 'THUNDER', stars: 0, done: false, locked: true  },
+  { id: 71, chapter: 9, mode: 'type',     word: 'ISLAND',  stars: 0, done: false, locked: true  },
   { id: 72, chapter: 9, mode: 'boss',     word: 'CRYSTAL', stars: 0, done: false, locked: true  },
   // ── Chapter 10: The Code Lab (sequence builder) ───────────────────────────
   { id: 73, chapter: 10, mode: 'coding',  word: 'L1',    stars: 0, done: false, locked: true  },
@@ -320,6 +323,7 @@ var WORD_SENTENCES = {
   LEMON: 'The lemon is sour and yellow.',
   MANGO: 'The mango is juicy and sweet.',
   FLAME: 'The candle flame flickers.',
+  CROWN: 'The king wears a golden crown.',
   GLOBE: 'I found our country on the globe.',
   RABBIT: 'The rabbit has long soft ears.',
   GARDEN: 'Flowers grow in the garden.',
@@ -526,17 +530,22 @@ var POWER_UPS = [
 ];
 window.POWER_UPS = POWER_UPS;
 
+// Chapter names follow the phonics skill each one teaches (theme = the
+// skill label, shown nowhere yet but ready for the map/parent dashboard).
+// Chapter names fuse the original journey scenery (postcard art in
+// ChapterComplete still matches) with the phonics skill each one teaches.
+// theme = the skill label, ready for the map/parent dashboard.
 var CHAPTER_META = [
-  { id: 1, name: 'The Word Forest',  theme: 'animal/object',  bg: 'linear-gradient(180deg, #D7F5E8 0%, #E3EAFF 100%)', emoji: '🌳' },
-  { id: 2, name: 'The Word Sea',     theme: 'nature/weather', bg: 'linear-gradient(180deg, #E3EAFF 0%, #FFF6EA 100%)', emoji: '🌊' },
-  { id: 3, name: 'The Word Mountain',theme: 'animals/food',   bg: 'linear-gradient(180deg, #FFF6EA 0%, #EDE4FF 100%)', emoji: '⛰️' },
-  { id: 4, name: 'The Word Jungle',  theme: 'mixed',          bg: 'linear-gradient(180deg, #E0F7E9 0%, #D7F0FF 100%)', emoji: '🌿' },
-  { id: 5, name: 'The Word Sky',     theme: 'nature/animals', bg: 'linear-gradient(180deg, #D7F0FF 0%, #E8E0FF 100%)', emoji: '☁️' },
-  { id: 6, name: 'The Word Castle',  theme: 'objects/nature', bg: 'linear-gradient(180deg, #E8E0FF 0%, #FFE8F0 100%)', emoji: '🏰' },
-  { id: 7, name: 'The Word Galaxy',  theme: 'fantasy/space',  bg: 'linear-gradient(180deg, #1A1A3E 0%, #2D1B69 100%)', emoji: '🚀', dark: true },
-  { id: 8, name: 'The Word Island',  theme: 'adventure',      bg: 'linear-gradient(180deg, #D7F0FF 0%, #D7F5E8 100%)', emoji: '🏝️' },
-  { id: 9, name: 'The Word Tower',   theme: 'challenge',      bg: 'linear-gradient(180deg, #EDE4FF 0%, #FFF6EA 100%)', emoji: '🗼' },
-  { id: 10, name: 'The Code Lab',    theme: 'coding',         bg: 'linear-gradient(180deg, #D7F5E8 0%, #E3EAFF 100%)', emoji: '🤖' },
+  { id: 1, name: 'Short Vowel Forest', theme: 'short vowels (a e i o u)', bg: 'linear-gradient(180deg, #D7F5E8 0%, #E3EAFF 100%)', emoji: '🌳' },
+  { id: 2, name: 'Double-Letter Sea',  theme: 'double letters & endings', bg: 'linear-gradient(180deg, #E3EAFF 0%, #FFF6EA 100%)', emoji: '🌊' },
+  { id: 3, name: 'Blend Mountain',     theme: 'consonant blends',         bg: 'linear-gradient(180deg, #FFF6EA 0%, #EDE4FF 100%)', emoji: '⛰️' },
+  { id: 4, name: 'Digraph Jungle',     theme: 'sh ch th ck ng',           bg: 'linear-gradient(180deg, #E0F7E9 0%, #D7F0FF 100%)', emoji: '🌿' },
+  { id: 5, name: 'Magic E Sky',        theme: 'silent e',                 bg: 'linear-gradient(180deg, #D7F0FF 0%, #E8E0FF 100%)', emoji: '☁️' },
+  { id: 6, name: 'Vowel Team Castle',  theme: 'ee ea ai oo',              bg: 'linear-gradient(180deg, #E8E0FF 0%, #FFE8F0 100%)', emoji: '🏰' },
+  { id: 7, name: 'The Owl Galaxy',     theme: 'ow & ou sounds',           bg: 'linear-gradient(180deg, #1A1A3E 0%, #2D1B69 100%)', emoji: '🦉', dark: true },
+  { id: 8, name: 'Bossy R Island',     theme: 'r-controlled vowels',      bg: 'linear-gradient(180deg, #D7F0FF 0%, #D7F5E8 100%)', emoji: '🏝️' },
+  { id: 9, name: 'Word Wizard Tower',  theme: 'big word mastery',         bg: 'linear-gradient(180deg, #EDE4FF 0%, #FFF6EA 100%)', emoji: '🗼' },
+  { id: 10, name: 'The Code Lab',      theme: 'coding',                   bg: 'linear-gradient(180deg, #D7F5E8 0%, #E3EAFF 100%)', emoji: '🤖' },
 ];
 
 const MODE_META = {
@@ -671,7 +680,7 @@ var WORD_HINTS = {
   APPLE:'🍎', HOUSE:'🏠', CLOUD:'☁️', TIGER:'🐯', EAGLE:'🦅', HORSE:'🐴',
   BUNNY:'🐰', STORM:'⛈️', PIZZA:'🍕', LEMON:'🍋', GRAPE:'🍇', SHEEP:'🐑',
   FLAME:'🔥', GLOBE:'🌍', PIANO:'🎹', ROBOT:'🤖', SHARK:'🦈',
-  SNAKE:'🐍', SWORD:'⚔️', TOWER:'🗼', ZEBRA:'🦓',
+  SNAKE:'🐍', SWORD:'⚔️', TOWER:'🗼', ZEBRA:'🦓', CROWN:'👑', CANDLE:'🕯️',
   RABBIT:'🐰', BRIDGE:'🌉', CASTLE:'🏰', CHEESE:'🧀', FOREST:'🌲', GARDEN:'🌸',
   ISLAND:'🏝️', JUNGLE:'🌴', KITTEN:'🐱', MIRROR:'🪞', PLANET:'🪐', ROCKET:'🚀',
   SCHOOL:'🏫', SPIDER:'🕷️', SUNSET:'🌅', TURTLE:'🐢', WINTER:'❄️',

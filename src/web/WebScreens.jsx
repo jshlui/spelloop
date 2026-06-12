@@ -44,9 +44,9 @@ function buildPath(points) {
 function WebMap({ levels, onPlayLevel, onBack }) {
   levels = levels || LEVELS;
   var chapters = window.CHAPTER_META || [
-    { id: 1, name: 'The Word Forest', emoji: '🌳' },
-    { id: 2, name: 'The Word Sea',    emoji: '🌊' },
-    { id: 3, name: 'The Word Mountain', emoji: '⛰️' },
+    { id: 1, name: 'Short Vowel Forest', emoji: '🌳' },
+    { id: 2, name: 'Double-Letter Sea',  emoji: '🌊' },
+    { id: 3, name: 'Blend Mountain',     emoji: '⛰️' },
   ];
   var [activeChapter, setActiveChapter] = React.useState(function() {
     var cur = levels.find(function(l) { return l.current; });

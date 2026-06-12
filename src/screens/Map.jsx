@@ -41,7 +41,7 @@ function MapScreen({ onPlayLevel }) {
         background: 'linear-gradient(180deg, #E3EAFF, rgba(227,234,255,0))',
       }}>
         <div style={{ fontSize: 12, color: 'var(--blue-ink)', fontWeight: 800, letterSpacing: 1, textTransform: 'uppercase' }}>Chapter 1</div>
-        <div style={{ fontSize: 'var(--fs-2xl)', fontWeight: 900, lineHeight: 1 }}>The Word Forest</div>
+        <div style={{ fontSize: 'var(--fs-2xl)', fontWeight: 900, lineHeight: 1 }}>Short Vowel Forest</div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 10 }}>
           <div className="progress-track" style={{ flex: 1 }}>
             <div className="progress-fill" style={{ width: '37%' }}/>
