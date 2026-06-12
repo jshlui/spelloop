@@ -136,6 +136,23 @@ function WebApp({ profile, setProfile, levels, setLevels, settings, setSettings,
       var due = new Date(Date.now() + days * 86400000).toISOString().slice(0, 10);
       errors[key] = { word: entry.word, letterIndex: entry.letterIndex, wrongLetter: entry.wrongLetter, correctLetter: entry.correctLetter, count: count, dueDate: due, lastSeen: today };
     });
+    // Successful round on this word (no new mistakes): push its due date
+    // out — without this, reviewed words stay overdue forever because the
+    // entries only update on errors.
+    var hadError = taskHistory.some(function(t) { return !t.correct && t.word === word; });
+    if (!hadError) {
+      Object.keys(errors).forEach(function(k) {
+        if (k.indexOf(word + ':') !== 0) return;
+        var e = errors[k];
+        var successes = (e.successCount || 0) + 1;
+        var days = Math.pow(2, Math.min((e.count || 1) + successes, 6));
+        errors[k] = Object.assign({}, e, {
+          successCount: successes,
+          dueDate: new Date(Date.now() + days * 86400000).toISOString().slice(0, 10),
+          lastSeen: today,
+        });
+      });
+    }
     // Cap at 200 entries — rotate oldest by lastSeen
     var keys = Object.keys(errors);
     if (keys.length > 200) {
@@ -143,6 +160,24 @@ function WebApp({ profile, setProfile, levels, setLevels, settings, setSettings,
       keys.slice(0, keys.length - 200).forEach(function(k) { delete errors[k]; });
     }
     return errors;
+  }
+
+  // Words whose spaced-repetition review is due today or overdue
+  function getDueReviewWords(letterErrors) {
+    var today = new Date().toISOString().slice(0, 10);
+    var seen = {};
+    var words = [];
+    Object.values(letterErrors || {}).forEach(function(e) {
+      if (!e.word || seen[e.word]) return;
+      if ((e.dueDate || '9999') <= today) { seen[e.word] = true; words.push(e.word); }
+    });
+    return words;
+  }
+
+  function startReview() {
+    var due = getDueReviewWords(profile.letterErrors);
+    if (!due.length) return;
+    setRoute({ name: 'game', mode: 'missing', word: due[0], activity: true });
   }
 
   function finishGame(stars, accuracy, taskHistory) {
@@ -353,7 +388,9 @@ function WebApp({ profile, setProfile, levels, setLevels, settings, setSettings,
             onPickMode={startMode}
             onTab={function(t) { setTab(t); setRoute({ name: 'screen' }); }}
             dailyState={dailyState}
-            onStartDaily={handleStartDaily}/>
+            onStartDaily={handleStartDaily}
+            reviewWords={getDueReviewWords(profile.letterErrors)}
+            onStartReview={startReview}/>
         )}
         {route.name === 'screen' && tab === 'map'  && <WebMap levels={levels} onPlayLevel={startLevel} onBack={function() { setTab('home'); }}/>}
         {route.name === 'screen' && tab === 'me'   && (
@@ -738,7 +775,7 @@ function ActivityThumb({ kind }) {
   return <div className={'activity-thumb activity-thumb--' + kind} aria-hidden="true"/>;
 }
 
-function WebHome({ profile, levels, onContinue, onPlayLevel, onPickMode, onTab, dailyState, onStartDaily }) {
+function WebHome({ profile, levels, onContinue, onPlayLevel, onPickMode, onTab, dailyState, onStartDaily, reviewWords, onStartReview }) {
   var [searchOpen, setSearchOpen] = React.useState(false);
   var [searchQuery, setSearchQuery] = React.useState('');
   var searchInputRef = React.useRef(null);
@@ -868,6 +905,7 @@ function WebHome({ profile, levels, onContinue, onPlayLevel, onPickMode, onTab, 
       )}
 
       <DailyChallengeCard dailyState={dailyState} onStartDaily={onStartDaily}/>
+      <TrickyWordsCard reviewWords={reviewWords} onStartReview={onStartReview}/>
 
       <section className="spelloop-section">
         <div className="spelloop-section-head"><h2>Continue Learning</h2><button onClick={function() { onTab('map'); }}>View all</button></div>
@@ -913,6 +951,45 @@ function WebHome({ profile, levels, onContinue, onPlayLevel, onPickMode, onTab, 
       </section>
 
     </main>
+  );
+}
+
+// Spaced-repetition surface: words whose review is due, one tap to practise.
+function TrickyWordsCard({ reviewWords, onStartReview }) {
+  var due = reviewWords || [];
+  if (!due.length) return null;
+  var shown = due.slice(0, 3).join(' · ');
+  return (
+    <section style={{ padding: '0 24px 4px' }}>
+      <div role="button" tabIndex={0}
+        aria-label={'Practise tricky words: ' + due.slice(0, 3).join(', ')}
+        style={{
+          background: 'linear-gradient(135deg, var(--coral) 0%, var(--rose) 100%)',
+          borderRadius: 20, padding: '18px 22px',
+          display: 'flex', alignItems: 'center', gap: 16,
+          boxShadow: '0 4px 24px rgba(244,63,94,0.25)',
+          cursor: 'pointer',
+          transition: 'transform 0.15s, box-shadow 0.15s',
+        }}
+        onClick={function() { window.sfx && window.sfx.tap && window.sfx.tap(); onStartReview && onStartReview(); }}
+        onKeyDown={function(e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onStartReview && onStartReview(); } }}
+        onMouseEnter={function(e) { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 8px 32px rgba(244,63,94,0.35)'; }}
+        onMouseLeave={function(e) { e.currentTarget.style.transform = ''; e.currentTarget.style.boxShadow = '0 4px 24px rgba(244,63,94,0.25)'; }}
+      >
+        <div style={{ fontSize: 32, lineHeight: 1 }}>🔁</div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: 1, textTransform: 'uppercase', color: 'rgba(255,255,255,0.75)', marginBottom: 2 }}>
+            Tricky Words
+          </div>
+          <div style={{ fontFamily: "'Fredoka', 'Nunito', sans-serif", fontSize: 20, fontWeight: 800, color: 'white', letterSpacing: 1.5 }}>
+            {shown}{due.length > 3 ? ' …' : ''}
+          </div>
+        </div>
+        <div style={{ flexShrink: 0, background: 'rgba(255,255,255,0.2)', color: 'white', fontWeight: 900, fontSize: 13, borderRadius: 'var(--r-pill)', padding: '8px 16px' }}>
+          {due.length === 1 ? 'Beat it!' : 'Beat them!'}
+        </div>
+      </div>
+    </section>
   );
 }
 

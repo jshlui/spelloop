@@ -54,6 +54,39 @@ function GameHeader({ mode, progress, onClose, word }) {
 }
 
 // ── Hint System — 3-tier scaffolded hint overlay ──────────────
+// "Sound it out" — phonics letter SOUNDS, not letter names. Two-letter
+// units that make one sound are spoken as a unit; the rest get sound
+// approximations TTS can say (buh, kuh), then the whole word blends back.
+var SOUND_UNITS = {
+  SH: 'shuh', CH: 'chuh', TH: 'thuh', CK: 'kuh', NG: 'ung', PH: 'fuh',
+  EE: 'ee', EA: 'ee', AI: 'ay', OO: 'oo', OW: 'ow', OU: 'ow',
+  AR: 'ar', ER: 'er', IR: 'er', OR: 'or', UR: 'er', QU: 'kwuh',
+};
+var LETTER_SOUNDS = {
+  A: 'ah', B: 'buh', C: 'kuh', D: 'duh', E: 'eh', F: 'fuh', G: 'guh',
+  H: 'huh', I: 'ih', J: 'juh', K: 'kuh', L: 'luh', M: 'muh', N: 'nuh',
+  O: 'oh', P: 'puh', Q: 'kwuh', R: 'ruh', S: 'suh', T: 'tuh', U: 'uh',
+  V: 'vuh', W: 'wuh', X: 'ks', Y: 'yuh', Z: 'zuh',
+};
+function soundOutUnits(word) {
+  var W = (word || '').toUpperCase();
+  // Magic-e words: the final E is silent — don't sound it
+  var pools = [].concat(window.WORDS_EASY || [], window.WORDS_MED || [], window.WORDS_HARD || [], window.WORDS_XLHARD || []);
+  var entry = pools.find(function(w) { return w.word === W; });
+  if (entry && entry.phonemes && entry.phonemes.indexOf('silent-e') !== -1 && W.slice(-1) === 'E') {
+    W = W.slice(0, -1);
+  }
+  var units = [];
+  var i = 0;
+  while (i < W.length) {
+    var pair = W.slice(i, i + 2);
+    if (SOUND_UNITS[pair]) { units.push(SOUND_UNITS[pair]); i += 2; continue; }
+    units.push(LETTER_SOUNDS[W[i]] || W[i]);
+    i += 1;
+  }
+  return units;
+}
+
 function HintSystem({ word, wrongCount }) {
   const [tier, setTier] = React.useState(0);
   const [imgVisible, setImgVisible] = React.useState(false);
@@ -78,14 +111,22 @@ function HintSystem({ word, wrongCount }) {
       setTier(2);
       if (window.speechSynthesis) {
         window.speechSynthesis.cancel();
-        (word || '').split('').forEach((l, i) => {
+        var units = soundOutUnits(word);
+        units.forEach((u, i) => {
           var id = setTimeout(() => {
-            const u = new SpeechSynthesisUtterance(l);
-            u.rate = 0.6; u.lang = 'en-AU';
-            window.speechSynthesis.speak(u);
-          }, i * 500);
+            const ut = new SpeechSynthesisUtterance(u);
+            ut.rate = 0.6; ut.lang = 'en-AU';
+            window.speechSynthesis.speak(ut);
+          }, i * 550);
           timerIds.current.push(id);
         });
+        // blend the sounds back into the whole word
+        var endId = setTimeout(() => {
+          const ut = new SpeechSynthesisUtterance((word || '').toLowerCase());
+          ut.rate = 0.75; ut.lang = 'en-AU';
+          window.speechSynthesis.speak(ut);
+        }, units.length * 550 + 300);
+        timerIds.current.push(endId);
       }
     } else if (tier === 2) {
       setTier(3);
@@ -95,7 +136,7 @@ function HintSystem({ word, wrongCount }) {
     }
   }
 
-  const btnLabel = tier === 0 ? '💡 Hint' : tier === 1 ? '🔊 Hear each letter' : tier === 2 ? '🖼️ Show clue' : '✓ Done';
+  const btnLabel = tier === 0 ? '💡 Hint' : tier === 1 ? '🔊 Sound it out' : tier === 2 ? '🖼️ Show clue' : '✓ Done';
   const btnBg = tier === 0 ? 'var(--gold)' : tier === 1 ? 'var(--violet)' : tier === 2 ? 'var(--emerald)' : 'var(--alpha-md)';
   const btnColor = tier === 0 ? 'var(--btn-back-ink)' : 'white';
 
